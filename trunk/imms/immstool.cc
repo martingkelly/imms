@@ -38,7 +38,8 @@ public:
     void do_missing();
     int missing_callback(int argc, char *argv[]);
     time_t get_last(const string &path);
-    bool do_purge(const string &path);
+    void do_purge(const string &path);
+    void do_lint();
 };
 
 int usage();
@@ -90,12 +91,17 @@ int main(int argc, char *argv[])
         string path;
         while (getline(cin, path))
         {
-            if (immstool.get_last(path) < cutoff && immstool.do_purge(path))
+            if (immstool.get_last(path) < cutoff)
+            {   
+                immstool.do_purge(path);
                 cout << " [X]";
+            }
             else
                 cout << " [_]"; 
             cout << " >> " << path_get_filename(path) << endl;
         }
+        
+        immstool.do_lint();
     }
     else if (!strcmp(argv[1], "help"))
     {
@@ -129,42 +135,35 @@ time_t ImmsTool::get_last(const string &path)
     select_query(
             "SELECT last FROM 'Last' "
                 "INNER JOIN Library ON Last.sid = Library.sid "
-                "WHERE Library.path = '" + path + "';");
+                "WHERE Library.path = '" + escape_string(path) + "';");
 
     return nrow && resultp[1] ? atol(resultp[1]) : 0;
 } 
 
-bool ImmsTool::do_purge(const string &path)
+void ImmsTool::do_purge(const string &path)
 {
-    select_query(
-            "SELECT uid, sid FROM 'Library' "
-            "WHERE Library.path = '" + path + "';");
+    run_query("DELETE FROM 'Library' WHERE path = '"
+            + escape_string(path) + "'");
+}
 
-    if (!nrow)
-        return false;
+void ImmsTool::do_lint()
+{
+    run_query(
+            "DELETE FROM Info "
+            "WHERE sid NOT IN (SELECT sid FROM Library);");
 
-    int uid = atoi(resultp[2]);
-    int sid = atoi(resultp[3]);
+    run_query(
+            "DELETE FROM Last "
+            "WHERE sid NOT IN (SELECT sid FROM Library);");
 
-    if (!uid || !sid)
-        return false;
+    run_query(
+            "DELETE FROM Rating "
+            "WHERE uid NOT IN (SELECT uid FROM Library);");
 
-    run_query("DELETE FROM 'Library' WHERE uid = '" + itos(uid) + "'");
-    run_query("DELETE FROM 'Rating' WHERE uid = '" + itos(uid) + "'");
-
-    select_query(
-            "SELECT count(sid) FROM 'Library' "
-            "WHERE Library.sid = '" + itos(sid) + "';");
-
-    if (!nrow || !resultp[1] || !atol(resultp[1]))
-    {
-        run_query("DELETE FROM 'Last' WHERE sid = '" + itos(sid) + "'");
-        run_query("DELETE FROM 'Corrlations' "
-                "WHERE origin = '" + itos(sid) + "' OR "
-                        "destination = '" + itos(sid) + "';");
-    }
-
-    return true;
+    run_query(
+            "DELETE FROM Correlations "
+            "WHERE origin NOT IN (SELECT sid FROM Library) "
+            "OR destination NOT IN (SELECT sid FROM Library);");
 }
 
 void ImmsTool::do_distance()
