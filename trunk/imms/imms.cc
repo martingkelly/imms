@@ -45,7 +45,7 @@ using std::ofstream;
 //////////////////////////////////////////////
 
 // Imms
-Imms::Imms(const IDBusConnection &con) : IMMSClient(con)
+Imms::Imms(const IDBusConnection &con) : IMMSServer(con)
 {
     last_skipped = last_jumped = false;
     local_max = MAX_TIME;
@@ -74,19 +74,18 @@ void Imms::do_events()
 {
     SongPicker::identify_more();
     SongPicker::do_events();
-    ImmsServer::do_events();
     XIdle::query();
 }
 
 string Imms::get_playlist_item(int index)
 {
-    return IMMSClient::get_playlist_item(index);
+    return IMMSServer::get_playlist_item(index);
 }
 
 void Imms::playlist_changed(int length)
 {
     pl_length = length != -1 ?
-        length : IMMSClient::get_playlist_length();
+        length : IMMSServer::get_playlist_length();
     local_max = pl_length * 8 * 60;
     if (local_max > MAX_TIME)
         local_max = MAX_TIME;
@@ -103,7 +102,7 @@ void Imms::playlist_changed(int length)
 void Imms::reset_selection()
 {
     SongPicker::reset();
-    IMMSClient::reset_selection();
+    IMMSServer::reset_selection();
 
     local_max = ImmsDb::get_effective_playlist_length() * 8 * 60;
         local_max = MAX_TIME;

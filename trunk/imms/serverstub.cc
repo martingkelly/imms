@@ -1,11 +1,11 @@
-#include "clientstub.h"
+#include "serverstub.h"
 
 #include <iostream>
 
 using std::cerr;
 using std::endl;
 
-int IMMSClient::get_playlist_length()
+int IMMSServer::get_playlist_length()
 {
     int r = 0;
     try {
@@ -18,7 +18,7 @@ int IMMSClient::get_playlist_length()
     return r;
 } 
 
-string IMMSClient::get_playlist_item(int index)
+string IMMSServer::get_playlist_item(int index)
 {
     string path = "";
     try {
@@ -32,7 +32,7 @@ string IMMSClient::get_playlist_item(int index)
     return path;
 }
 
-void IMMSClient::reset_selection()
+void IMMSServer::reset_selection()
 {
     try {
         IDBusOMessage m(IMMSCLIENTDBUSID, "ResetSelection");

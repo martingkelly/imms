@@ -1,5 +1,5 @@
-#ifndef __CLIENTSTUB_H
-#define __CLIENTSTUB_H
+#ifndef __SERVERSTUB_H
+#define __SERVERSTUB_H
 
 #include <string>
 
@@ -7,10 +7,10 @@
 
 using std::string;
 
-class IMMSClient
+class IMMSServer
 {
 public:
-    IMMSClient(IDBusConnection con_) : con(con_) {};
+    IMMSServer(IDBusConnection con_) : con(con_) {};
     int get_playlist_length();
     string get_playlist_item(int index);
     void reset_selection();

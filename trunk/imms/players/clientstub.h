@@ -1,5 +1,5 @@
-#ifndef __CLIENT_H_
-#define __CLIENT_H_
+#ifndef __CLIENTSTUB_H_
+#define __CLIENTSTUB_H_
 
 #include "dbuscore.h"
 #include "utils.h"
@@ -7,10 +7,10 @@
 #include "players/dbusclient.h"
 
 template <typename Filter>
-class IMMSServer
+class IMMSClient
 {
 public:
-    IMMSServer() : filter(this), client(get_imms_root("socket"), &filter) {}
+    IMMSClient() : filter(this), client(get_imms_root("socket"), &filter) {}
 
     void setup(bool use_xidle)
     {
@@ -79,7 +79,7 @@ template <typename Ops>
 class ClientFilter : public IDBusFilter
 {
 public:
-    ClientFilter(IMMSServer< ClientFilter<Ops> > *_client) : client(_client) {}
+    ClientFilter(IMMSClient< ClientFilter<Ops> > *_client) : client(_client) {}
     virtual bool dispatch(IDBusConnection &con, IDBusIMessage &message)
     {
         if (message.get_type() == MTError)
@@ -152,7 +152,7 @@ public:
         return false;
     }
 private:
-    IMMSServer< ClientFilter<Ops> > *client;
+    IMMSClient< ClientFilter<Ops> > *client;
 };
 
 #endif
