@@ -12,24 +12,26 @@
 
 using std::string;
 
-#define MINBPM 45
-#define MAXBPM 225
-#define SAMPLES 100
-#define MINBEATLENGTH (SAMPLES*60/MAXBPM)
-#define MAXBEATLENGTH (SAMPLES*60/MINBPM)
-#define SHORTSPECTRUM 16
-#define LONGSPECTRUM 256
+#define MINBPM          45
+#define MAXBPM          225
+#define SAMPLES         100
+#define MINBEATLENGTH   (SAMPLES*60/MAXBPM)
+#define MAXBEATLENGTH   (SAMPLES*60/MINBPM)
+#define SHORTSPECTRUM   16
+#define LONGSPECTRUM    256
+#define MICRO           1000000
 
 class BeatKeeper
 {
 public:
     BeatKeeper() { reset(); }
     void reset();
-    void getBPM();
+    int getBPM();
     void integrate_beat(float power);
-    void process_window();
 
 protected:
+    void process_window();
+
     struct timeval prev;
     long unsigned int samples;
     time_t first, last;

@@ -48,8 +48,10 @@ int InfoFetcher::fetch_song_info(SongData &data)
     data.unrated = false;
     if (data.rating < 0)
     {
+#ifdef LEGACY_RATINGS
         link(path);
         ++result;
+#endif
         data.unrated = true;
         data.rating = get_rating(email);
         immsdb.set_rating(data.rating);

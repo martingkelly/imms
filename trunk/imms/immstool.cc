@@ -19,7 +19,7 @@ using std::setw;
 
 int usage()
 {
-    cout << "immstool distance|deviation|test|help" << endl;
+    cout << "immstool distance|deviation|missing|help" << endl;
     return -1;
 }
 
@@ -68,6 +68,29 @@ public:
 
 private:
     string reference;
+};
+
+class MissingSqlDb : public SqlDb
+{
+public:
+    MissingSqlDb()
+        : SqlDb(string(getenv("HOME")).append("/.imms/imms.db")) {}
+
+    void do_stuff()
+    {
+        select_query("SELECT path FROM 'Library';",
+                (SqlCallback)&MissingSqlDb::missing_callback);
+    }
+
+    int missing_callback(int argc, char *argv[])
+    {
+        assert(argc == 1);
+
+        if (access(argv[0], F_OK))
+                cout << argv[0] << endl;
+
+        return 0;
+    }
 };
 
 int main(int argc, char *argv[])
@@ -131,23 +154,18 @@ int main(int argc, char *argv[])
             cout << std::setw(4) << ROUND(deviations[i] * 10);
         cout << endl;
     }
-    else if (!strcmp(argv[1], "test"))
+    else if (!strcmp(argv[1], "missing"))
     {
-        const string bitter = "hiiikijghihhhghe";
-        const string alles = "hnpmknmghhfeddba";
+        MissingSqlDb missing;
+        missing.do_stuff();
+    }
+    else if (!strcmp(argv[1], "purge"))
+    {
+        string path;
+        while (cin >> path)
+        {
 
-        pair<float, float> stats = spectrum_analyze(bitter);
-
-        cout << "spectrum " << bitter << " mean = " << (char)stats.first
-            << " dev = " << stats.second << endl;
-
-        stats = spectrum_analyze(alles);
-
-        cout << "spectrum " << alles << " mean = " << (char)stats.first
-            << " dev = " << stats.second << endl;
-
-        cout << "distance = " << spectrum_distance(alles, bitter) << endl;
-        cout << "distance = " << spectrum_distance(bitter, alles) << endl;
+        }
     }
     else if (!strcmp(argv[1], "help"))
     {
