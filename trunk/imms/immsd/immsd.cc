@@ -66,7 +66,8 @@ public:
         string command = "";
         sstr >> command;
 #if defined(DEBUG) && 1
-        std::cout << "> " << line << endl;
+        if (command != "Playlist")
+            std::cout << "> " << line << endl;
 #endif
 
         if (command == "Setup")
@@ -102,6 +103,16 @@ public:
             getline(sstr, path);
             path = path_normalize(path);
             check_playlist_item(pos, path);
+            return;
+        }
+        if (command == "Playlist")
+        {
+            int pos;
+            sstr >> pos;
+            string path;
+            getline(sstr, path);
+            path = path_normalize(path);
+            imms->playlist_insert_item(pos, path);
             return;
         }
         if (command == "PlaylistEnd")

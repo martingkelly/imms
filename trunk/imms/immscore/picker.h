@@ -3,6 +3,7 @@
 
 #include <string>
 #include <list>
+#include <vector>
 
 #include "immsconf.h"
 #include "fetcher.h"
@@ -14,7 +15,7 @@ class SongPicker : protected InfoFetcher
 {
 public:
     SongPicker();
-    int select_next();
+    virtual int select_next();
     void playlist_ready() { playlist_known = 1; }
     virtual void playlist_changed(int length);
 
@@ -27,8 +28,12 @@ protected:
     virtual void request_playlist_item(int index) = 0;
 
     SongData current;
+    std::vector<int> metacandidates;
 
 private:
+    int next_candidate();
+    void get_related(int pivot_sid, int limit);
+
     int acquired, attempts, playlist_known;
     SongData winner;
 

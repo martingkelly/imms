@@ -72,13 +72,13 @@ public:
         {
             int i;
             sstr >> i;
-            send_item(i);
+            send_item("PlaylistItem", i);
             return;
         }
         if (command == "GetEntirePlaylist")
         {
             for (int i = 0; i < Ops::get_length(); ++i)
-                send_item(i);
+                send_item("Playlist", i);
             write_command("PlaylistEnd");
             return;
         }
@@ -101,10 +101,10 @@ public:
 private:
     bool connected;
 
-    void send_item(int i)
+    void send_item(const char *command, int i)
     {
         ostringstream osstr;
-        osstr << "PlaylistItem " << i << " " << Ops::get_item(i);
+        osstr << command << " " << i << " " << Ops::get_item(i);
         write_command(osstr.str());
     }
 };

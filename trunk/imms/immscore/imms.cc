@@ -34,10 +34,10 @@ using std::ofstream;
 #define     SECONDARY               0.3
 #define     CORRELATION_IMPACT      40
 #define     BPM_IMPACT              25
-#define     SPECTRUM_IMPACT         10
+#define     SPECTRUM_IMPACT         5
 #define     SPECTRUM_RADIUS         3.75
 #define     BPM_RADIUS              2.5
-#define     LAST_EXPIRE             2*HOUR
+#define     LAST_EXPIRE             HOUR
 #define     MAX_TREND               20
 
 #define     TERM_WIDTH              80
@@ -47,7 +47,7 @@ using std::ofstream;
 // Imms
 Imms::Imms(IMMSServer *server) : server(server)
 {
-    last_skipped = last_jumped = false;
+    need_related = last_skipped = last_jumped = false;
     local_max = MAX_TIME;
 
     handpicked.set_on = 0;
@@ -72,6 +72,19 @@ void Imms::setup(bool use_xidle)
 
 void Imms::do_events()
 {
+    if (need_related)
+    {
+        need_related = false;
+#if 1
+        cerr << "doing correlations" << endl;
+        StackTimer t;
+        AutoTransaction a;
+        if (last.sid != -1)
+            CorrelationDb::get_related(metacandidates, last.sid, 20);
+        if (handpicked.sid != -1)
+            CorrelationDb::get_related(metacandidates, handpicked.sid, 30);
+#endif
+    }
     SongPicker::do_events();
     XIdle::query();
 }
@@ -92,6 +105,12 @@ void Imms::playlist_changed(int length)
     PlaylistDb::playlist_clear();
     SongPicker::playlist_changed(length);
 } 
+
+int Imms::select_next()
+{
+    need_related = true;
+    return SongPicker::select_next();
+}
 
 void Imms::reset_selection()
 {

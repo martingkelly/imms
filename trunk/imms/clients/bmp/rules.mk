@@ -1,5 +1,5 @@
 BMPCPPFLAGS=`pkg-config bmp --cflags` -I../clients/xmms/ -DBMP
-BMPLDFLAGS=`pkg-config bmp dbus-glib-1 --libs`
+BMPLDFLAGS=`pkg-config bmp glib --libs`
 BMPCOMMON=bmpinterface.o clientstubbase.o libimmscore.a
 
 libbmpimms.so: bmpplugin.o $(BMPCOMMON)

@@ -54,6 +54,32 @@ void CorrelationDb::add_recent(int uid, int delta)
     }
 }
 
+void CorrelationDb::get_related(vector<int> &out, int pivot_sid, int limit)
+{
+    string query =
+        "SELECT pos FROM Playlist NATURAL INNER JOIN Library "
+            "WHERE sid IN ("
+            "SELECT CASE WHEN C.x = ? THEN C.y ELSE C.x END "
+            "FROM Correlations AS C "
+            "WHERE C.weight > 0 AND (C.x = ? OR C.y = ?) "
+            "ORDER BY C.weight DESC LIMIT " + itos(limit) + ");";
+
+    try {
+        Q q(query);
+
+        q << pivot_sid << pivot_sid << pivot_sid;
+
+        while (q.next())
+        {
+            int pos;
+            q >> pos;
+            cerr << pivot_sid << " related to " << pos << endl;
+            out.push_back(pos);
+        }
+    }
+    WARNIFFAILED();
+}
+
 void CorrelationDb::expire_recent(time_t cutoff)
 {
 #ifdef DEBUG
