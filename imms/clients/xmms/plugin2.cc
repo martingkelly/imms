@@ -56,7 +56,9 @@ XMMSClient *imms = 0;
 
 static void enqueue_next()
 {
-    if (just_enqueued || select_pending)
+    if (select_pending)
+        return;
+    if (just_enqueued)
     {
         --just_enqueued;
         return;

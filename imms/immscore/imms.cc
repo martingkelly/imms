@@ -90,6 +90,7 @@ void Imms::playlist_changed(int length)
         local_max = MAX_TIME;
 
     ImmsDb::clear_recent();
+    PlaylistDb::playlist_clear();
     SongPicker::reset();
 } 
 
