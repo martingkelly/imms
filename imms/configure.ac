@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[2.0.1-rc2],[mag@luminal.org])
+AC_INIT([IMMS],[2.0.1-rc3],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -180,6 +180,8 @@ PLUGINS=""
 AC_CHECK_PROG(with_xmms, xmms-config, "yes", "no")
 if test "$xmms_config" != "no"; then
     CPPFLAGS=`xmms-config --cflags`
+    AC_CHECK_HEADERS(glib.h,, [with_xmms=no]) # how to disable caching for this?
+    AC_CHECK_HEADERS(gtk/gtk.h,, [with_xmms=no])
     AC_CHECK_HEADERS(xmms/plugin.h,, [with_xmms=no])
     AC_CHECK_HEADERS(xmms/xmmsctrl.h,, [with_xmms=no])
 fi

@@ -9,6 +9,9 @@
 #include "md5digest.h"
 #include "utils.h"
 
+#define     NEW_PLAYS               2
+#define     NEW_BONUS               20
+
 using std::endl;
 using std::cerr;
 
@@ -82,6 +85,12 @@ bool InfoFetcher::fetch_song_info(SongData &data)
 
     data.last_played = (data.get_sid() != next_sid) ?
                             time(0) - data.get_last() : 0;
+
+    data.newness = 0;
+
+    if (data.get_playcounter() <
+            std::min(BasicDb::avg_playcounter(), NEW_PLAYS))
+        data.newness = NEW_BONUS / (data.get_playcounter() + 1);
 
     data.trend = data.get_trend();
 

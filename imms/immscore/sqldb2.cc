@@ -28,7 +28,6 @@ extern sqlite3 *db();
 
 SqlDb::SqlDb()
 {
-    mkdir(get_imms_root().c_str(), 0700);
     if (!access(get_imms_root("imms.db").c_str(), R_OK)
             && access(get_imms_root("imms2.db").c_str(), F_OK))
     {

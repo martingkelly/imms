@@ -180,7 +180,7 @@ int BasicDb::avg_rating(const string &artist, const string &title)
                     "INNER JOIN Info AS I ON L.sid = I.sid "
                     "INNER JOIN Rating AS R ON L.uid = R.uid "
                     "INNER JOIN Artists AS A ON I.aid = A.aid "
-                    "WHERE A.artist = ? AND Info.title = ?;");
+                    "WHERE A.artist = ? AND I.title = ?;");
 
             q << artist << title;
 
@@ -222,11 +222,9 @@ int BasicDb::avg_playcounter()
 
     try
     {
-        q q("SELECT avg(playcounter) from Library;");
+        Q q("SELECT avg(playcounter) from Library;");
         if (q.next())
-        {
             q >> playcounter;
-        }
     }
     WARNIFFAILED();
     return playcounter;
