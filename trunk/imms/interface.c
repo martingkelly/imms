@@ -64,6 +64,7 @@ void configure_ok_cb(gpointer data)
 
     use_xidle = !!GTK_TOGGLE_BUTTON(xidle_button)->active;
     use_sloppy = !!GTK_TOGGLE_BUTTON(sloppy_button)->active;
+    use_queue = !!GTK_TOGGLE_BUTTON(queue_button)->active;
 
     xmms_cfg_write_int(cfgfile, "imms", "xidle", use_xidle);
     xmms_cfg_write_int(cfgfile, "imms", "sloppy", use_sloppy);
