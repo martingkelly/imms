@@ -267,6 +267,16 @@ bool BasicDb::check_title(const string &artist, string &title)
 
 void BasicDb::sql_schema_upgrade(int from)
 {
+    if (!from)
+    {
+        try
+        {
+            sql_create_tables();
+        }
+        WARNIFFAILED();
+        return;
+    }
+
     QueryCacheDisabler qcd;
     try 
     {
@@ -316,7 +326,7 @@ void BasicDb::sql_schema_upgrade(int from)
 
             Q("INSERT OR REPLACE INTO Library "
                     "(uid, sid, playcounter, lastseen, firstseen) "
-                    "SELECT uid, sid, 10, ?, ? FROM Library_backup;")
+                    "SELECT uid, sid, 2, ?, ? FROM Library_backup;")
                  << time(0) << time(0) << execute;
 
             Q("DROP TABLE Library_backup;").execute();
@@ -336,7 +346,7 @@ void BasicDb::sql_schema_upgrade(int from)
 
             Q("INSERT INTO Info SELECT sid, aid, title "
                     "FROM Info_backup INNER JOIN Artists "
-                        "ON Info_backup.artist = Artists.artist").execute();
+                        "ON Info_backup.artist = Artists.artist;").execute();
         }
 
         a.commit();

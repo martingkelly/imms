@@ -1,6 +1,7 @@
 #ifndef __SQLITE___H
 #define __SQLITE___H
 
+#include "immsconf.h"
 #include <string>
 #include <iostream>
 #include <map>
@@ -43,7 +44,7 @@ private:
 class AutoTransaction
 {
 public:
-    AutoTransaction();
+    AutoTransaction(bool exclusive = false);
     ~AutoTransaction();
     void commit();
 private:

@@ -1,5 +1,6 @@
 #include <sqlite3.h>
 #include <sstream>
+#include <time.h>
 
 #include "sqlite++.h"
 
@@ -130,9 +131,23 @@ void AttachedDatabase::detach()
 
 // AutoTransaction
 
-AutoTransaction::AutoTransaction() : commited(false)
+AutoTransaction::AutoTransaction(bool exclusive) : commited(false)
 {
-    if (sqlite3_exec(SQLDatabase::db(), "BEGIN TRANSACTION;", 0, 0, 0))
+    string query = "BEGIN ";
+    if (exclusive)
+        query += "EXCLUSIVE ";
+    query += "TRANSACTION;";
+    int r;
+    while (1) 
+    {
+        r = sqlite3_exec(SQLDatabase::db(), query.c_str(), 0, 0, 0);
+        if (r != SQLITE_BUSY)
+            break;
+#ifdef DEBUG
+        cerr << "waiting for exclusive lock" << endl;
+#endif
+    }
+    if (r)
         commited = true;
 }
 
@@ -145,7 +160,20 @@ AutoTransaction::~AutoTransaction()
 void AutoTransaction::commit()
 {
     if (!commited)
-        sqlite3_exec(SQLDatabase::db(), "COMMIT TRANSACTION;", 0, 0, 0);
+    {
+        int r;
+        while (1)
+        {
+            r = sqlite3_exec(SQLDatabase::db(), "COMMIT TRANSACTION;", 0, 0, 0);
+            if (r != SQLITE_BUSY)
+                break;
+#ifdef DEBUG
+            cerr << "database busy at commit time - sleeping" << endl;
+#endif
+            struct timespec t = { 0, 250000000 };
+            nanosleep(&t, 0);
+        }
+    }
     commited = true;
 }
 
@@ -248,11 +276,15 @@ SQLQuery &SQLQuery::operator<<(int i)
 
 SQLQuery &SQLQuery::operator<<(long i)
 {
-    if (stmt) {
-        if (sizeof(long) == 8) {
+    if (stmt)
+    {
+        if (sizeof(long) == 8)
+        {
             if (sqlite3_bind_int64(stmt, ++curbind, i))
                 throw SQLStandardException();
-        } else {
+        }
+        else
+        {
             if (sqlite3_bind_int(stmt, ++curbind, i))
                 throw SQLStandardException();
         }
@@ -291,8 +323,9 @@ SQLQuery &SQLQuery::operator>>(int &i)
 
 SQLQuery &SQLQuery::operator>>(long &i)
 {    
-    if (stmt) {
-        if (sizeof( long ) == 8)
+    if (stmt)
+    {
+        if (sizeof(long) == 8)
             i = sqlite3_column_int64(stmt, curbind++);
         else 
             i = sqlite3_column_int(stmt, curbind++);
