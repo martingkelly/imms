@@ -90,7 +90,6 @@ void Imms::playlist_changed(int length)
     if (local_max > MAX_TIME)
         local_max = MAX_TIME;
 
-    history.clear();
     ImmsDb::clear_recent();
     SongPicker::reset();
 
@@ -108,26 +107,12 @@ void Imms::reset_selection()
         local_max = MAX_TIME;
 }
 
-int Imms::get_previous()
-{
-    if (history.size() < 2)
-        return -1;
-    history.pop_back();
-    int result = history.back();
-    history.pop_back();
-    return result;
-}
-
 void Imms::start_song(int position, string path)
 {
     XIdle::reset();
 
     path = path_normalize(path);
     revalidate_current(position, path);
-
-    history.push_back(position);
-    if (history.size() > 10)
-        history.pop_front();
 
     AutoTransaction at;
 

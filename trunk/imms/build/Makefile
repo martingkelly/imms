@@ -8,23 +8,23 @@ first: ../configure
 
 include ../rules.mk
 
-all: libxmmsimms.so immsd analyzer immstool
+all: immsd analyzer immstool $(TARGETS)
 
-libxmmsimms.so: $(XMMS_OBJ)
+XMMSCOMMON=interface.o dbusclient.o glib1dbus.o libimmscore.a
+libxmmsimms.so: plugin.o $(XMMSCOMMON)
 libxmmsimms-LIBS = $(DBUSLDFLAGS) $(XMMSLDFLAGS)
+libxmmsimms2.so: plugin2.o $(XMMSCOMMON)
+libxmmsimms2-LIBS = $(DBUSLDFLAGS) $(XMMSLDFLAGS)
 
 libimmscore.a: $(call objects,../immscore)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 
-immsd: libimmscore.a
-
 immstool-CPPFLAGS = -I../analyzer
 immstool: immstool.o libimmscore.a spectrum.o
 
-analyzer-LIBS=`pkg-config fftw3f --libs`
-
 analyzer: $(call objects,../analyzer)
 analyzer: libimmscore.a
+analyzer-LIBS=`pkg-config fftw3f --libs`
 
 interface-CPPFLAGS=$(XMMSCPPFLAGS)
 plugin-CPPFLAGS=$(XMMSCPPFLAGS)
@@ -35,6 +35,7 @@ dbusclient-CPPFLAGS=$(DBUSCPPFLAGS)
 dbusserver-CPPFLAGS=$(DBUSCPPFLAGS) $(GLIB2CPPFLAGS)
 glib1dbus-CPPFLAGS=$(DBUSCPPFLAGS) $(GLIB1CPPFLAGS)
 
+immsd: libimmscore.a
 immsd: $(call objects,../immsd)
 immsd-CPPFLAGS=$(GLIB2CPPFLAGS)
 immsd-LIBS=$(GLIB2LDFLAGS) $(DBUSLDFLAGS)
