@@ -44,13 +44,18 @@ bool SongPicker::add_candidate(int position, string path, bool urgent)
     return acquired < (urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE);
 }
 
-void SongPicker::revalidate_winner(const string &path)
+void SongPicker::revalidate_current(const string &path)
 {
     string simple = path_simplifyer(path);
-    if (winner.path != simple)
+    if (current.path == winner.path)
     {
-        winner.path = simple;
-        fetch_song_info(winner);
+        std::cerr << "reusing winner!" << std::endl;
+        current = winner;
+    }
+    else if (current.path != simple)
+    {
+        current.path = simple;
+        fetch_song_info(current);
     }
 }
 

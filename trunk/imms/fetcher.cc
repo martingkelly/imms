@@ -68,7 +68,7 @@ int InfoFetcher::fetch_song_info(SongData &data)
         data.rating = SongInfo::get_rating(email);
 #endif
         if (data.rating < 1)
-            data.rating = immsdb.artist_avg_rating();
+            data.rating = immsdb.avg_rating();
         if (data.rating < 1)
             data.rating = 100;
 

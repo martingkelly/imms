@@ -23,8 +23,6 @@ public:
     //      int select_next()
     //      bool add_candidate(int, bool)
     //  SpectrumAnalyzer:
-    //      start_spectrum_analysis()
-    //      stop_spectrum_analysis()
     //      integrate_spectrum(uint16_t[])
 
     void start_song(int position, const std::string &path);
@@ -40,8 +38,7 @@ public:
 
     // configure imms
     //  email is used for getting legacy ratings from id3 tags
-    void setup(const char* _email, bool use_xidle,
-            bool _use_autooff = false);
+    void setup(const char* _email, bool use_xidle);
 
 protected:
     // Helper functions
@@ -49,7 +46,7 @@ protected:
     void print_song_info();
 
     // State variables
-    bool last_skipped, last_jumped, use_autooff;
+    bool last_skipped, last_jumped;
     int local_max;
 
     std::vector<int> history;
