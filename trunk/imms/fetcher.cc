@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <iostream>
 #include <algorithm>
@@ -16,18 +17,30 @@ using std::cerr;
 InfoFetcher::SongData::SongData(int _position, const string &_path)
     : Song(_path), position(_position)
 {
+    reset();
+}
+
+void InfoFetcher::SongData::reset()
+{
     bpmrating = specrating = rating = relation = 0;
-    identified = unrated = false;
+    composite_rating = 0;
+    identified = false;
     last_played = 0;
 }
 
-bool InfoFetcher::playlist_identify_item(int pos)
+bool InfoFetcher::SongData::get_song_from_playlist()
 {
-    string path = ImmsDb::get_playlist_item(pos);
+    *static_cast<Song*>(this) = PlaylistDb::playlist_id_from_item(position);
+    return isok();
+}
 
-    ImmsDb::identify(path);
-    ImmsDb::playlist_update_identity(pos);
+bool InfoFetcher::identify_playlist_item(int pos)
+{
+    Song song(PlaylistDb::get_playlist_item(pos));
+    if (!song.isok())
+        return false;
 
+    PlaylistDb::playlist_update_identity(pos, song.get_uid());
     return true;
 }
 
@@ -45,54 +58,48 @@ void InfoFetcher::playlist_changed()
 
 bool InfoFetcher::fetch_song_info(SongData &data)
 {
-    path = data.get_path();
-
-    if (access(path.c_str(), R_OK))
+    if (access(data.get_path().c_str(), R_OK))
         return false;
 
-    if (!ImmsDb::playlist_id_from_item(data.position))
-        if (!playlist_identify_item(data.position))
+    if (!data.get_song_from_playlist())
+        if (!identify_playlist_item(data.position))
             return false;
+        else
+            data.get_song_from_playlist();
 
-    StringPair info = ImmsDb::get_info();
+    StringPair info = data.get_info();
 
-    string artist = info.first;
-    string title = info.second;
+    const string &artist = info.first;
+    const string &title = info.second;
 
     if (artist != "" && title != "")
         data.identified = true;
-    else if ((data.identified = parse_song_info(path, title)))
-        ImmsDb::set_title(title);
+    else if ((data.identified = parse_song_info(data.get_path(), info)))
+        data.set_info(info);
 
-    data.rating = ImmsDb::get_rating();
+    data.rating = data.get_rating();
 
-    data.unrated = false;
     if (data.rating < 1)
     {
-        data.unrated = true;
-        data.rating = ImmsDb::avg_rating(ImmsDb::get_info().first, title);
+        data.rating = ImmsDb::avg_rating(data.get_info().first, title);
         if (data.rating < 1)
             data.rating = 100;
 
-        ImmsDb::set_rating(data.rating);
+        data.set_rating(data.rating);
     }
 
-#ifdef DEBUG
-#if 0
-    cerr << "path:\t" << path << endl;
-    cerr << "artist:\t" << artist << (identified ? " *" : "") << endl;
-    cerr << "title:\t" << title << (identified ? " *" : "") << endl;
+#if defined(DEBUG) && 0
+    cerr << "path:\t" << data.get_path() << endl;
+    cerr << "artist:\t" << artist << endl;
+    cerr << "title:\t" << title << endl;
 #endif
-#endif
-
-    *((Song*)&data) = *static_cast<Song*>(this);
 
     data.last_played = (data.get_sid() != next_sid) ?
-                            time(0) - ImmsDb::get_last() : 0;
+                            time(0) - data.get_last() : 0;
     return true;
 }
 
-bool InfoFetcher::parse_song_info(const string &path, string &title)
+bool InfoFetcher::parse_song_info(const string &path, StringPair &info)
 {
 
 #define REMIXCLUES "rmx|mix|[^a-z]version|edit|original|remaster|" \
@@ -105,9 +112,12 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
     bool identified = false;
     bool parser_confident, artist_confirmed = false;
 
+    string &artist = info.first;
+    string &title = info.second;
+
     link(path);
 
-    string artist = string_normalize(get_artist());
+    artist = string_normalize(get_artist());
     string tag_artist = artist;
 
     StringPair fm = get_simplified_filename_mask(path);
@@ -206,9 +216,8 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
     if (i != file_parts.end())
         file_parts.erase(i);
 
-    // By this point the artist had to have been confirmed
-    ImmsDb::set_artist(artist); 
     //////////////////////////////////////////////
+    // By this point the artist had to have been confirmed
     // Try (not very hard) to identify the album
 
     string album = album_filter(get_album());
@@ -222,8 +231,8 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
     string tag_title = string_tolower(get_title());
     title = title_filter(tag_title);
     // If we know the title and were only missing the artist
-    if (title != "" && (identified = ImmsDb::check_title(artist, title)))
-        return identified;
+    if (title != "" && ImmsDb::check_title(artist, title))
+        return true;
 
     if (identified = Regexx(title, album + ".*(" REMIXCLUES ")"))
         title = album;
@@ -232,27 +241,32 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
 
     // Can recognize the title by matching filename parts to the database?
     for (list<string>::reverse_iterator i = file_parts.rbegin();
-            !identified && i != file_parts.rend(); ++i)
+            i != file_parts.rend(); ++i)
     {
-        if (ImmsDb::check_title(artist, *i) || string_like(*i, title, 4))
+        if (ImmsDb::check_title(artist, *i)
+                || string_like(*i, title, 4)
+                || Regexx(title, string("^") + *i))
         {
-            identified = true;
             title = *i;
+            return true;
         }
-        else if (identified = Regexx(*i, album + ".*(" REMIXCLUES ")"))
+        else if (Regexx(*i, album + ".*(" REMIXCLUES ")"))
+        {
             title = album;
+            return true;
+        }
+        else if (Regexx(*i, string("^") + title))
+            return true;
     }
 
     if (identified)
-        return identified;
+        return identified; 
 
     // See if we can trust the tag title enough to just default to it
     if (title != "" && !Regexx(title, "(" REMIXCLUES "|^track$|^title$)")
             && tag_artist != "" && !Regexx(tag_artist, BADARTIST)
             && string_like(tag_title, title, 6))
-    {
-        return identified = true;
-    }
+        return true;
 
     // Filter things that are probably not the title
     for (list<string>::iterator i = file_parts.begin();
@@ -267,14 +281,14 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
     // Default to the right most non-suspicious entry as the title
     if (parser_confident && file_parts.size())
     {
-        identified = true;
         title = file_parts.back();
+        return true;
     }
     // nothing left. maybe a remix album??
-    else if (!file_parts.size() && ImmsDb::check_title(artist, album))
+    if (!file_parts.size() && ImmsDb::check_title(artist, album))
     {
-        identified = true;
         title = album;
+        return true;
     }
     return identified;
 }

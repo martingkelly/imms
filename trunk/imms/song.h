@@ -12,11 +12,10 @@ typedef pair<string, string> StringPair;
 class Song
 {
 public:
-    Song(const string &path);
+    Song(const string &path = "", int _uid = -1, int _sid = -1);
 
     void set_last(time_t last);
-    void set_title(const string &_title);
-    void set_artist(const string &_artist);
+    void set_info(const StringPair &info);
     void set_rating(int rating);
     void set_trend(int trend);
     void set_acoustic(const string &spectrum, const string &bpmgraph);

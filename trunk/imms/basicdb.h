@@ -8,7 +8,7 @@
 
 using std::string;
 
-class BasicDb : protected SqlDb, public Song
+class BasicDb : protected SqlDb
 {
 public:
     BasicDb();
@@ -18,9 +18,6 @@ public:
     bool check_title(const string &artist, string &title);
 
     int avg_rating(const string &artist, const string &title);
-
-    bool identify(const string &path)
-        { *static_cast<Song*>(this) = Song(path); return uid != -1; }
 
 protected:
     void sql_set_pragma();

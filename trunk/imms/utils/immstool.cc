@@ -18,6 +18,7 @@
 #include <player.h>
 #include <spectrum.h>
 #include <strmanip.h>
+#include <cluster.h>
 
 using std::string;
 using std::cout;
@@ -39,6 +40,7 @@ void do_missing();
 void do_purge(const string &path);
 time_t get_last(const string &path);
 void do_lint();
+void do_cluster();
 void do_spec_distance(const string &to);
 void do_bpm_distance(const string &to);
 void do_identify(const string &path);
@@ -131,6 +133,10 @@ int main(int argc, char *argv[])
     else if (!strcmp(argv[1], "lint"))
     {
         do_lint();
+    }
+    else if (!strcmp(argv[1], "cluster"))
+    {
+        do_cluster();
     }
     else if (!strcmp(argv[1], "help"))
     {
@@ -299,9 +305,6 @@ void do_lint()
         Q("DELETE FROM Library "
                 "WHERE uid NOT IN (SELECT uid FROM Identify);").execute();
 
-        Q("DELETE FROM Info "
-                "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
-
         Q("DELETE FROM Last "
                 "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
 
@@ -311,9 +314,14 @@ void do_lint()
         Q("DELETE FROM Acoustic "
                 "WHERE uid NOT IN (SELECT uid FROM Library);").execute();
 
+#ifdef DANGEROUS
+        Q("DELETE FROM Info "
+                "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
+
         Q("DELETE FROM Correlations "
                 "WHERE x NOT IN (SELECT sid FROM Library) "
                 "OR y NOT IN (SELECT sid FROM Library);").execute();
+#endif
 
         QueryCacheDisabler qcd;
 
@@ -447,4 +455,13 @@ void do_deviation()
     for (int i = 0; i < SHORTSPECTRUM; ++i)
         cout << std::setw(4) << ROUND(deviations[i] * 10);
     cout << endl;
+}
+
+void do_cluster()
+{
+    try
+    {
+        AcousticCluster ac;
+    }
+    WARNIFFAILED();
 }

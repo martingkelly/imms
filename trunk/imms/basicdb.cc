@@ -9,7 +9,7 @@
 using std::endl;
 using std::cerr; 
 
-BasicDb::BasicDb() : Song("")
+BasicDb::BasicDb()
 {
     sql_set_pragma();
 }
