@@ -12,9 +12,15 @@
 using std::cerr;
 using std::endl;
 
-Song::Song(const string &path_) : path(path_)
+Song::Song(const string &path_, int _uid, int _sid) : path(path_)
 {
     reset();
+
+    uid = _uid;
+    sid = _sid;
+
+    if (isok() || path == "")
+        return;
 
     struct stat statbuf;
     if (stat(path.c_str(), &statbuf))
@@ -232,14 +238,13 @@ StringPair Song::get_acoustic()
     return res;
 }
 
-void Song::set_artist(const string &_artist) { artist = _artist; }
-
-void Song::set_title(const string &_title)
+void Song::set_info(const StringPair &info)
 {
     if (uid < 0)
         return;
 
-    title = _title;
+    artist = info.first;
+    title = info.second;
 
     try {
         AutoTransaction a;
@@ -253,6 +258,7 @@ void Song::set_title(const string &_title)
             q.execute();
 
             {
+                cerr << "reusing sid " << sid << endl;
                 Q q("UPDATE 'Library' SET sid = ? WHERE uid = ?;");
                 q << sid << uid;
                 q.execute();
@@ -262,8 +268,10 @@ void Song::set_title(const string &_title)
         {
             register_new_sid();
 
+            cerr << "inserting sid " << sid << endl;
             Q q("INSERT INTO 'Info' "
                     "('sid', 'artist', 'title') VALUES (?, ?, ?);");
+            cerr << "tick 1" << endl;
             q << sid << artist << title;
             q.execute();
         }
@@ -383,7 +391,7 @@ void Song::register_new_sid()
     }
 
 #ifdef DEBUG
-    cerr << __func__ << " registered sid = " << sid << " for uid = "
+    cerr << __func__ << ": registered sid = " << sid << " for uid = "
         << uid << endl;
 #endif
 }

@@ -90,31 +90,57 @@ void SQLDatabaseConnection::close()
 string SQLDatabaseConnection::error()
 {
     return SQLDatabase::error();
-} 
+}
+
+// AttachedDatabase
+
+AttachedDatabase::AttachedDatabase(const string &filename, const string &alias)
+{
+    attach(filename, alias);
+}
+
+AttachedDatabase::~AttachedDatabase()
+{
+    detach();
+}
+
+void AttachedDatabase::attach(const string &filename, const string &alias)
+{
+    if (dbname != "")
+        throw SQLException("Database already attached!");
+    QueryCacheDisabler qcd;
+    dbname = alias;
+    Q("ATTACH \"" + filename + "\" AS " + dbname).execute();
+}
+
+void AttachedDatabase::detach()
+{
+    if (dbname == "")
+        throw SQLException("No database attached!");
+    QueryCacheDisabler qcd;
+    string query = "DETACH " + dbname; 
+    dbname = "";
+    Q(query).execute();
+}
 
 // AutoTransaction
 
 AutoTransaction::AutoTransaction() : commited(false)
 {
-    try {
-        SQLQuery("BEGIN TRANSACTION;").execute();
-    }
-    catch (SQLException &q)
-    {
+    if (sqlite3_exec(SQLDatabase::db(), "BEGIN TRANSACTION;", 0, 0, 0))
         commited = true;
-    }
 }
 
 AutoTransaction::~AutoTransaction()
 {
     if (!commited)
-        SQLQuery("ROLLBACK TRANSACTION;").execute();
+        sqlite3_exec(SQLDatabase::db(), "ROLLBACK TRANSACTION;", 0, 0, 0);
 }
 
 void AutoTransaction::commit()
 {
     if (!commited)
-        SQLQuery("COMMIT TRANSACTION;").execute();
+        sqlite3_exec(SQLDatabase::db(), "COMMIT TRANSACTION;", 0, 0, 0);
     commited = true;
 }
 

@@ -80,25 +80,27 @@ int PlaylistDb::get_unknown_playlist_item()
     return -1;
 }
 
-bool PlaylistDb::playlist_id_from_item(int pos)
+Song PlaylistDb::playlist_id_from_item(int pos)
 {
     try {
-        Q q("SELECT Library.uid, Library.sid FROM 'Library' "
+        Q q("SELECT Library.uid, Library.sid, Playlist.path FROM 'Library' "
                 "INNER JOIN 'Playlist' ON Library.uid = Playlist.uid "
                 "WHERE Playlist.pos = ?;");
         q << pos;
 
         if (!q.next())
-            return false;
+            return Song();
 
-        q >> uid >> sid;
-        return true;
+        int uid, sid;
+        string path;
+        q >> uid >> sid >> path;
+        return Song(path, uid, sid);
     }
     WARNIFFAILED();
-    return false;
+    return Song();
 }
 
-void PlaylistDb::playlist_update_identity(int pos)
+void PlaylistDb::playlist_update_identity(int pos, int uid)
 {
     try {
         Q q("UPDATE 'Playlist' SET ided = '1', uid = ? WHERE pos = ?;");
@@ -168,7 +170,7 @@ string PlaylistDb::get_playlist_item(int pos)
             q >> path;
     }
     WARNIFFAILED();
-    
+
     return path;
 }
 

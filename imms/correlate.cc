@@ -38,7 +38,7 @@ void CorrelationDb::sql_create_tables()
     WARNIFFAILED();
 }
 
-void CorrelationDb::add_recent(int delta)
+void CorrelationDb::add_recent(int uid, int delta)
 {
     expire_recent(time(0) - CORRELATION_TIME);
 
@@ -198,12 +198,12 @@ void CorrelationDb::update_correlation(int from, int to, float weight)
     }
 }
 
-float CorrelationDb::correlate(int from)
+float CorrelationDb::correlate(int sid1, int sid2)
 {
-    if (sid < 0)
+    if (sid1 < 0 || sid2 < 0)
         return 0;
 
-    int min = std::min(from, sid), max = std::max(from, sid);
+    int min = std::min(sid1, sid2), max = std::max(sid1, sid2);
     
     Q q("SELECT weight FROM 'Correlations' WHERE x = ? AND y = ?;");
     q << min << max;

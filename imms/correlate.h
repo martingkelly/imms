@@ -12,8 +12,8 @@ using std::string;
 class CorrelationDb : virtual public BasicDb
 {
 public:
-    float correlate(int from);
-    void add_recent(int delta);
+    float correlate(int sid1, int sid2);
+    void add_recent(int uid, int delta);
     void clear_recent() { expire_recent(INT_MAX); }
 
     CorrelationDb() : correlate_from(time(0)) { }

@@ -6,13 +6,13 @@
 
 #include <vector>
 
-class PlaylistDb : virtual public BasicDb
+class PlaylistDb
 {
 public:
     void playlist_insert_item(int pos, const string &path);
-    void playlist_update_identity(int pos);
+    void playlist_update_identity(int pos, int uid);
     void playlist_mass_identify();
-    bool playlist_id_from_item(int pos);
+    static Song playlist_id_from_item(int pos);
 
     string get_playlist_item(int pos);
     int get_unknown_playlist_item();

@@ -22,6 +22,19 @@ public:
     static string error();
 };
 
+class AttachedDatabase
+{
+public:
+    AttachedDatabase(const string &filename, const string &alias);
+    AttachedDatabase() : dbname("") {};
+    ~AttachedDatabase();
+
+    void attach(const string &filename, const string &alias);
+    void detach();
+private:
+    string dbname;
+};
+
 class AutoTransaction
 {
 public:
@@ -29,7 +42,7 @@ public:
     ~AutoTransaction();
     void commit();
 private:
-    bool active, commited;
+    bool commited;
 };
 
 class SQLException

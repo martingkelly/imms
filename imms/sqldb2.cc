@@ -1,8 +1,10 @@
 #include <iostream>
 #include <sstream>
 
-#include <sqlite3.h>
+#include <unistd.h>
 #include <sys/stat.h>
+
+#include <sqlite3.h>
 
 #include "strmanip.h"
 #include "sqldb2.h"

@@ -18,7 +18,7 @@
 using std::endl;
 using std::cerr;
 
-SongPicker::SongPicker()
+SongPicker::SongPicker() : current(0, "current"), winner(0, "winner")
 {
     reset();
 }
@@ -80,7 +80,7 @@ void SongPicker::identify_more()
         playlist_ready = true;
         return;
     }
-    playlist_identify_item(pos);
+    identify_playlist_item(pos);
 }
 
 void SongPicker::do_events()

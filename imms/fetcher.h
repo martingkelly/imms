@@ -15,20 +15,24 @@ protected:
     class SongData : public Song
     {
     public:
-        SongData(int _position = -1, const string &_path = "");
+        SongData(int _position, const string &_path);
         bool operator ==(const SongData &other) const
             { return position == other.position; }
+
+        void reset();
+        bool get_song_from_playlist();
 
         int position, rating;
         int composite_rating;
         int relation, bpmrating, specrating;
-        bool identified, unrated;
+        bool identified;
         time_t last_played;
     };
 
-    bool playlist_identify_item(int pos);
     virtual bool fetch_song_info(SongData &data);
-    virtual bool parse_song_info(const string &path, string &title);
+    virtual bool parse_song_info(const string &path, StringPair &info);
+
+    bool identify_playlist_item(int pos);
 
     int next_sid;
 };

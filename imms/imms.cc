@@ -132,7 +132,6 @@ void Imms::start_song(int position, string path)
 
     AutoTransaction at;
 
-    *static_cast<Song*>(this) = *static_cast<Song*>(&current);
     current.set_last(time(0));
 
     print_song_info();
@@ -140,12 +139,12 @@ void Imms::start_song(int position, string path)
     if (last_jumped)
         set_lastinfo(handpicked);
 
-    StringPair acoustic = ImmsDb::get_acoustic();
+    StringPair acoustic = current.get_acoustic();
+
+    at.commit();
 
     if (acoustic.first == "")
         system(string("analyzer \"" + path + "\" &").c_str());
-
-    at.commit();
 }
 
 void Imms::print_song_info()
@@ -227,8 +226,6 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     if (bad)
         mod = 0;
 
-    *static_cast<Song*>(this) = *static_cast<Song*>(&current);
-
 #ifdef DEBUG
     cerr << " *** " << path_get_filename(current.get_path()) << endl;
 #endif
@@ -255,7 +252,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     AutoTransaction at;
 
-    ImmsDb::add_recent(mod);
+    ImmsDb::add_recent(current.get_uid(), mod);
     current.set_last(time(0));
     current.set_rating(new_rating);
     current.increment_playcounter();
@@ -272,7 +269,7 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     if (last.sid == -1)
         return;
 
-    float rel = ImmsDb::correlate(last.sid) / MAX_CORRELATION;
+    float rel = ImmsDb::correlate(data.get_sid(), last.sid) / MAX_CORRELATION;
     rel = std::max(std::min(rel, (float)1), (float)-1);
     data.relation += ROUND(rel * weight * CORRELATION_IMPACT);
 
