@@ -89,6 +89,7 @@ void ImmsDb::add_recent(int weight)
 
 void ImmsDb::expire_recent(const string &where_clause)
 {
+    abort_requested = false;
     gettimeofday(&start, 0);
 
     select_query(
@@ -104,12 +105,8 @@ static inline time_t usec_diff(struct timeval &tv1, struct timeval &tv2)
 int ImmsDb::expire_recent_callback_1(int argc, char **argv)
 {
     assert(argc == 2);
-
-    struct timeval now;
-    gettimeofday(&now, 0);
-
-    if (usec_diff(start, now) > 2 * 1000000)
-        return 4; // SQLITE_ABORT
+    if (abort_requested)
+        return 4;
 
     from = atoi(argv[0]);
     from_weight = atoi(argv[1]);
@@ -134,6 +131,11 @@ int ImmsDb::expire_recent_callback_2(int argc, char **argv)
 
     if (from_weight < 0 && to_weight < 0)
         return 0;
+
+    struct timeval now;
+    gettimeofday(&now, 0);
+    if ((abort_requested = usec_diff(start, now) > 2 * 1000000))
+        return 4; // SQLITE_ABORT
 
 #ifdef DEBUG
     cerr << string(55, '-') << endl;
