@@ -25,6 +25,7 @@ dbuscore-CPPFLAGS=$(DBUSCPPFLAGS)
 dbusclient-CPPFLAGS=$(DBUSCPPFLAGS)
 dbusserver-CPPFLAGS=$(DBUSCPPFLAGS) $(GLIB2CPPFLAGS)
 glib1dbus-CPPFLAGS=$(DBUSCPPFLAGS) $(GLIB1CPPFLAGS)
+glib2dbus-CPPFLAGS=$(DBUSCPPFLAGS) $(GLIB2CPPFLAGS)
 
 immsd: libimmscore.a
 immsd: $(call objects,../immsd)
