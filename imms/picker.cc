@@ -17,7 +17,6 @@ using std::cerr;
 
 SongPicker::SongPicker()
 {
-    state = ON;
     reset();
 }
 
@@ -29,9 +28,6 @@ void SongPicker::reset()
 
 bool SongPicker::add_candidate(int position, string path, bool urgent)
 {
-    if (state != ON)
-        return false;
-
     ++attempts;
     if (attempts > MAX_ATTEMPTS)
         return false;
@@ -60,7 +56,7 @@ void SongPicker::revalidate_winner(const string &path)
 
 int SongPicker::select_next()
 {
-    if (candidates.empty() || state != ON)
+    if (candidates.empty())
         return 0;
 
     Candidates::iterator i;
@@ -128,6 +124,8 @@ int SongPicker::select_next()
     }
     cerr << endl;
 #endif
+
+    reset();
 
     return winner.position;
 }

@@ -2,11 +2,13 @@
 #define __PLUGIN_H
 
 #include <stdint.h>
+#include "immsconf.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-void imms_setup(char *ch_email, int use_xidle, int use_sloppy, int use_autooff);
+
+void imms_setup(char *ch_email, int use_xidle);
 void imms_spectrum(uint16_t spectrum[256]);
 void imms_init();
 void imms_cleanup();

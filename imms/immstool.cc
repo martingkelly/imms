@@ -104,6 +104,10 @@ int main(int argc, char *argv[])
         
         immstool.do_lint();
     }
+    else if (!strcmp(argv[1], "lint"))
+    {
+        immstool.do_lint();
+    }
     else if (!strcmp(argv[1], "help"))
     {
         do_help();
@@ -128,6 +132,7 @@ void do_help()
     cout << "       deviation   - calculate statistics on a list of spectrums" << endl;
     cout << "       missing     - list missing files" << endl;
     cout << "       purge       - remove from database if last played more than n days ago" << endl;
+    cout << "       lint        - remove unneeded entries" << endl;
     cout << "       help        - show this help" << endl;
 }
 
@@ -170,7 +175,7 @@ void ImmsTool::do_lint()
             "WHERE origin NOT IN (SELECT sid FROM Library) "
             "OR destination NOT IN (SELECT sid FROM Library);");
 
-    run_query("VACUUM all;");
+    run_query("VACUUM Library;");
 }
 
 void ImmsTool::do_distance()

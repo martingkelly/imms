@@ -76,7 +76,7 @@ int Mp3Info::get_rating(const string &email)
             return ratingfield->Get();
         }
     }
-    return INITIAL_RATING;
+    return -1;
 }
 #endif
 

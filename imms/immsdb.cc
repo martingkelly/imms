@@ -51,7 +51,7 @@ ImmsDb::~ImmsDb()
 
 void ImmsDb::sql_set_pragma()
 {
-    run_query("PRAGMA cache_size = 6666");
+    run_query("PRAGMA cache_size = 10000");
     run_query("PRAGMA synchronous = OFF;");
     run_query("PRAGMA temp_store = MEMORY;");
 }
@@ -166,8 +166,8 @@ int ImmsDb::expire_recent_callback_2(int argc, char **argv)
         return 4; // SQLITE_ABORT
 
 #ifdef DEBUG
-    std::cout << string(55, '-') << endl;
-    std::cout << "processing update between " << MIN(from, to) <<
+    cerr << string(55, '-') << endl;
+    cerr << "processing update between " << MIN(from, to) <<
         " and " << MAX(from, to) << endl;
 #endif
 
@@ -344,6 +344,20 @@ int ImmsDb::identify(const string &path, time_t modtime,
 #endif
 
     return uid;
+}
+
+int ImmsDb::artist_avg_rating()
+{
+    if (artist == "")
+        return -1;
+
+    select_query(
+            "SELECT avg(rating) FROM Library "
+                "INNER JOIN Info ON Library.sid = Info.sid "
+                "INNER JOIN Rating ON Library.uid = Rating.uid "
+                "WHERE Info.artist = '" + artist + "';");
+
+    return nrow && resultp[1] ? (int)atof(resultp[1]) : -1;
 }
 
 bool ImmsDb::check_artist(string &artist)

@@ -40,9 +40,8 @@ public:
 
     // configure imms
     //  email is used for getting legacy ratings from id3 tags
-    void setup(const char* _email, bool use_xidle, bool _use_autooff);
-
-    bool is_enabled() { return state == ON; }
+    void setup(const char* _email, bool use_xidle,
+            bool _use_autooff = false);
 
 protected:
     // Helper functions
