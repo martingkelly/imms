@@ -1,14 +1,19 @@
-Requirments:
+Requirements:
 
     * XMMS 1.2.7+
+
+    * sqlite 3.0.6+
+    * pcre 4.3
+    * fftw 3.0
+    * glib 2.0
 
     * taglib 1.0+ [recommended]
         or
     * id3lib 3.8.0+
     * libvorbis 1.0+
 
-    * sqlite 3.0.6+
-    * pcre 4.3+
+    * sox (with support for your favourite filetypes)
+
 
 Installation:
 

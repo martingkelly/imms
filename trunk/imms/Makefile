@@ -6,7 +6,9 @@ first: configure
 	$(error Please run the "configure" script)
  
 configure: configure.ac
-	autoreconf
+	autoheader
+	aclocal
+	autoconf
 
 immsconf.h: configure
 	$(error Please run the "configure" script)

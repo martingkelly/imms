@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[2.0.1],[mag@luminal.org])
+AC_INIT([IMMS],[2.0.2-pre1],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -8,13 +8,13 @@ AC_CONFIG_SRCDIR(immscore/imms.cc)
 
 AC_PREFIX_DEFAULT("/usr")
 
-AC_DEFUN(AC_APPEND,
-    if test -z "$$1"; then
+AC_DEFUN([AC_APPEND],
+    [if test -z "$$1"; then
         $1="$2"
     else
         $1="$$1 $2"
     fi
-)
+])
 
 AC_ARG_WITH(taglib,
             AC_HELP_STRING([--with-taglib],
@@ -176,6 +176,9 @@ else
     AC_APPEND(LIBS, -L/usr/X11R6/lib)
 fi
 
+saved_cppflags="$CPPFLAGS"
+saved_libs="$LIBS"
+
 PLUGINS=""
 AC_CHECK_PROG(with_xmms, xmms-config, "yes", "no")
 if test "$xmms_config" != "no"; then
@@ -212,8 +215,6 @@ fi
 
 PKG_CHECK_MODULES(BMP, [bmp >= 0.9.7], [], [with_bmp=no])
 
-saved_cppflags="$CPPFLAGS"
-saved_libs="$LIBS"
 LIBS=$BMP_LIBS
 CPPFLAGS=$BMP_CFLAGS
 
