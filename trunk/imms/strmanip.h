@@ -100,6 +100,8 @@ string string_delete(const string &haystack, const string &needle);
 void imms_magic_parse_path(list<string> &store, string path);
 bool imms_magic_parse_filename(list<string> &store, string filename);
 
+string get_filename_mask(const string& path);
+
 string path_get_filename(const string &path);
 string path_get_dirname(const string &path);
 string path_get_extension(const string &path);

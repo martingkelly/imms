@@ -231,6 +231,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     else if (new_rating < MIN_RATING)
         new_rating = MIN_RATING;
 
+    immsdb.set_last(time(0));
     immsdb.set_rating(new_rating);
 }
 
@@ -265,7 +266,8 @@ int Imms::fetch_song_info(SongData &data)
             secondary = color_transition(last_spectrum, data.spectrum)
                 * (1 - PRIMARY);
     }
-    data.color_rating = ROUND((primary + secondary) * SPECTRUM_IMPACT);
+    if (primary + secondary < 0)
+        data.color_rating = ROUND((primary + secondary) * SPECTRUM_IMPACT);
 
     // evaluate the transition based on bpm
     primary = 0, secondary = 0;

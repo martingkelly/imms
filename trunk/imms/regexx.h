@@ -216,7 +216,14 @@ namespace regexx {
     /// Destructor
     inline
     ~Regexx()
-    { if(m_compiled) { free((void *)m_preg); if(m_study) free((void *)m_extra); } }
+    {
+        match.clear();
+        if (!m_compiled)
+            return;
+        free((void *)m_preg);
+        if(m_study)
+            free((void *)m_extra);
+    }
 
     // Constructor with regular expression execution.
     inline
