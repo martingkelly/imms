@@ -35,7 +35,7 @@ int PlaylistDb::install_filter(const string &filter)
     run_query("INSERT INTO 'Matches' "
             "SELECT DISTINCT(Library.uid) FROM 'Library' "
                 "INNER JOIN 'Rating' ON Rating.uid = Library.uid "
-                "OUTER JOIN 'Acoustic' ON Acoustic.uid = Library.uid "
+                "LEFT OUTER JOIN 'Acoustic' ON Acoustic.uid = Library.uid "
                 "INNER JOIN 'Last' ON Last.sid = Library.sid "
                 "INNER JOIN 'Info' ON Info.sid = Library.sid "
                     "WHERE " + filter + ";");

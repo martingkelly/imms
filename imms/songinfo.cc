@@ -9,7 +9,7 @@
 class Mp3Info : public InfoSlave
 {
 public:
-    Mp3Info(const string &filename);
+    Mp3Info(const string &filename)
     {
         id3tag.Clear();
         id3tag.Link(filename.c_str());
