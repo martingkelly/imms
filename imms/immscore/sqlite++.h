@@ -120,14 +120,14 @@ public:
     SQLQuery &operator<<(int i);
     SQLQuery &operator<<(double i);
     SQLQuery &operator<<(float i) { return *this << double(i); }
-    SQLQuery &operator<<(time_t i) { return *this << (int)i; }
+    SQLQuery &operator<<(long i);
     SQLQuery &operator<<(const string &s);
     SQLQuery &operator<<(const SQLExec &execute);
 
     SQLQuery &operator>>(int &i);
+    SQLQuery &operator>>(long &i);
     SQLQuery &operator>>(double &i);
     SQLQuery &operator>>(float &i);
-    SQLQuery &operator>>(time_t &i) { return *this >> ((int&)i); }
     SQLQuery &operator>>(string &s);
 
 private:

@@ -10,6 +10,8 @@
 #include "serverstub.h"
 #include "socketserver.h"
 
+#define INTERFACE_VERSION "2.0"
+
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -142,6 +144,11 @@ public:
                 return;
             }
             write_command("EnqueueNext " + itos(pos));
+            return;
+        }
+        if (command == "Version")
+        {
+            write_command("Version " INTERFACE_VERSION);
             return;
         }
         cerr << "IMMSd: Unknown command: " << command << endl;
