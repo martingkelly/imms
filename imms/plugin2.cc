@@ -21,9 +21,9 @@ using std::string;
 
 // Local vars
 static Imms *imms = NULL;
-int last_plpos = -1, cur_plpos, next_plpos = -1, pl_length = -1;
+int cur_plpos, next_plpos = -1, pl_length = -1, last_time = -1;
 int good_length = 0, song_length = 0, busy = 0, just_enqueued = 0, ending = 0;
-bool need_more = true, spectrum_ok = false, shuffle = false;
+bool spectrum_ok = false, shuffle = false;
 
 string cur_path = "", last_path = "";
 
@@ -77,7 +77,6 @@ void reset_selection()
 {
     xmms_remote_playqueue_remove(session, next_plpos);
     next_plpos = -1;
-    need_more = true;
 }
 
 void check_playlist()
@@ -109,14 +108,11 @@ void do_more_checks()
     if (!newshuffle && shuffle)
         reset_selection();
     shuffle = newshuffle;
-
-    // have imms do it's internal processing
-    imms->pump();
 }
 
 void do_song_change()
 {
-    bool forced = cur_plpos != next_plpos;
+    bool forced = (cur_plpos != next_plpos);
     bool bad = good_length < 3 || song_length < 30*1000;
 
     // notify imms that the previous song has ended
@@ -126,7 +122,6 @@ void do_song_change()
     // notify imms of the next song
     imms->start_song(cur_plpos, cur_path);
 
-    last_plpos = cur_plpos;
     last_path = cur_path;
     ending = good_length = 0;
 }
@@ -139,19 +134,11 @@ void enqueue_next()
         return;
     }
 
-    if (need_more)
-    {
-        do { next_plpos = random_index(); }
-        while (imms->add_candidate(next_plpos,
-                    imms_get_playlist_item(next_plpos), true));
-    }
-
     // have imms select the next song for us
     next_plpos = imms->select_next();
     xmms_remote_playqueue_add(session, next_plpos);
 
     just_enqueued = 2;
-    need_more = true;
 }
 
 void do_checks()
@@ -162,12 +149,17 @@ void do_checks()
 
     check_playlist();
 
-    cur_plpos = xmms_remote_get_playlist_pos(session);
-    if (cur_plpos != last_plpos)
+    // check the time to catch the end of the song
+    int cur_time = xmms_remote_get_output_time(session);
+
+    if (last_time != cur_time)
     {
+        cur_plpos = xmms_remote_get_playlist_pos(session);
         cur_path = imms_get_playlist_item(cur_plpos);
         if (cur_path == "")
             return;
+
+        last_time = cur_time;
 
         if (last_path != cur_path)
         {
@@ -177,9 +169,6 @@ void do_checks()
         }
     }
 
-    // check the time to catch the end of the song
-    int cur_time = xmms_remote_get_output_time(session);
-
     spectrum_ok = (cur_time > song_length * SPECTRUM_SKIP
             && cur_time < song_length * (1 - SPECTRUM_SKIP));
 
@@ -187,6 +176,9 @@ void do_checks()
                             ? ending < 10 : -(ending > 0);
 
     do_more_checks();
+
+    // have imms do it's internal processing
+    imms->pump();
 
     int qlength = xmms_remote_get_playqueue_length(session);
     if (shuffle)
@@ -204,14 +196,8 @@ void do_checks()
     }
     else
     {
+        cur_plpos = xmms_remote_get_playlist_pos(session);
         next_plpos = (cur_plpos + 1) % pl_length;
-    }
-    
-    // if we don't have enough, feed imms more candidates for the next song
-    if (shuffle && need_more)
-    {
-        int pos = random_index();
-        need_more = imms->add_candidate(pos, imms_get_playlist_item(pos));
     }
 }
 

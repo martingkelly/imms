@@ -31,7 +31,7 @@ public:
     // get the last song played
     int  get_previous();
 
-    void playlist_changed();
+    virtual void playlist_changed();
 
     // process internal events - call this periodically
     void pump();

@@ -7,7 +7,8 @@ DESTDIR = @prefix@
 SHELL = bash
 XMMS_OBJ = @PLUGIN_OBJ@ interface.o player.o libimmscore.a 
 CORE_OBJ = imms.o immsdb.o fetcher.o picker.o spectrum.o sqldb.o \
-	   songinfo.o regexx.o strmanip.o levenshtein.o xidle.o md5.o
+	   songinfo.o regexx.o utils.o strmanip.o levenshtein.o \
+	   xidle.o md5.o
 
 CPPFLAGS = `xmms-config --cflags` @XCPPFLAGS@ -Wall -fPIC -D_REENTRANT
 CXXFLAGS = ${CPPFLAGS} -fno-rtti

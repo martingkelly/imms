@@ -5,6 +5,8 @@
 
 #include "picker.h"
 #include "strmanip.h"
+#include "player.h"
+#include "utils.h"
 
 #define     SAMPLE_SIZE             100
 #define     MIN_SAMPLE_SIZE         30
@@ -26,11 +28,21 @@ void SongPicker::reset()
     acquired = attempts = 0;
 }
 
-bool SongPicker::add_candidate(int position, string path, bool urgent)
+bool SongPicker::add_candidate(bool urgent)
 {
     ++attempts;
     if (attempts > MAX_ATTEMPTS)
         return false;
+
+    int position = imms_random(Player::get_playlist_length());
+    string path = immsdb.get_playlist_item(position);
+    string realpath = Player::get_playlist_item(position);
+
+    if (path != realpath)
+    {
+        playlist_changed();
+        return true;
+    }
 
     SongData data(position, path);
 
@@ -61,6 +73,9 @@ void SongPicker::revalidate_current(const string &path)
 
 int SongPicker::select_next()
 {
+    if (candidates.size() < MIN_SAMPLE_SIZE)
+        while (add_candidate(true));
+
     if (candidates.empty())
         return 0;
 
