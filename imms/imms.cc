@@ -164,6 +164,7 @@ void Imms::set_lastinfo(LastInfo &last)
 {
     last.set_on = time(0);
     last.sid = current.get_sid();
+    last.acoustic = current.get_acoustic();
 }
 
 void Imms::end_song(bool at_the_end, bool jumped, bool bad)
@@ -253,8 +254,10 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
         return;
 
     float rel = ImmsDb::correlate(last.sid) / MAX_CORRELATION;
-    rel = rel > 1 ? 1 : rel < -1 ? -1 : rel;
+    rel = std::max(std::min(rel, (float)1), (float)-1);
     data.relation += ROUND(rel * weight * CORRELATION_IMPACT);
+
+    //if (last.acoustic.first != "" && )
 }
 
 bool Imms::fetch_song_info(SongData &data)
@@ -265,7 +268,7 @@ bool Imms::fetch_song_info(SongData &data)
     if (data.last_played > local_max)
         data.last_played = local_max;
 
-    data.relation = 0;
+    data.specrating = data.bpmrating = data.relation = 0;
 
     evaluate_transition(data, handpicked, PRIMARY);
     evaluate_transition(data, last, 1 - PRIMARY);

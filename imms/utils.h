@@ -33,7 +33,7 @@ private:
     string name;
 };
 
-string get_imms_root();
+string get_imms_root(const string &file = "");
 
 float rms_string_distance(const string &s1, const string &s2, int max = INT_MAX);
 string rescale_bpmgraph(const string &graph);

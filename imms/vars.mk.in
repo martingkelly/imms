@@ -2,7 +2,7 @@ CC = @CC@
 CXX = @CXX@
 VERSION = @PACKAGE_VERSION@
 INSTALL_PROGRAM = @INSTALL@
-DESTDIR = @prefix@
+PREFIX = @prefix@
 VPATH = ..:../players/xmms:../analyzer:../utils
 
 SHELL = bash

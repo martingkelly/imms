@@ -43,6 +43,7 @@ protected:
     struct LastInfo {
         time_t set_on;
         int sid;
+        StringPair acoustic;
     };
 
     void reset_selection();

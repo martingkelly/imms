@@ -49,12 +49,17 @@ else
     install: user-message install-user
 endif
 
+define installprogs
+    ${INSTALL_PROGRAM} analyzer immsremote immstool ${PREFIX}
+endef
+
 system-message:
 	$(warning Defaulting to installing for all users.)
 	$(warning Use 'make install-user' to install for the current user only.)
 
 install-system: libimms.so
-	${INSTALL_PROGRAM} libimms.so ${DESTDIR}`xmms-config --general-plugin-dir`
+	${INSTALL_PROGRAM} libimms.so `xmms-config --general-plugin-dir`
+	$(call installprogs)
 
 user-message:
 	$(warning Defaulting to installing for current user only.)
@@ -63,3 +68,4 @@ user-message:
 install-user: libimms.so
 	mkdir -p ${HOME}/.xmms/Plugins/General/
 	${INSTALL_PROGRAM} libimms.so ${HOME}/.xmms/Plugins/General/
+	$(call installprogs)

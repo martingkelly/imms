@@ -19,8 +19,9 @@ protected:
         bool operator ==(const SongData &other) const
             { return position == other.position; }
 
-        int position, rating, relation;
+        int position, rating;
         int composite_rating;
+        int relation, bpmrating, specrating;
         bool identified, unrated;
         time_t last_played;
     };
