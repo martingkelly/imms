@@ -4,6 +4,8 @@
 #include <dirent.h>
 #include <string.h>
 
+#include <iostream>
+
 using std::list;
 
 Regexx rex;
@@ -17,7 +19,7 @@ void string_split(list<string> &store, const string &s, const string &delims)
 {
     string expr("(?>[^" + delims + "]+)");
     rex.exec(s, expr, Regexx::global);
-    store.insert(store.begin(), rex.match.begin(), rex.match.end());
+    store.insert(store.end(), rex.match.begin(), rex.match.end());
 }
 
 string escape_char(char c)
@@ -37,25 +39,37 @@ string escape_char(char c)
     return s;
 }
 
-bool imms_magic_parse_filename(list<string> &store, string filename)
+bool imms_magic_preprocess_filename(string &filename)
 {
-    bool confident = true;
-
     filename = rex.replace(filename, "[-\\s_\\.]{2,}", "/");
 
-    if (!rex.matches() && (extradelims != "" || !rex.exec(filename, " ")))
-    {
+	bool confident = rex.matches();
+
+	if (confident)
+		return true;
+
         if (extradelims != "")
+    {
             filename = rex.replace(filename, "[" + extradelims + "]",
                     "/", Regexx::global);
-        confident = (extradelims != "" || !rex.matches());
+        confident = rex.matches();
     }
 
-    imms_magic_parse_path(store, filename);
+	if (!confident)
+	{
+		int spaces = rex.exec(filename, " ", Regexx::global);
+		int dashes = rex.exec(filename, "-", Regexx::global);
+		int scores = rex.exec(filename, "_", Regexx::global);
+
+		if ((!spaces || !scores) && dashes && dashes < 3
+				&& (spaces >= dashes || scores >= dashes))
+			filename = rex.replace(filename, "-", "/", Regexx::global);
+    }
+
     return confident;
 }
 
-void imms_magic_parse_path(list<string> &store, string path)
+void imms_magic_preprocess_path(string &path)
 {
     path = string_tolower(path);
     path = rex.replace(path, "[-\\s_\\.]{2,}", "/", Regexx::global);
@@ -63,7 +77,29 @@ void imms_magic_parse_path(list<string> &store, string path)
     path = rex.replace(path, "[\\(\\[][^/]+[\\)\\]]/", "/", Regexx::global);
     path = rex.replace(path, "[-\\s_\\./][iv]{2}i?[/$]", "/", Regexx::global);
     path = rex.replace(path, "[^a-z/]", "", Regexx::global);
+}
+
+bool imms_magic_parse_filename(list<string> &store, string filename)
+{
+	bool result = imms_magic_preprocess_filename(filename);
+	imms_magic_preprocess_path(filename);
+    string_split(store, filename, "/");
+    return result;
+}
+
+void imms_magic_parse_path(list<string> &store, string path)
+{
+    path = rex.replace(path, "/+$", "", Regexx::global);
+
+	string lastdir = path_get_filename(path);
+	path = path_get_dirname(path);
+
+	imms_magic_preprocess_path(path);
     string_split(store, path, "/");
+
+	imms_magic_preprocess_filename(lastdir);
+	imms_magic_preprocess_path(lastdir);
+	string_split(store, lastdir, "/");
 }
 
 string string_normalize(string s)
@@ -246,7 +282,7 @@ string path_get_filename(const string &path)
     size_t last_slash = path.find_last_of("/") + 1;
     size_t last_dot = path.find_last_of(".");
 
-    if (last_dot == string::npos)
+    if (last_dot == string::npos || last_dot < path.length() - 4)
         last_dot = path.length();
 
     return path.substr(last_slash, last_dot - last_slash);
