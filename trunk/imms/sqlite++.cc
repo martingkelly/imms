@@ -219,7 +219,7 @@ SQLQuery &SQLQuery::operator<<(double i)
 SQLQuery &SQLQuery::operator<<(const string &s)
 {
     if (stmt)
-        if (sqlite3_bind_text(stmt, ++curbind, s.c_str(), -1, SQLITE_STATIC))
+        if (sqlite3_bind_text(stmt, ++curbind, s.c_str(), -1, SQLITE_TRANSIENT))
             throw SQLStandardException();
     return *this;
 }

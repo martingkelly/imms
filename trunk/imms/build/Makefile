@@ -31,3 +31,6 @@ analyzer-LIBS=`pkg-config fftw3f --libs`
 
 analyzer: $(call objects,../analyzer)
 analyzer: libimmscore.a
+
+test: test.o
+test: libimmscore.a

@@ -74,7 +74,7 @@ void BasicDb::sql_create_tables()
     WARNIFFAILED();
 }
 
-int BasicDb::avg_rating(const string &title, const string &artist)
+int BasicDb::avg_rating(const string &artist, const string &title)
 {
     try
     {
@@ -89,9 +89,9 @@ int BasicDb::avg_rating(const string &title, const string &artist)
 
             if (q.next())
             {
-                float avg;
+                int avg;
                 q >> avg;
-                return (int)avg;
+                return avg;
             }
         }
 
@@ -105,15 +105,10 @@ int BasicDb::avg_rating(const string &title, const string &artist)
 
             if (q.next())
             {
-                float avg;
+                int avg;
                 q >> avg;
                 if (avg)
-                {
-                    int rating = (int)avg;
-                    rating = std::min(rating, 115);
-                    rating = std::max(rating, 90);
-                    return rating;
-                }
+                    return std::min(std::max(avg, 90), 115);
             }
         }
     }
