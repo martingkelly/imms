@@ -52,11 +52,17 @@ void InfoFetcher::playlist_changed(int length)
     cerr << "playlist changed. new length = " << length << endl;
 #endif
 
+    AutoTransaction at;
+
     for (int i = 0; i < pl_length; ++i)
     {
         string path = path_normalize(get_playlist_item(i));
+        if (path == "")
+            cerr << "IMMS: Error: Playlist item " << i << " is empty!" << endl;
         ImmsDb::playlist_insert_item(i, path);
     }
+    
+    at.commit();
 }
 
 bool InfoFetcher::fetch_song_info(SongData &data)

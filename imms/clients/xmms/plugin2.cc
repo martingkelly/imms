@@ -19,10 +19,12 @@ using std::cerr;
 using std::endl;
 
 // Local vars
-int cur_plpos, next_plpos = -1, pl_length = -1;
-int last_plpos = -1, last_song_length = -1;
-int good_length = 0, song_length = 0, busy = 0, just_enqueued = 0, ending = 0;
-bool shuffle = false, select_pending = false, xidle_val = false;
+int cur_plpos, next_plpos = -1, pl_length = -1,
+    last_plpos = -1, last_song_length = -1;
+int good_length = 0, song_length = 0,
+    busy = 0, just_enqueued = 0, ending = 0;
+bool shuffle = false, select_pending = false,
+     xidle_val = false, connected = false;
 
 string cur_path = "", last_path = "";
 
@@ -49,6 +51,23 @@ static void xmms_reset_selection()
     next_plpos = -1;
 }
 
+struct FilterOps;
+typedef IMMSClient< ClientFilter<FilterOps> > XMMSClient;
+XMMSClient *imms = 0;
+
+static void enqueue_next()
+{
+    if (just_enqueued  || select_pending || !connected)
+    {
+        --just_enqueued;
+        return;
+    }
+
+    // have imms select the next song for us
+    select_pending = true;
+    imms->select_next();
+}
+
 struct FilterOps
 {
     static void set_next(int next)
@@ -70,11 +89,21 @@ struct FilterOps
     {
         return (int)xmms_remote_get_playlist_length(session);
     }
+    static void connected()
+    {
+        ::connected = true;
+        imms->setup(xidle_val);
+        if (xmms_remote_is_playing(session))
+            imms->start_song(cur_plpos, cur_path);
+        xmms_reset_selection();
+        enqueue_next();
+    }
+    static void disconnected()
+    {
+        select_pending = ::connected = false;
+        imms->connection_lost();
+    }
 }; 
-
-typedef IMMSClient< ClientFilter<FilterOps> > XMMSClient;
-
-XMMSClient *imms = 0;
 
 void imms_setup(int use_xidle)
 {
@@ -114,26 +143,14 @@ static void do_song_change()
         imms->end_song(ending, forced, bad);
 
     // notify imms of the next song
-    imms->start_song(cur_plpos, cur_path);
+    if (connected)
+        imms->start_song(cur_plpos, cur_path);
 
     last_path = cur_path;
     ending = good_length = 0;
 
     if (!shuffle)
         next_plpos = (cur_plpos + 1) % pl_length;
-}
-
-static void enqueue_next()
-{
-    if (just_enqueued)
-    {
-        --just_enqueued;
-        return;
-    }
-
-    // have imms select the next song for us
-    imms->select_next();
-    select_pending = true;
 }
 
 static void check_playlist()
@@ -188,12 +205,7 @@ void do_checks()
     }
 
     if (imms->check_connection())
-    {
-        imms->setup(xidle_val);
         imms->playlist_changed(pl_length);
-        if (xmms_remote_is_playing(session))
-            imms->start_song(cur_plpos, cur_path);
-    }
 
     check_time();
 

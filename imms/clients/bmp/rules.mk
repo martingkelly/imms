@@ -1,11 +1,13 @@
-BMPCPPFLAGS=`pkg-config bmp --cflags` -I../clients/xmms/
+BMPCPPFLAGS=`pkg-config bmp --cflags` -I../clients/xmms/ -DBMP
 BMPLDFLAGS=`pkg-config bmp dbus-glib-1 --libs`
 
 libbmpimms.so: bmpplugin.o bmpinterface.o dbusclient.o glib2dbus.o libimmscore.a
 libbmpimms-LIBS = $(DBUSLDFLAGS) $(BMPLDFLAGS)
 
 bmpinterface-CPPFLAGS=$(BMPCPPFLAGS)
-bmpplugin-CPPFLAGS=$(BMPCPPFLAGS)
+
+bmpplugin.o: plugin.cc
+	$(call compile, $(CXX), $<, $@, $(CXXFLAGS) $(BMPCPPFLAGS) $(CPPFLAGS))
 
 BMPDESTDIR=""
 ifeq ($(shell id -u), 0)
