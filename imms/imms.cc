@@ -62,9 +62,8 @@ Imms::Imms()
     fout << endl << endl << ctime(&t) << setprecision(3);
 }
 
-void Imms::setup(const char* _email, bool use_xidle)
+void Imms::setup(bool use_xidle)
 {
-    email = _email;
     xidle_enabled = use_xidle;
 }
 

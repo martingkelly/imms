@@ -16,13 +16,11 @@
 
 using std::string;
 
-#define DEFAULT_EMAIL       "default@imms.org"
 #define SPECTRUM_SKIP       0.15
-#define POLL_DELAY          3
 
 // Local vars
 static Imms *imms = NULL;
-int cur_plpos, next_plpos = -1, pl_length = -1, last_time = -1;
+int cur_plpos, next_plpos = -1, pl_length = -1, last_song_length = -1;
 int good_length = 0, song_length = 0, busy = 0, just_enqueued = 0, ending = 0;
 bool spectrum_ok = false, shuffle = false;
 
@@ -45,10 +43,10 @@ string imms_get_playlist_item(int at)
     return result;
 }
 
-void imms_setup(char *ch_email, int use_xidle)
+void imms_setup(int use_xidle)
 {
     if (imms)
-        imms->setup(ch_email ? ch_email : DEFAULT_EMAIL, use_xidle);
+        imms->setup(use_xidle);
 }
 
 void imms_init()
@@ -74,44 +72,13 @@ void imms_spectrum(uint16_t spectrum[256])
 
 int random_index() { return imms_random(pl_length); }
 
-void reset_selection()
+static void reset_selection()
 {
     xmms_remote_playqueue_remove(session, next_plpos);
     next_plpos = -1;
 }
 
-void check_playlist()
-{
-    // update playlist length
-    int new_pl_length = xmms_remote_get_playlist_length(session);
-    if (new_pl_length != pl_length)
-    {
-        pl_length = new_pl_length;
-        reset_selection();
-        imms->playlist_changed();
-    }
-}
-
-void do_more_checks()
-{
-    // run these checks less frequently so as not to waste cpu time
-    static int delay = 0;
-    if (++delay < POLL_DELAY && pl_length > -1 && good_length > 2)
-        return;
-    delay = 0;
-
-    // check if xmms is reporting the song length correctly
-    song_length = xmms_remote_get_playlist_time(session, cur_plpos);
-    if (song_length > 1000)
-        good_length++;
-
-    bool newshuffle = xmms_remote_is_shuffle(session);
-    if (!newshuffle && shuffle)
-        reset_selection();
-    shuffle = newshuffle;
-}
-
-void do_song_change()
+static void do_song_change()
 {
     bool forced = (cur_plpos != next_plpos);
     bool bad = good_length < 3 || song_length < 30*1000;
@@ -130,7 +97,7 @@ void do_song_change()
         next_plpos = (cur_plpos + 1) % pl_length;
 }
 
-void enqueue_next()
+static void enqueue_next()
 {
     if (just_enqueued)
     {
@@ -145,6 +112,29 @@ void enqueue_next()
     just_enqueued = 2;
 }
 
+static void check_playlist()
+{
+    // update playlist length
+    int new_pl_length = xmms_remote_get_playlist_length(session);
+    if (new_pl_length != pl_length)
+    {
+        pl_length = new_pl_length;
+        reset_selection();
+        imms->playlist_changed();
+    }
+}
+
+static void check_time()
+{
+    int cur_time = xmms_remote_get_output_time(session);
+
+    spectrum_ok = (cur_time > song_length * SPECTRUM_SKIP
+            && cur_time < song_length * (1 - SPECTRUM_SKIP));
+
+    ending += song_length - cur_time < 20 * 1000
+                            ? ending < 10 : -(ending > 0);
+}
+
 void do_checks()
 {
     // if not playing do nothing
@@ -156,17 +146,19 @@ void do_checks()
     // have imms do it's internal processing
     imms->pump();
 
-    // check the time to catch the end of the song
-    int cur_time = xmms_remote_get_output_time(session);
+    // check if xmms is reporting the song length correctly
+    song_length = xmms_remote_get_playlist_time(session, cur_plpos);
+    if (song_length > 1000)
+        good_length++;
 
-    if (last_time != cur_time)
+    if (last_song_length != song_length)
     {
         cur_plpos = xmms_remote_get_playlist_pos(session);
         cur_path = imms_get_playlist_item(cur_plpos);
         if (cur_path == "")
             return;
 
-        last_time = cur_time;
+        last_song_length = song_length;
 
         if (last_path != cur_path)
         {
@@ -176,13 +168,12 @@ void do_checks()
         }
     }
 
-    spectrum_ok = (cur_time > song_length * SPECTRUM_SKIP
-            && cur_time < song_length * (1 - SPECTRUM_SKIP));
+    check_time();
 
-    ending += song_length - cur_time < 20 * 1000
-                            ? ending < 10 : -(ending > 0);
-
-    do_more_checks();
+    bool newshuffle = xmms_remote_is_shuffle(session);
+    if (!newshuffle && shuffle)
+        reset_selection();
+    shuffle = newshuffle;
 
     if (!shuffle)
         return;

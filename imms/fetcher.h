@@ -31,7 +31,6 @@ protected:
     virtual bool parse_song_info(const string &path, string &title);
 
     int next_sid;
-    string email;
 };
 
 #endif

@@ -37,8 +37,7 @@ public:
     void pump();
 
     // configure imms
-    //  email is used for getting legacy ratings from id3 tags
-    void setup(const char* _email, bool use_xidle);
+    void setup(bool use_xidle);
 
 protected:
     struct LastInfo {

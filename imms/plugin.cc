@@ -15,7 +15,6 @@
 
 using std::string;
 
-#define DEFAULT_EMAIL       "default@imms.org"
 #define SPECTRUM_SKIP       0.15
 #define POLL_DELAY          5
 
@@ -51,10 +50,10 @@ string imms_get_playlist_item(int at)
     return result;
 }
 
-void imms_setup(char *ch_email, int use_xidle)
+void imms_setup(int use_xidle)
 {
     if (imms)
-        imms->setup(ch_email ? ch_email : DEFAULT_EMAIL, use_xidle);
+        imms->setup(use_xidle);
 }
 
 void imms_init()
