@@ -118,7 +118,9 @@ void do_checks()
     if (++delay > POLL_DELAY || pl_length < 0 || good_length < 3)
         do_more_checks();
 
-    bool ending = good_length > 2 && time_left == 0;
+    // do not preemptively end the song if imms is disabled 
+    // to allow the built in shuffle/sequential to take effect
+    bool ending = imms->is_enabled() && good_length > 2 && time_left == 0;
     cur_plpos = xmms_remote_get_playlist_pos(session);
 
     if (ending || cur_plpos != last_plpos)

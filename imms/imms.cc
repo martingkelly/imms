@@ -42,8 +42,6 @@ using std::ofstream;
 
 //////////////////////////////////////////////
 
-string last_song;
-
 // Random
 int imms_random(int max)
 {
@@ -116,9 +114,8 @@ void Imms::start_song(int position, const string &path)
     SongPicker::reset();
     SpectrumAnalyzer::reset();
 
-    state = !use_autooff ||
-        (path.find("CD AUDIO TRACK") && path.find("http://")) ?
-        ON : AUTOOFF;
+    state = use_autooff && (path.find(".cda") != string::npos
+            || !path.find("http://")) ? AUTOOFF : ON;
 
     if (state != ON)
         return;
