@@ -67,10 +67,14 @@ void Imms::setup(bool use_xidle)
     xidle_enabled = use_xidle;
 }
 
-void Imms::pump()
+void Imms::do_idle_events()
 {
     SongPicker::identify_more();
-    SongPicker::add_candidate();
+}
+
+void Imms::do_events()
+{
+    SongPicker::do_events();
     XIdle::query();
 }
 

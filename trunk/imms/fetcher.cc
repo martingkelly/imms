@@ -32,8 +32,6 @@ bool InfoFetcher::playlist_identify_item(int pos)
 {
     string path = immsdb.get_playlist_item(pos);
 
-    cerr << "trying to identify playlist entry # " << pos << endl;
-
     struct stat statbuf;
     if (stat(path.c_str(), &statbuf))
         return false;
@@ -50,11 +48,10 @@ bool InfoFetcher::playlist_identify_item(int pos)
 
 void InfoFetcher::playlist_changed()
 {
-#ifdef DEBUG
+#ifdef DEBUGX
     struct timeval start;
     gettimeofday(&start, 0);
 #endif
-
     immsdb.playlist_clear();
 
     for (int i = 0; i < Player::get_playlist_length(); ++i)
@@ -63,7 +60,7 @@ void InfoFetcher::playlist_changed()
         immsdb.playlist_insert_item(i, path);
     }
 
-#ifdef DEBUG
+#ifdef DEBUGX
     struct timeval now;
     gettimeofday(&now, 0);
     int msec = usec_diff(start, now) / 1000;
@@ -85,7 +82,9 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     string title = info.second;
 
     if (artist != "" && title != "")
+    {
         data.identified = true;
+    }
     else
     {
         if ((data.identified = parse_song_info(path, title)))

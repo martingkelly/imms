@@ -34,7 +34,13 @@ bool SongPicker::add_candidate(bool urgent)
         return false;
     ++attempts;
 
-    int position = imms_random(Player::get_playlist_length());
+    int want = urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE;
+    if (acquired >= std::min(want, Player::get_playlist_length()))
+        return false;
+
+    int position = immsdb.get_uid_from_filter();
+    if (position < 0)
+        position = imms_random(Player::get_playlist_length());
     string path = immsdb.get_playlist_item(position);
     string realpath = Player::get_playlist_item(position);
 
@@ -56,8 +62,7 @@ bool SongPicker::add_candidate(bool urgent)
         candidates.push_back(data);
     }
 
-    int want = urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE;
-    return acquired < std::min(want, Player::get_playlist_length());
+    return true;
 }
 
 void SongPicker::identify_more()
@@ -73,12 +78,19 @@ void SongPicker::identify_more()
     playlist_identify_item(pos);
 }
 
+void SongPicker::do_events()
+{
+    bool more;
+    for (int i = 0; i < 4 && (more = add_candidate()); ++i);
+    if (!more)
+        identify_more();
+}
+
 void SongPicker::revalidate_current(int pos, const string &path)
 {
     string simple = path_simplifyer(path);
     if (winner.position == pos && winner.path == simple)
     {
-        std::cerr << "reusing winner!" << std::endl;
         current = winner;
     }
     else if (current.path != simple || current.position != pos)

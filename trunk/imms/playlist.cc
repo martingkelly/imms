@@ -1,5 +1,11 @@
+#include <iostream>
+
 #include "playlist.h"
 #include "strmanip.h"
+#include "utils.h"
+
+using std::endl;
+using std::cerr;
 
 void PlaylistDb::sql_create_tables()
 {
@@ -8,20 +14,22 @@ void PlaylistDb::sql_create_tables()
             "'pos' INTEGER PRIMARY KEY, "
             "'path' VARCHAR(4096) NOT NULL, "
             "'uid' INTEGER DEFAULT NULL, "
-            "'ided' INTEGER DEFAULT '0');");    
+            "'ided' INTEGER DEFAULT '0');");
 }
 
-int PlaylistDb::playlist_install_filter(const string &filter)
+int PlaylistDb::install_filter(const string &filter)
 {
     string where_clause = "WHERE uid > '-1'";
     if (filter != "")
         where_clause += " AND (" + filter + ")";
     run_query("DROP VIEW 'Filter';");
     run_query("CREATE TEMPORARY VIEW 'Filter' AS "
-            "SELECT FROM 'Playlist' " + where_clause + ";");
+            "SELECT * FROM 'Playlist' " + where_clause + ";");
 
     select_query("SELECT count() FROM 'Filter';");
-    return nrow && resultp[1] ? atoi(resultp[1]) : 0;
+
+    filtercount = nrow && resultp[1] ? atoi(resultp[1]) : 0;
+    return filtercount;
 }
 
 int PlaylistDb::get_unknown_playlist_item()
@@ -66,6 +74,18 @@ void PlaylistDb::playlist_insert_item(int pos, const string &path)
     run_query("INSERT INTO 'Playlist' ('pos', 'path', 'uid') "
             "VALUES ('" + itos(pos) + "', '" + epath + "', "
                 "(SELECT uid FROM Library WHERE path = '" + epath + "'));");
+}
+
+int PlaylistDb::get_uid_from_filter()
+{
+    select_query("SELECT count() FROM 'Filter';");
+    filtercount = nrow && resultp[1] ? atoi(resultp[1]) : 0;
+    if (filtercount < 2)
+        install_filter("");
+
+    int num = imms_random(filtercount);
+    select_query("SELECT uid FROM 'Filter' LIMIT 1 OFFSET " + itos(num) + ";");
+    return nrow && resultp[1] ? atoi(resultp[1]) : -1;
 }
 
 string PlaylistDb::get_playlist_item(int pos)

@@ -34,7 +34,8 @@ public:
     virtual void playlist_changed();
 
     // process internal events - call this periodically
-    void pump();
+    void do_events();
+    void do_idle_events();
 
     // configure imms
     void setup(bool use_xidle);
