@@ -13,6 +13,7 @@ using std::cerr;
 #define MAX_CORR_STR        "10"
 #define MAX_CORRELATION     10
 #define SECOND_DEGREE       0.5
+#define PROCESSING_TIME     5000000
 
 void CorrelationDb::sql_create_tables()
 {
@@ -125,7 +126,7 @@ void CorrelationDb::expire_recent_helper()
     struct timeval now;
     gettimeofday(&now, 0);
 
-    if (usec_diff(start, now) > 2000000)
+    if (usec_diff(start, now) > PROCESSING_TIME)
         return;
     
     try {
