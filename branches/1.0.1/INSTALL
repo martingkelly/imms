@@ -1,0 +1,14 @@
+Requirments:
+
+    * XMMS 1.2.7+
+    * id3lib 3.8.0+ [recommended]
+    * libvorbis 1.0+ [optional]
+    * sqlite 2.8.0+
+    * pcre 4.3+
+
+Installation:
+
+    make
+    ./configure
+    make
+    make install
