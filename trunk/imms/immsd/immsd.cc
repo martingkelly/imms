@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <iostream>
 #include <sstream>
+#include <errno.h>
 
 #include "imms.h"
 #include "strmanip.h"
@@ -159,6 +160,15 @@ void quit(int signum)
 
 int main(int argc, char **argv)
 {
+    int r = mkdir(get_imms_root().c_str(), 0700);
+    if (r && r != EEXIST)
+    {
+        cerr << "IMMSd: could not create directory " 
+            << get_imms_root() << ": " << strerror(r) << endl;
+        exit(r);
+    }
+    
+
     StackLockFile lock(get_imms_root(".immsd_lock"));
     if (!lock.isok())
     {

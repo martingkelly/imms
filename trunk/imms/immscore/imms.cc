@@ -33,17 +33,16 @@ using std::ofstream;
 #define     MAX_CORRELATION         12.0
 #define     SECONDARY               0.3
 #define     CORRELATION_IMPACT      40
+
 #define     BPM_IMPACT              25
 #define     SPECTRUM_IMPACT         10
 #define     SPECTRUM_RADIUS         3.75
 #define     BPM_RADIUS              2.5
+
 #define     LAST_EXPIRE             HOUR
 #define     MAX_TREND               20
 
 #define     TERM_WIDTH              80
-
-#define     NEW_PLAYS               3
-#define     NEW_BONUS               30
 
 //////////////////////////////////////////////
 
@@ -159,14 +158,12 @@ void Imms::print_song_info()
     fout << setiosflags(std::ios::showpos);
     if (current.relation)
         fout << current.relation << "r";
-    if (current.trend)
-        fout << current.trend << "t";
+    if (current.newness)
+        fout << current.newness << "n";
     if (current.bpmrating)
         fout << current.bpmrating << "b";
     if (current.specrating)
         fout << current.specrating << "s";
-    if (current.newness)
-        fout << current.newness << "n";
     fout << resetiosflags(std::ios::showpos);
 
     fout << "] [Last: " << strtime(current.last_played) <<
@@ -250,7 +247,8 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
             std::max(current.rating + mod, MIN_RATING), MAX_RATING);
 
     int trend = current.get_trend();
-    if (abs(mod) > INTERACTIVE_BONUS)
+
+    if (abs(mod) > CONS_NON_SKIP_RATE + INTERACTIVE_BONUS)
     {
         if ((trend >= 0 && mod > 0) || (trend <= 0 && mod < 0))
         {
@@ -262,7 +260,12 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
             trend = mod;
     }
     else
-        trend = (int)(trend * 0.75);
+    {
+        if (abs(trend) < 3)
+            trend = 0;
+        else
+            trend += (trend > 0 ? -3 : 3);
+    }
 
     AutoTransaction at;
 
@@ -318,17 +321,11 @@ bool Imms::fetch_song_info(SongData &data)
     if (data.last_played > local_max)
         data.last_played = local_max;
 
-    data.specrating = data.bpmrating = data.relation = data.newness = 0;
+    data.specrating = data.bpmrating = data.relation = 0;
 
     evaluate_transition(data, handpicked, 1);
     evaluate_transition(data, last,
             SECONDARY * (handpicked.sid == -1 ? 2 : 1));
-
-    if (BasicDb::avg_playcounter() >= NEW_PLAYS
-        && data.get_playcounter() < NEW_PLAYS)
-    {
-        data.newness = NEW_BONUS / (data.get_playcounter() + 1);
-    }
 
     return true;
 }

@@ -120,13 +120,13 @@ void Song::identify(time_t modtime)
 #endif
 
     // new file - insert into the database
-    Q("INSERT INTO 'Identify' "
+    Q("INSERT INTO Identify "
             "('path', 'uid', 'modtime', 'checksum') "
             "VALUES (?, ?, ?, ?);")
         << path << uid << modtime << checksum << execute;
 
     if (!duplicate)
-        Q("INSERT INTO 'Library' "
+        Q("INSERT INTO Library "
                 "('uid', 'sid', 'playcounter', 'lastseen', 'firstseen') "
                 "VALUES (?, ?, ?, ?, ?);")
             << uid << -1 << 0 << time(0) << time(0) << execute;
