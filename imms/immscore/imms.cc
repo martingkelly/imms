@@ -72,7 +72,6 @@ void Imms::setup(bool use_xidle)
 
 void Imms::do_events()
 {
-    SongPicker::identify_more();
     SongPicker::do_events();
     XIdle::query();
 }
@@ -91,7 +90,7 @@ void Imms::playlist_changed(int length)
 
     ImmsDb::clear_recent();
     PlaylistDb::playlist_clear();
-    SongPicker::reset();
+    SongPicker::playlist_changed(length);
 } 
 
 void Imms::reset_selection()

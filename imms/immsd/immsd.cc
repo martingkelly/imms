@@ -104,6 +104,11 @@ public:
             check_playlist_item(pos, path);
             return;
         }
+        if (command == "PlaylistEnd")
+        {
+            imms->playlist_ready();
+            return;
+        }
         if (command == "PlaylistChanged")
         {
             int length;

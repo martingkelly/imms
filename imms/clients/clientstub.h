@@ -78,6 +78,7 @@ public:
         {
             for (int i = 0; i < Ops::get_length(); ++i)
                 send_item(i);
+            write_command("PlaylistEnd");
             return;
         }
 
