@@ -38,6 +38,13 @@ int main(int argc, char *argv[])
 
     string path = argv[1];
 
+    StackLockFile lock(get_imms_root() + ".analyzer_lock");
+    if (!lock.isok())
+    {
+        cerr << "analyzer: Another instance already active - exiting." << endl;
+        return -7;
+    }
+
     if (access(path.c_str(), R_OK))
     {
         cerr << "could not open file " << path << endl;

@@ -9,7 +9,7 @@
 using std::endl;
 using std::cerr; 
 
-BasicDb::BasicDb()
+BasicDb::BasicDb() : Song("")
 {
     sql_set_pragma();
 }
@@ -26,9 +26,14 @@ BasicDb::~BasicDb()
 
 void BasicDb::sql_set_pragma()
 {
-    Q("PRAGMA cache_size = 10000").execute();
-    Q("PRAGMA synchronous = OFF;").execute();
-    Q("PRAGMA temp_store = MEMORY;").execute();
+    try {
+        QueryCacheDisabler qdb;
+
+        Q("PRAGMA cache_size = 10000").execute();
+        Q("PRAGMA synchronous = OFF;").execute();
+        Q("PRAGMA temp_store = MEMORY;").execute();
+    }
+    WARNIFFAILED();
 }
 
 void BasicDb::sql_create_tables()

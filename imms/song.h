@@ -12,7 +12,7 @@ typedef pair<string, string> StringPair;
 class Song
 {
 public:
-    static Song identify(const string &path);
+    Song(const string &path);
 
     void set_last(time_t last);
     void set_title(const string &_title);
@@ -23,6 +23,7 @@ public:
     int get_rating();
     time_t get_last();
     StringPair get_info();
+    StringPair get_acoustic();
 
     int get_sid() { return sid; }
     int get_uid() { return uid; }
@@ -32,8 +33,6 @@ public:
 
     void reset() { uid = sid = -1; artist = title = ""; }
 protected:
-    Song() { reset(); }
-
     void register_new_sid();
 
     int uid, sid;

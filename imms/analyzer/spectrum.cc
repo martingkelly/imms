@@ -320,8 +320,7 @@ void BeatKeeper::process_window()
     last_window = tmp;
 }
 
-SpectrumAnalyzer::SpectrumAnalyzer(const string &path)
-    : song(Song::identify(path))
+SpectrumAnalyzer::SpectrumAnalyzer(const string &path) : song(path)
 {
     if (!song.isok())
         throw string("identify error!");

@@ -33,6 +33,7 @@ private:
     time_t correlate_from;
     int from, from_weight, to, to_weight;
     float weight;
+    struct timeval start;
 };
 
 #endif

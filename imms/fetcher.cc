@@ -14,7 +14,7 @@ using std::cerr;
 
 
 InfoFetcher::SongData::SongData(int _position, const string &_path)
-    : Song(Song::identify(_path)), position(_position)
+    : Song(_path), position(_position)
 {
     rating = relation = 0;
     identified = unrated = false;
@@ -45,14 +45,14 @@ void InfoFetcher::playlist_changed()
 
 bool InfoFetcher::fetch_song_info(SongData &data)
 {
-    if (!ImmsDb::playlist_id_from_item(data.position))
-        if (!playlist_identify_item(data.position))
-            return false;
-
-    const string &path = data.get_path();
+    path = data.get_path();
 
     if (access(path.c_str(), R_OK))
         return false;
+
+    if (!ImmsDb::playlist_id_from_item(data.position))
+        if (!playlist_identify_item(data.position))
+            return false;
 
     StringPair info = ImmsDb::get_info();
 
@@ -85,7 +85,7 @@ bool InfoFetcher::fetch_song_info(SongData &data)
 #endif
 #endif
 
-    *((Song*)&data) = *((Song*)this);
+    *((Song*)&data) = *static_cast<Song*>(this);
 
     data.last_played = (data.get_sid() != next_sid) ?
                             time(0) - ImmsDb::get_last() : 0;

@@ -49,8 +49,7 @@ Imms::Imms()
     handpicked.set_on = 0;
     last.sid = handpicked.sid = -1;
 
-    string homedir = getenv("HOME");
-    fout.open(homedir.append("/.imms/imms.log").c_str(),
+    fout.open(get_imms_root().append("imms.log").c_str(),
             ofstream::out | ofstream::app);
 
     time_t t = time(0);
@@ -125,6 +124,10 @@ void Imms::start_song(int position, const string &path)
     ImmsDb::set_last(time(0));
 
     print_song_info();
+
+    StringPair acoustic = ImmsDb::get_acoustic();
+    if (acoustic.first == "")
+        system(string("analyzer \"" + path + "\" &").c_str());
 }
 
 void Imms::print_song_info()

@@ -153,7 +153,7 @@ string sid2info(int sid)
 
 void do_identify(const string &path)
 {
-    Song s = Song::identify(path_simplifyer(path));
+    Song s(path_simplifyer(path));
 
     if (!s.isok())
     {

@@ -1,9 +1,10 @@
 #include "server.h"
+#include "utils.h"
 
 #include "strmanip.h"
 
 ImmsServer::ImmsServer()
-    : SocketServer(string(getenv("HOME")).append("/.imms/socket"))
+    : SocketServer(get_imms_root() + "socket")
 {
     conn = 0;
 }
