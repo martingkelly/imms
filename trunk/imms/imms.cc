@@ -136,6 +136,8 @@ void Imms::start_song(int position, const string &path)
     revalidate_current(path);
 
     history.push_back(position);
+    if (history.size() > 10)
+        history.pop_front();
 
     immsdb.set_id(current.id);
     immsdb.set_last(time(0));
