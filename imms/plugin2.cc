@@ -80,14 +80,8 @@ void reset_selection()
     need_more = true;
 }
 
-void do_more_checks()
+void check_playlist()
 {
-    // run these checks less frequently so as not to waste cpu time
-    static int delay = 0;
-    if (++delay < POLL_DELAY && pl_length > -1 && good_length > 2)
-        return;
-    delay = 0;
-
     // update playlist length
     int new_pl_length = xmms_remote_get_playlist_length(session);
     if (new_pl_length != pl_length)
@@ -96,6 +90,15 @@ void do_more_checks()
         reset_selection();
         imms->playlist_changed();
     }
+}
+
+void do_more_checks()
+{
+    // run these checks less frequently so as not to waste cpu time
+    static int delay = 0;
+    if (++delay < POLL_DELAY && pl_length > -1 && good_length > 2)
+        return;
+    delay = 0;
 
     // check if xmms is reporting the song length correctly
     song_length = xmms_remote_get_playlist_time(session, cur_plpos);
@@ -157,10 +160,14 @@ void do_checks()
     if (!xmms_remote_is_playing(session))
         return;
 
+    check_playlist();
+
     cur_plpos = xmms_remote_get_playlist_pos(session);
     if (cur_plpos != last_plpos)
     {
         cur_path = imms_get_playlist_item(cur_plpos);
+        if (cur_path == "")
+            return;
 
         if (last_path != cur_path)
         {

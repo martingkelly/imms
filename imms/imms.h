@@ -3,7 +3,7 @@
 
 #include <string>
 #include <fstream>
-#include <vector>
+#include <list>
 
 #include "picker.h"
 #include "spectrum.h"
@@ -58,7 +58,7 @@ protected:
     bool last_skipped, last_jumped;
     int local_max;
 
-    std::vector<int> history;
+    std::list<int> history;
     std::ofstream fout;
 
     LastInfo handpicked, last;
