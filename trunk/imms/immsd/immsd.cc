@@ -3,20 +3,13 @@
 #include "imms.h"
 #include "utils.h"
 #include "dbuscore.h"
+#include "dbusserver.h"
 
 int pl_length;
 int cur_plpos;
 
 IDBusConnection activecon;
 Imms *imms;
-
-string imms_get_playlist_item(int at)
-{
-    IDBusOMessage message("/org/luminal/IMMSClient",
-            "org.luminal.IMMSClient", "GetPlaylistItem");
-    message << at;
-    return "";
-}
 
 gboolean do_events(void *unused)
 {
@@ -31,17 +24,50 @@ class ImmsDFilter : public IDBusFilter
     {
         if (!imms)
         {
+#ifdef DEBUG
+            cerr << "New client connected!" << endl;
+#endif
             activecon = con;
             imms = new Imms(con);
         }
     }
     bool dispatch(IDBusConnection &con, IDBusIMessage &message)
     {
+#ifdef DEBUG
+        cerr << "Got message on " << message.get_interface() << endl;
+#endif
+
+        if (message.get_type() == MTError)
+        {
+            cerr << "Error: " << message.get_error() << endl;
+            return true;
+        }              
+
         if (!imms || activecon != con)
             return false;
 
         if (message.get_type() == MTSignal)
         {
+            if (message.get_interface() == "org.freedesktop.Local")
+            {
+                if (message.get_member() == "Disconnected")
+                {
+#ifdef DEBUG
+                    cerr << "Client diconnected!" << endl;
+#endif
+                    delete imms;
+                    imms = 0;
+                    return true;
+                }
+            }
+
+            if (message.get_interface() != "org.luminal.IMMS")
+            {
+                cerr << "Recieved message " << message.get_member()
+                    << " on unknown interface: "
+                    << message.get_interface() << endl;
+                return false;
+            }
             if (message.get_member() == "Setup")
             {
                 bool use_xidle;
@@ -68,6 +94,7 @@ class ImmsDFilter : public IDBusFilter
             {
                 int length;
                 message >> length;
+                cerr << "got playlist length = " << length << endl;
                 imms->playlist_changed(length);
                 return true;
             }

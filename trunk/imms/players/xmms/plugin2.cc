@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <time.h>
+#include <glib.h>
 
 #include <xmms/plugin.h>
 #include <xmms/xmmsctrl.h> 
@@ -56,9 +57,10 @@ public:
     {
         if (message.get_type() == MTError)
         {
-            g_print("Received error: %s\n", message.get_error().c_str());
+            cerr << "Error: " << message.get_error() << endl;
+            return true;
         }
-        else if (message.get_type() == MTSignal)
+        if (message.get_type() == MTSignal)
         {
             g_print("Received signal %s %s\n",
                     message.get_interface().c_str(),
@@ -72,10 +74,6 @@ public:
         }
         else if (message.get_type() == MTMethod)
         {
-            g_print("Received method call %s %s\n",
-                    message.get_interface().c_str(),
-                    message.get_member().c_str());
-
             if (message.get_member() == "GetPlaylistItem")
             {
                 int index;
@@ -87,13 +85,19 @@ public:
             }
             if (message.get_member() == "GetPlaylistLength")
             {
-                int index;
                 IDBusOMessage reply(message.reply());
-                reply << xmms_remote_get_playlist_length(session);
+                reply << (int)xmms_remote_get_playlist_length(session);
                 con.send(reply);
                 return true;
             }
+
+            g_print("Received method call %s %s\n",
+                    message.get_interface().c_str(),
+                    message.get_member().c_str());
+
         }
+
+        cerr << "Unhandled message!" << endl;
 
         return false;
     }
@@ -170,7 +174,7 @@ static void check_playlist()
     {
         pl_length = new_pl_length;
         reset_selection();
-        imms->playlist_changed(new_pl_length);
+        imms->playlist_changed(pl_length);
     }
 }
 

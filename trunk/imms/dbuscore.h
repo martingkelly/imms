@@ -61,7 +61,8 @@ class IDBusIMessage : protected IDBusMessageBase
 public:
     IDBusIMessage(DBusMessage *message_);
 
-    IDBusIMessage &operator>>(int i);
+    IDBusIMessage &operator>>(int &i);
+    IDBusIMessage &operator>>(bool &b);
     IDBusIMessage &operator>>(string &s);
 
     string get_interface();
@@ -102,20 +103,6 @@ class IDBusFilter
 public:
     virtual void new_connection(IDBusConnection &con) {};
     virtual bool dispatch(IDBusConnection &con, IDBusIMessage &message) = 0;
-};
-
-class IDBusServer
-{
-public:
-    IDBusServer(const string &path, IDBusFilter *filter);
-private:
-    DBusServer *server;
-};
-
-class IDBusClient : public IDBusConnection
-{
-public:
-    IDBusClient(const string &path, IDBusFilter *filter);
 };
 
 #endif

@@ -3,14 +3,14 @@ CXX = @CXX@
 VERSION = @PACKAGE_VERSION@
 INSTALL_PROGRAM = @INSTALL@
 PREFIX = @prefix@
-VPATH = ..:../players/xmms:../analyzer:../utils
+VPATH = ..:../players/xmms:../analyzer:../utils:../players:../immsd
 ARFLAGS = rs
 
 SHELL = bash
-XMMS_OBJ = @PLUGIN_OBJ@ interface.o libimmscore.a 
+XMMS_OBJ = @PLUGIN_OBJ@ interface.o dbusclient.o libimmscore.a 
 
 XMMSCPPFLAGS= `xmms-config --cflags`
-DBUSCPPFLAGS=`pkg-config dbus-1 dbus-glib-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE
+DBUSCPPFLAGS=`pkg-config dbus-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE
 GLIBCPPFLAGS=`pkg-config glib-2.0 --cflags`
 TAGCPPFLAGS=@TAGCPPFLAGS@
 
@@ -18,8 +18,8 @@ CPPFLAGS=@XCPPFLAGS@ -Wall -fPIC -D_REENTRANT -I../
 CXXFLAGS=-fno-rtti
 
 XMMSLDFLAGS=`xmms-config --libs`
-GLIBLDFLAGS=`pkg-config glib-2.0 --libs`
-DBUSLDFLAGS=`pkg-config dbus-1 dbus-glib-1 --libs`
+GLIBLDFLAGS=`pkg-config dbus-glib-1 --libs`
+DBUSLDFLAGS=`pkg-config dbus-1 --libs`
 LDFLAGS=-L. @LIBS@
 
 default: all

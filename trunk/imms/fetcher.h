@@ -32,6 +32,8 @@ protected:
     virtual bool fetch_song_info(SongData &data);
     virtual bool parse_song_info(const string &path, StringPair &info);
 
+    virtual string get_playlist_item(int index) = 0;
+
     bool identify_playlist_item(int pos);
 
     int next_sid, pl_length;

@@ -14,7 +14,7 @@ public:
     void playlist_mass_identify();
     static Song playlist_id_from_item(int pos);
 
-    string get_playlist_item(int pos);
+    string get_item_from_playlist(int pos);
     int get_unknown_playlist_item();
 
     int install_filter(const string &filter);

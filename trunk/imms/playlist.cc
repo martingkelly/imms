@@ -173,7 +173,7 @@ int PlaylistDb::random_playlist_position()
     return result;
 }
 
-string PlaylistDb::get_playlist_item(int pos)
+string PlaylistDb::get_item_from_playlist(int pos)
 {
     string path;
 

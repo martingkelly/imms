@@ -4,6 +4,8 @@
 #include "dbuscore.h"
 #include "utils.h"
 
+#include "players/dbusclient.h"
+
 template <typename Filter>
 class IMMSClient
 {
@@ -15,7 +17,6 @@ public:
         m << use_xidle;
         client.send(m);
     }
-    
     void start_song(int position, std::string path)
     {
         IDBusOMessage m(IMMSDBUSID, "StartSong");
@@ -43,6 +44,7 @@ public:
     {
         IDBusOMessage m(IMMSDBUSID, "PlaylistChanged");
         m << length;
+        cerr << "sending out pl len = " << length << endl;
         client.send(m);
     }
 private:

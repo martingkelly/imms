@@ -30,7 +30,7 @@ else
 endif
 
 define installprogs
-    ${INSTALL_PROGRAM} analyzer immsremote immstool ${PREFIX}/bin
+    ${INSTALL_PROGRAM} immsd analyzer immsremote immstool ${PREFIX}/bin
 endef
 
 system-message:
