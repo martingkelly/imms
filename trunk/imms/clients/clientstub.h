@@ -38,7 +38,7 @@ public:
         stringstream sstr;
         sstr << line;
 
-#ifdef DEBUG
+#if defined(DEBUG) && 0
         cerr << "< " << line << endl;
 #endif
 
