@@ -320,9 +320,11 @@ void BeatKeeper::process_window()
     last_window = tmp;
 }
 
-SpectrumAnalyzer::SpectrumAnalyzer()
+SpectrumAnalyzer::SpectrumAnalyzer(const string &path)
+    : song(Song::identify(path))
 {
-    last_bpm = last_spectrum = "";
+    if (!song.isok())
+        throw string("identify error!");
     reset();
 }
 
@@ -367,26 +369,6 @@ float rms_string_distance(const string &s1, const string &s2)
     return sqrt(distance / len);
 }
 
-float SpectrumAnalyzer::color_transition(const string &from,
-        const string &to)
-{
-    float rms = rms_string_distance(from, to);
-    if (rms)
-        cerr << "spectrum distance [" << from << "]  [" << to << "] = "
-            << rms << endl;
-    return 0;
-}
-
-float SpectrumAnalyzer::bpm_transition(const string &from,
-        const string &to)
-{
-    float rms = rms_string_distance(from, to);
-    if (rms)
-        cerr << "bpm distance [" << from << "]  [" << to << "] = "
-            << rms << endl;
-    return 0;
-}
-
 void SpectrumAnalyzer::integrate_spectrum(float long_spectrum[LONGSPECTRUM])
 {
     float bark[BARKSIZE];
@@ -417,26 +399,21 @@ void SpectrumAnalyzer::finalize()
     bpm_com += bpm_low; 
     bpm_com += bpm_hi; 
 
+    string last_bpm = bpm_com.get_bpm_graph();
+    int bpmval = bpm_com.guess_actual_bpm();
+
+#ifdef DEBUG
     bpm_low.dump("/tmp/beats-low");
     bpm_hi.dump("/tmp/beats-high");
     bpm_com.dump("/tmp/beats-com");
 
-    last_bpm = bpm_com.get_bpm_graph();
-    int bpmval = bpm_com.guess_actual_bpm();
     cerr << "BPM [com] = " << bpmval << endl;
+#endif
 
     if (!have_spectrums)
         return;
 
-    last_spectrum = encode_spectrum(spectrum);
-
-#if 0
-    std::ofstream bstats("/tmp/spectrums", std::ios::app);
-    for (int i = 0; i < BARKSIZE; ++i)
-        bstats << spectrum[i] << " ";
-    bstats << endl;
-    bstats.close();
-#endif
+    string last_spectrum = encode_spectrum(spectrum);
 
 #ifdef DEBUG
     cerr << "spectrum  [" << last_spectrum << "] " << endl;

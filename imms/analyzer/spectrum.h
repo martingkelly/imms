@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "immsconf.h"
+#include <immsconf.h>
+#include <song.h>
 
 using std::string;
 using std::vector;
@@ -59,24 +60,19 @@ protected:
 class SpectrumAnalyzer
 {
 public:
-    SpectrumAnalyzer();
+    SpectrumAnalyzer(const string &path);
+    ~SpectrumAnalyzer() { finalize(); }
     void integrate_spectrum(float long_spectrum[LONGSPECTRUM]);
     void finalize();
 
 protected:
-    float color_transition(const string &from, const string &to);
-    float bpm_transition(const string &from, const string &to);
-    const string& get_last_spectrum() { return last_spectrum; }
-    string get_last_bpm() { return last_bpm; }
     void reset();
 
 private:
+    Song song;
     BeatKeeper bpm_low, bpm_hi;
     int have_spectrums;
     float spectrum[SHORTSPECTRUM];
-
-    string last_spectrum;
-    string last_bpm;
 };
 
 #endif

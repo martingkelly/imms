@@ -24,8 +24,11 @@ public:
     time_t get_last();
     StringPair get_info();
     int get_sid() { return sid; }
+    int get_uid() { return uid; }
 
-    void reset() { uid = sid = 0; artist = title = ""; }
+    bool isok() { return uid != -1; }
+
+    void reset() { uid = sid = -1; artist = title = ""; }
 protected:
     void register_new_sid();
 
