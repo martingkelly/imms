@@ -49,10 +49,11 @@ bool InfoFetcher::fetch_song_info(SongData &data)
         return false;
 
     if (!data.get_song_from_playlist())
+    {
         if (!identify_playlist_item(data.position))
             return false;
-        else
-            data.get_song_from_playlist();
+        data.get_song_from_playlist();
+    }
 
     StringPair info = data.get_info();
 

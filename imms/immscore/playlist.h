@@ -22,7 +22,9 @@ public:
     int install_filter(const string &filter);
     int random_playlist_position();
     int get_effective_playlist_length(bool nofilter = false);
+
     time_t get_average_first_seen();
+    time_t get_average_last();
 
     void playlist_clear();
 
