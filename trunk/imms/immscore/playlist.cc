@@ -135,10 +135,10 @@ void PlaylistDb::playlist_insert_item(int pos, const string &path)
     WARNIFFAILED();
 }
 
-int PlaylistDb::get_effective_playlist_length()
+int PlaylistDb::get_effective_playlist_length(bool nofilter)
 {
     int result = 0;
-    string table = filtercount > 0 ? "Filter" : "Playlist";
+    string table = filtercount > 0 && !nofilter ? "Filter" : "Playlist";
 
     try {
         Q q("SELECT count(pos) FROM " + table + ";");

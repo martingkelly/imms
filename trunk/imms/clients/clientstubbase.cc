@@ -45,6 +45,7 @@ void IMMSClientStub::playlist_changed(int length)
 int socket_connect(const string &sockname)
 {
     int fd = socket(PF_UNIX, SOCK_STREAM, 0);
+
     struct sockaddr_un sun;
     sun.sun_family = AF_UNIX;
     strncpy(sun.sun_path, sockname.c_str(), sizeof(sun.sun_path));

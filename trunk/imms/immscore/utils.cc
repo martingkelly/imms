@@ -5,6 +5,7 @@
 #include <fstream>
 #include <math.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include "utils.h"
 
@@ -127,9 +128,12 @@ string rescale_bpmgraph(const string &graph)
 
 string path_normalize(const string &path)
 {
-    if (access(path.c_str(), R_OK))
-        return path;
+    const char *start = path.c_str();
+    while (isspace(*start))
+        start++;
+    if (access(start, R_OK))
+        return start;
     char resolved[4096];
-    realpath(path.c_str(), resolved);
+    realpath(start, resolved);
     return resolved;
 }

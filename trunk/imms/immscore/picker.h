@@ -25,7 +25,7 @@ protected:
 
     virtual void request_playlist_item(int index) = 0;
 
-    bool playlist_ready;
+    int playlist_ready;
     SongData current;
 
 private:
