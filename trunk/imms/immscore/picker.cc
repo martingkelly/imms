@@ -20,14 +20,20 @@ using std::cerr;
 SongPicker::SongPicker()
     : current(0, "current"), acquired(0), winner(0, "winner")
 {
+    playlist_known = 0;
     reset();
 }
 
 void SongPicker::reset()
 {
-    playlist_ready = 0;
     candidates.clear();
     acquired = attempts = 0;
+}
+
+void SongPicker::playlist_changed(int length)
+{
+    playlist_known = 0;
+    reset();
 }
 
 bool SongPicker::add_candidate(bool urgent)
@@ -45,7 +51,7 @@ bool SongPicker::add_candidate(bool urgent)
     {
         position = ImmsDb::random_playlist_position();
         if (position < 0)
-            position = imms_random(pl_length);
+            return false;
 
         bool found = false;
         for (Candidates::iterator i = candidates.begin();
@@ -82,23 +88,23 @@ bool SongPicker::add_candidate(bool urgent)
     return true;
 }
 
-void SongPicker::identify_more()
+void SongPicker::do_events()
 {
+    if (!playlist_known)
+        return;
+
+    for (int i = 0; i < 5 && add_candidate(); ++i);
+
+    if (playlist_known == 2)
+        return;
+
     int pos = ImmsDb::get_unknown_playlist_item();
     if (pos < 0)
     {
-        playlist_ready = 2;
+        playlist_known = 2;
         return;
     }
     identify_playlist_item(pos);
-}
-
-void SongPicker::do_events()
-{
-    if (playlist_ready)
-        for (int i = 0; i < 5 && add_candidate(); ++i);
-    if (playlist_ready == 1)
-        identify_more();
 }
 
 void SongPicker::revalidate_current(int pos, const string &path)

@@ -15,21 +15,21 @@ class SongPicker : protected InfoFetcher
 public:
     SongPicker();
     int select_next();
+    void playlist_ready() { playlist_known = 1; }
+    virtual void playlist_changed(int length);
 
 protected:
     bool add_candidate(bool urgent = false);
     void revalidate_current(int pos, const std::string &path);
     void do_events();
-    void identify_more();
     void reset();
 
     virtual void request_playlist_item(int index) = 0;
 
-    int playlist_ready;
     SongData current;
 
 private:
-    int acquired, attempts;
+    int acquired, attempts, playlist_known;
     SongData winner;
 
     typedef std::list<SongData> Candidates;
