@@ -10,16 +10,16 @@
 #include <xmms/xmmsctrl.h> 
 
 #include "immsconf.h"
-#include "plugin.h"
-#include "player.h"
-#include "imms.h"
+#include "cplugin.h"
+#include "clientstub.h"
 
 using std::string;
+using std::cerr;
+using std::endl;
 
 #define POLL_DELAY          5
 
 // Local vars
-static Imms *imms = NULL;
 unsigned int time_left = 1000, sloppy_skips = 0;
 int last_plpos = -2, cur_plpos, pl_length = -1;
 int good_length = 0, song_length = 0, delay = 0;
@@ -36,8 +36,6 @@ static enum
     FIND_NEXT   = 2
 } state;
 
-void Player::reset_selection() {}
-
 // Wrapper that frees memory
 string imms_get_playlist_item(int at)
 {
@@ -51,18 +49,57 @@ string imms_get_playlist_item(int at)
     return result;
 }
 
-void imms_setup(int use_xidle)
+struct FilterOps;
+typedef IMMSClient< ClientFilter<FilterOps> > XMMSClient;
+XMMSClient *imms = 0;
+
+struct FilterOps
 {
-    if (imms)
-        imms->setup(use_xidle);
-}
+    static void set_next(int next)
+    {
+        cur_plpos = next;
+
+        cur_path = imms_get_playlist_item(cur_plpos);
+        xmms_remote_set_playlist_pos(session, cur_plpos);
+
+        // notify imms of the next song
+        if (imms)
+            imms->start_song(cur_plpos, cur_path);
+
+        last_path = cur_path;
+        good_length = 0;
+
+        xmms_remote_play(session);
+    }
+    static void reset_selection() {}
+    static string get_item(int index)
+    {
+        return imms_get_playlist_item(index);
+    }
+    static int get_length()
+    {
+        return (int)xmms_remote_get_playlist_length(session);
+    }
+};
 
 void imms_init()
 {
     if (!imms)
-        imms = new Imms();
+    {
+        try {
+            imms = new XMMSClient();
+        } catch (IDBusException &e) {
+            cerr << "Error: " << e.what() << endl;
+        }
+    }
 
     state = IDLE;
+}
+
+void imms_setup(int use_xidle)
+{
+    if (imms)
+        imms->setup(use_xidle);
 }
 
 void imms_cleanup(void)
@@ -84,16 +121,13 @@ void do_more_checks()
     if (new_pl_length != pl_length)
     {
         pl_length = new_pl_length;
-        imms->playlist_changed();
+        imms->playlist_changed(pl_length);
     }
 
     // check if xmms is reporting the song length correctly
     song_length = xmms_remote_get_playlist_time(session, cur_plpos);
     if (song_length > 1000)
         good_length++;
-
-    // have imms do it's internal processing
-    imms->do_events();
 }
 
 void do_checks()
@@ -102,10 +136,7 @@ void do_checks()
         last_plpos = xmms_remote_get_playlist_pos(session) - 1;
 
     if (!xmms_remote_is_playing(session))
-    {
-        imms->do_idle_events();
         return;
-    }
 
     // run these checks less frequently so as not to waste cpu time
     if (++delay > POLL_DELAY || pl_length < 0 || good_length < 3)
@@ -144,7 +175,6 @@ void do_find_next()
     cur_plpos = xmms_remote_get_playlist_pos(session);
     bool forced = (cur_plpos != last_plpos) && 
         ((last_plpos + 1) % pl_length) != cur_plpos;
-    bool back = ((last_plpos + pl_length - 1) % pl_length) == cur_plpos;
     bool bad = good_length < 3 || song_length <= 30*1000;
 
     // notify imms that the previous song has ended
@@ -152,27 +182,7 @@ void do_find_next()
         imms->end_song(!time_left, forced, bad);
 
     if (!forced && pl_length > 2)
-    {
-        // have imms select the next song for us
-        cur_plpos = imms->select_next();
-    }
-    else if (back)
-    {
-        int previous = imms->get_previous();
-        if (previous != -1)
-            cur_plpos = previous;
-    }
-
-    cur_path = imms_get_playlist_item(cur_plpos);
-    xmms_remote_set_playlist_pos(session, cur_plpos);
-
-    // notify imms of the next song
-    imms->start_song(cur_plpos, cur_path);
-
-    last_path = cur_path;
-    good_length = 0;
-
-    xmms_remote_play(session);
+        imms->select_next();
 }
 
 void imms_poll()

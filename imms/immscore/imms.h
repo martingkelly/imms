@@ -3,7 +3,6 @@
 
 #include <string>
 #include <fstream>
-#include <list>
 #include <memory>
 
 #include "picker.h"
@@ -60,7 +59,6 @@ protected:
     bool last_skipped, last_jumped;
     int local_max;
 
-    std::list<int> history;
     std::ofstream fout;
 
     LastInfo handpicked, last;

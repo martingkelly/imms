@@ -1,6 +1,8 @@
 #include "dbusclient.h"
 #include <dbus/dbus.h>
+
 #include <iostream>
+#include <unistd.h>
 
 using std::cerr;
 using std::endl;
@@ -37,6 +39,8 @@ void IDBusClient::connection_lost()
 
 void IDBusClient::connect()
 {
+    system("immsd &");
+
     DBusError error;
     dbus_error_init(&error);
 
