@@ -8,15 +8,15 @@ first: ../configure
 
 include ../rules.mk
 
-all: libimms.so analyzer immstool immsremote
+all: libxmmsimms.so immsd analyzer immstool immsremote
 
-libimms.so: $(XMMS_OBJ)
-	$(CXX) $(XMMS_OBJ) \
-		$(LDFLAGS) \
-		-shared -Wl,-z,defs,-soname,$@ -o $@
+libxmmsimms.so: $(XMMS_OBJ)
+libxmmsimms-LIBS = $(XMMSLDFLAGS)
 
 libimmscore.a: $(call objects,..)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
+
+immsd: libimmscore.a
 
 immstool-CPPFLAGS = -I../analyzer
 immstool: immstool.o libimmscore.a spectrum.o
@@ -39,11 +39,14 @@ interface-CPPFLAGS=$(XMMSCPPFLAGS)
 plugin-CPPFLAGS=$(XMMSCPPFLAGS)
 plugin2-CPPFLAGS=$(XMMSCPPFLAGS)
 songinfo-CPPFLAGS=$(TAGCPPFLAGS)
+dbuscore-CPPFLAGS=$(DBUSCPPFLAGS)
+immsd-CPPFLAGS=$(GLIBCPPFLAGS)
+immsd-LIBS=$(GLIBLDFLAGS)
 
-dbus-server-CPPFLAGS=`pkg-config dbus-1 dbus-glib-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE
-dbus-server-LIBS=`pkg-config dbus-1 dbus-glib-1 --libs`
+dbus-server-CPPFLAGS=$(DBUSCPPFLAGS)
+dbus-server-LIBS=`pkg-config dbus-1 dbus-glib-1 --libs` -limmscore -L.
 dbus-server: dbus-server.o
 
-dbus-client-CPPFLAGS=`pkg-config dbus-1 dbus-glib-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE
-dbus-client-LIBS=`pkg-config dbus-1 dbus-glib-1 --libs`
+dbus-client-CPPFLAGS=$(DBUSCPPFLAGS)
+dbus-client-LIBS=`pkg-config dbus-1 dbus-glib-1 --libs` -limmscore -L.
 dbus-client: dbus-client.o

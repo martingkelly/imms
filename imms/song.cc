@@ -26,103 +26,113 @@ Song::Song(const string &path_, int _uid, int _sid) : path(path_)
     if (stat(path.c_str(), &statbuf))
         return;
 
-    time_t modtime = statbuf.st_mtime;
-
     try {
-        AutoTransaction a;
+        identify(statbuf.st_mtime);
 
-        {
-            Q q("SELECT Library.uid, sid, modtime "
-                    "FROM 'Identify' NATURAL JOIN 'Library' "
-                    "WHERE path = ?;");
-            q << path;
+        Q("UPDATE 'Library' SET lastseen = ? WHERE uid = ?")
+            << time(0) << uid << execute;
+    }
+    WARNIFFAILED();
+}
 
-            if (q.next())
-            {
-                time_t last_modtime;
-                q >> uid >> sid >> last_modtime;
 
-                if (modtime == last_modtime)
-                    return;
-            }
-        }
+void Song::identify(time_t modtime)
+{
+    AutoTransaction a;
 
-        string checksum = Md5Digest::digest_file(path);
-
-        // old path but modtime has changed - update checksum
-        if (uid != -1)
-        {
-            Q q("UPDATE 'Identify' SET modtime = ?, "
-                    "checksum = ? WHERE path = ?;");
-            q << modtime << checksum << path;
-            q.execute();
-
-            a.commit();
-            return;
-        }
-
-        // moved or new file and path needs updating
-        reset();
-
-        Q q("SELECT uid, path FROM 'Identify' WHERE checksum = ?;");
-        q << checksum;
+    {
+        Q q("SELECT Library.uid, sid, modtime "
+                "FROM 'Identify' NATURAL JOIN 'Library' "
+                "WHERE path = ?;");
+        q << path;
 
         if (q.next())
         {
-            // Check if any of the old paths no longer exist 
-            // (aka file was moved) so that we can reuse their uid
-            do
-            {
-                string oldpath;
-                q >> uid >> oldpath;
+            time_t last_modtime;
+            q >> uid >> sid >> last_modtime;
 
-                if (access(oldpath.c_str(), F_OK))
-                {
-                    q.reset();
-
-                    sid = -1;
-
-                    Q("UPDATE 'Identify' SET path = ?, "
-                            "modtime = ? WHERE path = ?;")
-                        << path << modtime << oldpath << execute;
-
-                    Q("UPDATE 'Library' SET sid = -1 WHERE uid = ?;")
-                        << uid << execute;
-#ifdef DEBUG
-                    cerr << "identify: moved: uid = " << uid << endl;
-#endif
-                    a.commit();
-                    return;
-                }
-            } while (q.next());
+            if (modtime == last_modtime)
+                return;
         }
-        else
-        {
-            // figure out what the next uid should be
-            Q q("SELECT max(uid) FROM Library;");
-            if (q.next())
-                q >> uid;
-            ++uid;
-        }
+    }
 
-        // new file - insert into the database
-        Q("INSERT INTO 'Identify' "
-                "('path', 'uid', 'modtime', 'checksum') "
-                "VALUES (?, ?, ?, ?);")
-            << path << uid << modtime << checksum << execute;
-        Q("INSERT INTO 'Library' "
-                "('uid', 'sid', 'playcounter', 'lastseen', 'firstseen') "
-                "VALUES (?, ?, ?, ?, ?);")
-            << uid << 0 << 0 << time(0) << time(0) << execute;
+    string checksum = Md5Digest::digest_file(path);
 
-#ifdef DEBUG
-        cerr << "identify: new: uid = " << uid << endl;
-#endif
+    // old path but modtime has changed - update checksum
+    if (uid != -1)
+    {
+        Q q("UPDATE 'Identify' SET modtime = ?, "
+                "checksum = ? WHERE path = ?;");
+        q << modtime << checksum << path;
+        q.execute();
 
         a.commit();
         return;
     }
-    WARNIFFAILED();
+
+    // moved or new file and path needs updating
+    reset();
+
+    Q q("SELECT uid, path FROM 'Identify' WHERE checksum = ?;");
+    q << checksum;
+
+    bool duplicate;
+    if (duplicate = q.next())
+    {
+        // Check if any of the old paths no longer exist 
+        // (aka file was moved) so that we can reuse their uid
+        do
+        {
+            string oldpath;
+            q >> uid >> oldpath;
+
+            if (access(oldpath.c_str(), F_OK))
+            {
+                q.reset();
+
+                sid = -1;
+
+                Q("UPDATE 'Identify' SET path = ?, "
+                        "modtime = ? WHERE path = ?;")
+                    << path << modtime << oldpath << execute;
+
+                Q("UPDATE 'Library' SET sid = -1 WHERE uid = ?;")
+                    << uid << execute;
+#ifdef DEBUG
+                cerr << "identify: moved: uid = " << uid << endl;
+#endif
+                a.commit();
+                return;
+            }
+        } while (q.next());
+    }
+    else
+    {
+        // figure out what the next uid should be
+        Q q("SELECT max(uid) FROM Library;");
+        if (q.next())
+            q >> uid;
+        ++uid;
+    }
+
+#ifdef DEBUG
+    cerr << "identify: new: uid = " << uid << endl;
+#endif
+
+    // new file - insert into the database
+    Q("INSERT INTO 'Identify' "
+            "('path', 'uid', 'modtime', 'checksum') "
+            "VALUES (?, ?, ?, ?);")
+        << path << uid << modtime << checksum << execute;
+
+    if (!duplicate)
+        Q("INSERT INTO 'Library' "
+                "('uid', 'sid', 'playcounter', 'lastseen', 'firstseen') "
+                "VALUES (?, ?, ?, ?, ?);")
+            << uid << -1 << 0 << time(0) << time(0) << execute;
+
+    a.commit();
+    return;
 }
 
 void Song::set_last(time_t last)
@@ -186,8 +196,11 @@ void Song::set_rating(int rating)
 
     try
     {
-        Q("INSERT OR REPLACE INTO 'Rating' ('uid', 'rating') VALUES (?, ?);")
-            << uid << rating << execute;
+        int trend = get_trend();
+
+        Q("INSERT OR REPLACE INTO 'Rating' "
+               "('uid', 'rating', 'trend') VALUES (?, ?, ?);")
+            << uid << rating << trend << execute;
     }
     WARNIFFAILED();
 }
@@ -318,7 +331,7 @@ int Song::get_rating()
 int Song::get_trend()
 {
     if (uid < 0)
-        return -1;
+        return 0;
 
     int trend = 0;
 

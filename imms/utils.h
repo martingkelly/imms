@@ -25,7 +25,6 @@ private:
 class StackLockFile
 {
 public:
-    class AlreadyLocked {};
     StackLockFile(const string &_name);
     ~StackLockFile();
     bool isok() { return name != ""; }

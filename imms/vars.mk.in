@@ -10,9 +10,15 @@ SHELL = bash
 XMMS_OBJ = @PLUGIN_OBJ@ interface.o libimmscore.a 
 
 XMMSCPPFLAGS= `xmms-config --cflags`
+DBUSCPPFLAGS=`pkg-config dbus-1 dbus-glib-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE
+GLIBCPPFLAGS=`pkg-config glib-2.0 --cflags`
 TAGCPPFLAGS=@TAGCPPFLAGS@
+
 CPPFLAGS=@XCPPFLAGS@ -Wall -fPIC -D_REENTRANT -I../
 CXXFLAGS=-fno-rtti
-LDFLAGS=`xmms-config --libs` @LIBS@
+
+XMMSLDFLAGS=`xmms-config --libs`
+GLIBLDFLAGS=`pkg-config glib-2.0 --libs`
+LDFLAGS=-L. @LIBS@
 
 default: all
