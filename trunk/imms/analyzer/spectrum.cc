@@ -7,6 +7,7 @@
 #include <map>
 
 #include <utils.h>
+#include <sqlite++.h>
 
 #include "spectrum.h"
 
@@ -354,21 +355,6 @@ pair<float, float> spectrum_analyze(const string &spectstr)
     return pair<float, float>(mean, deviation);
 }
 
-float rms_string_distance(const string &s1, const string &s2)
-{
-    if (s1 == "" || s2 == "")
-        return 0;
-
-    unsigned len = s1.length();
-    assert(len == s2.length());
-    float distance = 0;
-
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-        distance += pow(s1[i] - s2[i], 2);
-
-    return sqrt(distance / len);
-}
-
 void SpectrumAnalyzer::integrate_spectrum(float long_spectrum[LONGSPECTRUM])
 {
     float bark[BARKSIZE];
@@ -399,7 +385,7 @@ void SpectrumAnalyzer::finalize()
     bpm_com += bpm_low; 
     bpm_com += bpm_hi; 
 
-    string last_bpm = bpm_com.get_bpm_graph();
+    string bpmgraph = bpm_com.get_bpm_graph();
     int bpmval = bpm_com.guess_actual_bpm();
 
 #ifdef DEBUG
@@ -413,10 +399,10 @@ void SpectrumAnalyzer::finalize()
     if (!have_spectrums)
         return;
 
-    string last_spectrum = encode_spectrum(spectrum);
+    song.set_acoustic(encode_spectrum(spectrum), bpmgraph);
 
 #ifdef DEBUG
-    cerr << "spectrum  [" << last_spectrum << "] " << endl;
-    cerr << "bpm graph [" << last_bpm << "] " << endl;
+    cerr << "spectrum  [" << encode_spectrum(spectrum) << "] " << endl;
+    cerr << "bpm graph [" << bpmgraph << "] " << endl;
 #endif
 }

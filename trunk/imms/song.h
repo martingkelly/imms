@@ -19,12 +19,15 @@ public:
     void set_title(const string &_title);
     void set_artist(const string &_artist);
     void set_rating(int rating);
+    void set_acoustic(const string &spectrum, const string &bpmgraph);
 
     int get_rating();
     time_t get_last();
     StringPair get_info();
+
     int get_sid() { return sid; }
     int get_uid() { return uid; }
+    const string &get_path() { return path; }
 
     bool isok() { return uid != -1; }
 
@@ -33,7 +36,7 @@ protected:
     void register_new_sid();
 
     int uid, sid;
-    string title, artist;
+    string title, artist, path;
 };
 
 #endif

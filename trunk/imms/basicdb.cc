@@ -48,6 +48,10 @@ void BasicDb::sql_create_tables()
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'rating' INTEGER NOT NULL);").execute();
 
+        Q("CREATE TABLE 'Acoustic' ("
+                "'uid' INTEGER UNIQUE NOT NULL, "
+                "'spectrum' TEXT, 'bpm' TEXT);").execute();
+
         Q("CREATE TABLE 'Info' ("
                 "'sid' INTEGER UNIQUE NOT NULL," 
                 "'artist' TEXT NOT NULL, "
@@ -168,6 +172,12 @@ void BasicDb::sql_schema_upgrade(int from)
                     "SELECT uid, sid, path, modtime, checksum "
                     "FROM Library_backup;").execute();
             Q("DROP TABLE Library_backup;").execute();
+        }
+        if (from < 7)
+        {
+            Q("DROP TABLE Acoustic;").execute();
+            // Create new tables
+            sql_create_tables();
         }
 
         a.commit();

@@ -33,14 +33,6 @@ inline string escape_string(const string &in)
     return rex.replace(in, "'", "''", Regexx::global); 
 }
 
-inline string path_simplifyer(string path)
-{
-    path = rex.replace(path, "/\\.?/", "/", Regexx::global); 
-    path = rex.replace(path, "/[^/]+/\\.\\./", "/", Regexx::global); 
-    return path;
-}
-
-
 inline string strtime(double seconds)
 {
     int hours = (int)seconds / (60*60);
@@ -97,6 +89,8 @@ string title_filter(const string &title);
 string album_filter(const string &album);
 string string_delete(const string &haystack, const string &needle);
 
+string path_simplifyer(const string &path);
+
 void string_split(list<string> &store, const string &s,
         const string &delims);
 
@@ -111,7 +105,5 @@ string path_get_extension(const string &path);
 
 bool string_like(const string &s1, const string &s2, int slack = 0);
 pair<string, string> get_simplified_filename_mask(const string &path);
-
-float rms_string_distance(const string &s1, const string &s2);
 
 #endif

@@ -1,6 +1,7 @@
 #include "song.h"
 #include "md5digest.h"
 #include "sqlite++.h"
+#include "strmanip.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -11,12 +12,14 @@
 using std::cerr;
 using std::endl;
 
-Song Song::identify(const string &path)
+Song Song::identify(const string &path_)
 {
     Song song;
 
+    song.path = path_;
+
     struct stat statbuf;
-    if (stat(path.c_str(), &statbuf))
+    if (stat(song.path.c_str(), &statbuf))
         return Song();
 
     time_t modtime = statbuf.st_mtime;
@@ -26,7 +29,7 @@ Song Song::identify(const string &path)
 
         {
             Q q("SELECT uid, sid, modtime FROM 'Library' WHERE path = ?;");
-            q << path;
+            q << song.path;
 
             if (q.next())
             {
@@ -38,14 +41,14 @@ Song Song::identify(const string &path)
             }
         }
 
-        string checksum = Md5Digest::digest_file(path);
+        string checksum = Md5Digest::digest_file(song.path);
 
         // old path but modtime has changed - update checksum
         if (song.uid != -1)
         {
             Q q("UPDATE 'Library' SET modtime = ?, "
                     "checksum = ? WHERE path = ?';");
-            q << modtime << checksum << path;
+            q << modtime << checksum << song.path;
             q.execute();
             a.commit();
             return song;
@@ -74,7 +77,7 @@ Song Song::identify(const string &path)
                         Q q("UPDATE 'Library' SET sid = -1, "
                                 "path = ?, modtime = ? WHERE path = ?;");
 
-                        q << path << modtime << oldpath;
+                        q << song.path << modtime << oldpath;
 
                         q.execute();
                     }
@@ -101,7 +104,7 @@ Song Song::identify(const string &path)
                     "('uid', 'sid', 'path', 'modtime', 'checksum') "
                     "VALUES (?, -1, ?, ?, ?);");
 
-            q << song.uid << path << modtime << checksum;
+            q << song.uid << song.path << modtime << checksum;
 
             q.execute();
         }
@@ -147,6 +150,18 @@ void Song::set_rating(int rating)
     {
         Q q("INSERT OR REPLACE INTO 'Rating' ('uid', 'rating') VALUES (?, ?);");
         q << uid << rating;
+        q.execute();
+    }
+    WARNIFFAILED();
+}
+
+void Song::set_acoustic(const string &spectrum, const string &bpmgraph)
+{
+    try
+    {
+        Q q("INSERT OR REPLACE INTO 'Acoustic' "
+                "('uid', 'spectrum', 'bpm') VALUES (?, ?, ?);");
+        q << uid << spectrum << bpmgraph;
         q.execute();
     }
     WARNIFFAILED();

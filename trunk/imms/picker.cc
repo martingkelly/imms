@@ -43,7 +43,7 @@ bool SongPicker::add_candidate(bool urgent)
     if (position < 0)
         position = imms_random(Player::get_playlist_length());
     string path = ImmsDb::get_playlist_item(position);
-    string realpath = Player::get_playlist_item(position);
+    string realpath = path_simplifyer(Player::get_playlist_item(position));
 
     if (path != realpath)
     {
@@ -93,14 +93,13 @@ void SongPicker::do_events()
 
 void SongPicker::revalidate_current(int pos, const string &path)
 {
-    string simple = path_simplifyer(path);
-    if (winner.position == pos && winner.path == simple)
+    if (winner.position == pos && winner.path == path)
     {
         current = winner;
     }
-    else if (current.path != simple || current.position != pos)
+    else if (current.path != path || current.position != pos)
     {
-        current.path = simple;
+        current.path = path;
         current.position = pos;
         fetch_song_info(current);
     }
