@@ -44,7 +44,7 @@ private:
 class AutoTransaction
 {
 public:
-    AutoTransaction(bool exclusive = false);
+    AutoTransaction();
     ~AutoTransaction();
     void commit();
 private:
