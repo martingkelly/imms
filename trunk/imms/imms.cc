@@ -210,7 +210,8 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     fout << (!jumped && last_skipped ? "[Skipped] " : "");
     fout << "[Delta " << setiosflags(std::ios::showpos) << mod <<
         resetiosflags (std::ios::showpos) << "] ";
-    fout << "[" << SpectrumAnalyzer::get_last_spectrum() << "]";
+    fout << "[" << SpectrumAnalyzer::get_last_spectrum() << "] ";
+    fout << "[Power: " << spectrum_power(get_last_spectrum()) << "] ";
     fout << endl;
 
     last_jumped = jumped;
