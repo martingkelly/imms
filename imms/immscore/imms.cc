@@ -120,23 +120,26 @@ void Imms::start_song(int position, string path)
     path = path_normalize(path);
     revalidate_current(position, path);
 
-    AutoTransaction at;
+    try {
+        AutoTransaction at;
 
-    current.set_last(time(0));
+        current.set_last(time(0));
 
-    print_song_info();
+        print_song_info();
 
-    if (last_jumped)
-        set_lastinfo(handpicked);
+        if (last_jumped)
+            set_lastinfo(handpicked);
 
-    StringPair acoustic = current.get_acoustic();
+        StringPair acoustic = current.get_acoustic();
 
-    at.commit();
+        at.commit();
 
-    if (acoustic.first == "") {
-        string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
-        system(string("analyzer '" + epath + "' &").c_str());
-    }
+        if (acoustic.first == "") {
+            string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
+            system(string("analyzer '" + epath + "' &").c_str());
+        }
+    } 
+    WARNIFFAILED();
 }
 
 void Imms::print_song_info()

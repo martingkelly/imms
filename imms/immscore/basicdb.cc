@@ -30,7 +30,7 @@ void BasicDb::sql_set_pragma()
         QueryCacheDisabler qdb;
 
         Q("PRAGMA cache_size = 5000").execute();
-        Q("PRAGMA synchronous = OFF;").execute();
+        //Q("PRAGMA synchronous = OFF;").execute();
         Q("PRAGMA temp_store = MEMORY;").execute();
     }
     WARNIFFAILED();

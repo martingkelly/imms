@@ -36,7 +36,7 @@ void SQLDatabase::open(const string &filename)
     if (sqlite3_open(filename.c_str(), &db_ptr))
         throw SQLStandardException();
 
-    sqlite3_busy_timeout(db(), 5000);
+    sqlite3_busy_timeout(db(), 60000);
 }
 
 void SQLDatabase::close()
@@ -131,24 +131,15 @@ void AttachedDatabase::detach()
 
 // AutoTransaction
 
-AutoTransaction::AutoTransaction(bool exclusive) : commited(false)
+AutoTransaction::AutoTransaction() : commited(false)
 {
-    string query = "BEGIN ";
-    if (exclusive)
-        query += "EXCLUSIVE ";
-    query += "TRANSACTION;";
-    int r;
-    while (1) 
-    {
-        r = sqlite3_exec(SQLDatabase::db(), query.c_str(), 0, 0, 0);
-        if (r != SQLITE_BUSY)
-            break;
-#ifdef DEBUG
-        cerr << "waiting for exclusive lock" << endl;
-#endif
-    }
+    int r = sqlite3_exec(SQLDatabase::db(), "BEGIN TRANSACTION;", 0, 0, 0);
     if (r)
+    {
         commited = true;
+        if (r != SQLITE_ERROR)
+            throw SQLStandardException();
+    }
 }
 
 AutoTransaction::~AutoTransaction()
