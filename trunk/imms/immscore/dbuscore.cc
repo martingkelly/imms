@@ -1,9 +1,7 @@
 #include "dbuscore.h"
+#include "immsconf.h"
 
 #include <dbus/dbus.h>
-
-#include <iostream>
-using namespace std;
 
 IDBusMessageBase::IDBusMessageBase() : iter(new DBusMessageIter) {}
 
