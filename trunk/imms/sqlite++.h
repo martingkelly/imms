@@ -2,10 +2,13 @@
 #define __SQLITE___H
 
 #include <string>
+#include <iostream>
 #include <map>
 
 using std::string;
 using std::map;
+using std::cerr;
+using std::endl;
 
 class SQLExec {};
 extern SQLExec execute;

@@ -41,6 +41,7 @@ void do_purge(const string &path);
 time_t get_last(const string &path);
 void do_lint();
 void do_cluster();
+void do_dump_bpm();
 void do_spec_distance(const string &to);
 void do_bpm_distance(const string &to);
 void do_identify(const string &path);
@@ -52,7 +53,11 @@ int main(int argc, char *argv[])
 
     SqlDb sqldb;
 
-    if (!strcmp(argv[1], "bpmdistance"))
+    if (!strcmp(argv[1], "dumpbpm"))
+    {
+        do_dump_bpm();
+    }
+    else if (!strcmp(argv[1], "bpmdistance"))
     {
         if (argc < 3)
         {
@@ -462,6 +467,38 @@ void do_cluster()
     try
     {
         AcousticCluster ac;
+        ac.calculate_distances();
     }
     WARNIFFAILED();
+}
+
+void do_dump_bpm()
+{
+    Q q("SELECT uid, bpm, spectrum FROM Acoustic;");
+
+    bool first = true;
+    unsigned len = 0;
+
+    while (q.next())
+    {
+        int uid = 0;
+        string bpm, spectrum;
+        q >> uid >> bpm >> spectrum;
+
+        string point = rescale_bpmgraph(bpm) + rescale_bpmgraph(spectrum);
+
+        if (first)
+        {
+            len = point.length();
+            cout << len << endl;
+            first = false;
+        }
+
+        if (point.length() != len)
+            continue;
+
+        for (unsigned i = 0; i < point.length(); ++i)
+            cout << point[i] - 'a' << " ";
+        cout << uid << endl;
+    }
 }

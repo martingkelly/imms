@@ -74,7 +74,7 @@ Song::Song(const string &path_, int _uid, int _sid) : path(path_)
             do
             {
                 string oldpath;
-                q >> uid >> sid >> oldpath;
+                q >> uid >> oldpath;
 
                 if (access(oldpath.c_str(), F_OK))
                 {
@@ -106,20 +106,14 @@ Song::Song(const string &path_, int _uid, int _sid) : path(path_)
         }
 
         // new file - insert into the database
-        {
-            Q q("INSERT INTO 'Identify' "
-                    "('path', 'uid', 'modtime', 'checksum') "
-                    "VALUES (?, ?, ?, ?);");
-            q << path << uid << modtime << checksum;
-            q.execute();
-        }
-        {
-            Q q("INSERT INTO 'Library' "
-                    "('uid', 'sid', 'lastseen', 'firstseen') "
-                    "VALUES (?, ?, ?, ?);");
-            q << uid << sid << time(0) << time(0);
-            q.execute();
-        }
+        Q("INSERT INTO 'Identify' "
+                "('path', 'uid', 'modtime', 'checksum') "
+                "VALUES (?, ?, ?, ?);")
+            << path << uid << modtime << checksum << execute;
+        Q("INSERT INTO 'Library' "
+                "('uid', 'sid', 'playcounter', 'lastseen', 'firstseen') "
+                "VALUES (?, ?, ?, ?, ?);")
+            << uid << 0 << 0 << time(0) << time(0) << execute;
 
 #ifdef DEBUG
         cerr << "identify: new: uid = " << uid << endl;
@@ -258,7 +252,6 @@ void Song::set_info(const StringPair &info)
             q.execute();
 
             {
-                cerr << "reusing sid " << sid << endl;
                 Q q("UPDATE 'Library' SET sid = ? WHERE uid = ?;");
                 q << sid << uid;
                 q.execute();
@@ -268,7 +261,6 @@ void Song::set_info(const StringPair &info)
         {
             register_new_sid();
 
-            cerr << "inserting sid " << sid << endl;
             Q q("INSERT INTO 'Info' "
                     "('sid', 'artist', 'title') VALUES (?, ?, ?);");
             cerr << "tick 1" << endl;
