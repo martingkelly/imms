@@ -16,7 +16,6 @@
 
 using std::string;
 
-#define SPECTRUM_SKIP       0.15
 #define POLL_DELAY          5
 
 // Local vars
@@ -25,7 +24,6 @@ unsigned int time_left = 1000, sloppy_skips = 0;
 int last_plpos = -2, cur_plpos, pl_length = -1;
 int good_length = 0, song_length = 0, delay = 0;
 string cur_path = "", last_path = "";
-bool spectrum_ok = false;
 
 // Extern from interface.c
 extern VisPlugin imms_vp;
@@ -73,12 +71,6 @@ void imms_cleanup(void)
     imms = 0;
 }
 
-void imms_spectrum(uint16_t spectrum[256])
-{
-    if (imms && spectrum_ok)
-        imms->integrate_spectrum(spectrum);
-}
-
 void do_more_checks()
 {
     delay = 0;
@@ -109,7 +101,6 @@ void do_checks()
     if (last_plpos == -2)
         last_plpos = xmms_remote_get_playlist_pos(session) - 1;
 
-    // if not playing make sure we stopped collecting spectrum statistics
     if (!xmms_remote_is_playing(session))
     {
         imms->do_idle_events();
@@ -143,9 +134,6 @@ void do_checks()
     int cur_time = xmms_remote_get_output_time(session);
     if (cur_time > 1000 || good_length < 3)
         time_left = (song_length - cur_time) / 500;
-
-    spectrum_ok = (cur_time > song_length * SPECTRUM_SKIP
-            && cur_time < song_length * (1 - SPECTRUM_SKIP));
 }
 
 void do_find_next()

@@ -5,6 +5,8 @@ Author:
      Michael Grigoriev <mag@luminal.org>
 
 Aknowledgements: (see actual files for more details):
+    Makefiles inspired by WvStreams 
+        by Avery Pennarun <apenwarr@nit.ca> and Pierre Phaneuf <pphaneuf@nit.ca>
     md5.{h,c} (added ability to restrict maximum size to process)
         from GNU textutils
     levenshtein.{h,c} (stripped down)

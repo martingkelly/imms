@@ -164,11 +164,6 @@ void about(void)
             GTK_SIGNAL_FUNC(gtk_widget_destroyed), &about_win);
 }
 
-void render_freq(gint16 freq_data[2][256])
-{
-    imms_spectrum(freq_data[0]);
-}
-
 VisPlugin imms_vp =
 {
     NULL,           /* handle */
@@ -185,7 +180,7 @@ VisPlugin imms_vp =
     NULL,           /* playback start */
     NULL,           /* playback stop */
     NULL,           /* render pcm */
-    render_freq     /* render freq */
+    NULL            /* render freq */
 };
 
 VisPlugin *get_vplugin_info(void) { return &imms_vp; }

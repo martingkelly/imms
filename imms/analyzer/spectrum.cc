@@ -6,8 +6,9 @@
 #include <fstream>
 #include <map>
 
+#include <utils.h>
+
 #include "spectrum.h"
-#include "utils.h"
 
 using std::endl;
 using std::cerr;
@@ -258,44 +259,11 @@ int BeatKeeper::guess_actual_bpm()
     return 0;
 }
 
-const struct timeval& operator +=(struct timeval &tv, int usecs)
-{
-    tv.tv_usec += usecs;
-    tv.tv_sec += tv.tv_usec / MICRO;
-    tv.tv_usec %= MICRO;
-    return tv;
-}
-
 void BeatKeeper::integrate_beat(float power)
 {
-    struct timeval now;
-    gettimeofday(&now, 0);
-
-#if defined(DEBUG) && 0
-    last = now.tv_sec;
-    if (!first)
-    {
-        first = last;
-    }
-#endif
-
-    // find out how many timeslices we should count this sample for
-    time_t diff = usec_diff(prev, now);
-    int count_for = ROUND(diff * SAMPLES / (float)MICRO) % 10;
-
-    samples += count_for;
-
-    if (diff > MICRO)
-        prev = now;
-    else 
-        prev += count_for * MICRO / SAMPLES;
-
-    for (int i = 0; i < count_for; ++i)
-    {
-        *current_position++ = power;
-        if (current_position - current_window == MAXBEATLENGTH)
-            process_window();
-    }
+    *current_position++ = power;
+    if (current_position - current_window == MAXBEATLENGTH)
+        process_window();
 }
 
 void BeatKeeper::process_window()
@@ -434,10 +402,9 @@ void SpectrumAnalyzer::finalize()
     bpm_com += bpm_hi; 
 
     last_bpm = bpm_com.get_bpm_graph();
+    int bpmval = bpm_com.guess_actual_bpm();
+    cerr << "BPM [com] = " << bpmval << endl;
 
-#ifdef DEBUG
-    cerr << "BPM [com] = " << last_bpm << endl;
-#endif
     if (!have_spectrums)
         return;
 
@@ -459,12 +426,4 @@ void SpectrumAnalyzer::finalize()
 #ifdef DEBUG
     cerr << "spectrum [" << last_spectrum << "] " << endl;
 #endif
-
-    if (have_spectrums > 2000)
-    {
-        immsdb.set_spectrum(last_spectrum);
-        cerr << "about to set bpm" << endl;
-        if (last_bpm != "")
-            immsdb.set_bpm(last_bpm);
-    }
 }

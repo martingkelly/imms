@@ -22,7 +22,6 @@ extern sqlite3 *db();
 
 SqlDb::SqlDb(const string &dbname) : dbcon(dbname)
 {
-    sqlite3_busy_timeout(db(), 3000);
     sqlite3_create_function(db(), "similar", 2, 1, 0, fuzzy_like, 0, 0);
 }
 

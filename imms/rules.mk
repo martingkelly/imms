@@ -1,29 +1,23 @@
-all: libimms.so
+# usage compile(compiler, source, output, flags) 
+DEPFILE = $(if $(filter %.o,$1),$(dir $1).$(notdir $(1:.o=.d)),/dev/null)
+define compile
+        @$1 $4 $2 -M -E > $(DEPFILE)
+        $1 $4 -c $2 -o $3
+endef
 
-libimms.so: $(XMMS_OBJ) immsconf.h
-	$(CXX) $(XMMS_OBJ) \
-		$(LDFLAGS) \
-	       	-shared -Wl,-z,defs,-soname,$@ -o $@
+# usage link(objects, output, flags) 
+link = $(CXX) $3 $(filter-out %.a,$1) $(filter %.a,$1) -o $2
 
-immstool: libimmscore.a
+%.o: %.cc $(call compile, $(CXX), $<, $@, $($*-CXXFLAGS) $(CXXFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
+%.o: %.c; $(call compile, $(CC), $<, $@, $($*-CFLAGS) $(CFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
+%: %.o; $(call link, $^ $($*-OBJ) $($*-LIBS) $(LIBS), $@, $(LDFLAGS))
 
-sqlite_speed_test: libimmscore.a -lsqlite3
+# macros that expand to the object files in the given directories
+objects=$(sort $(foreach type,c cc,$(call objects_$(type),$1)))
+objects_c=$(patsubst %.c,%.o,$(wildcard $(addsuffix /*.c,$1)))
+objects_cc=$(patsubst %.cc,%.o,$(wildcard $(addsuffix /*.cc,$1)))
 
-immsremote: comm.o immsremote.o
-	$(CXX) -lreadline -lcurses $+ -o $@
-
-libimmscore.a: $(CORE_OBJ) immsconf.h
-	$(AR) $(ARFLAGS) $@ $(CORE_OBJ)
-
-%.o: %.cc vars.mk
-	@$(CXX) $(CXXFLAGS) -M -E $< > .$*.d
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-%.o: %.c vars.mk
-	@$(CXX) $(CPPFLAGS) -M -E $< > .$*.d
-	$(CC) $(CPPFLAGS) -c $< -o $@
-
-.PHONY: clean distclean
+.PHONY: clean distclean dist
 
 clean:
 	rm -f $(wildcard $(XMMS_OBJ) $(CORE_OBJ) \
@@ -33,8 +27,6 @@ clean:
 distclean: clean
 	rm -f $(wildcard .\#* config.* configure immsconf.h* vars.mk)
 	rm -rf $(wildcard autom4te.cache)
-
-.PHONY: dist
 
 configure: configure.ac
 	autoheader

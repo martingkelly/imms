@@ -26,14 +26,10 @@ public:
     time_t get_last();
     IntPair get_id();
     StringPair get_info();
-    string get_spectrum();
-    string get_bpm();
 
     void set_last(time_t last);
     void set_title(const string &_title);
     void set_artist(const string &_artist);
-    void set_spectrum(const string &spectrum);
-    void set_bpm(const string& bpm);
     void set_rating(int rating);
     void set_id(const IntPair &p);
 

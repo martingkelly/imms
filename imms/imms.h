@@ -6,14 +6,12 @@
 #include <list>
 
 #include "picker.h"
-#include "spectrum.h"
 #include "xidle.h"
 #include "server.h"
 
 // IMMS, UMMS, we all MMS for XMMS?
 
 class Imms : public SongPicker,
-             public SpectrumAnalyzer,
              protected XIdle,
              protected ImmsServer
 {
@@ -24,8 +22,6 @@ public:
     //  SongPicker:
     //      int select_next()
     //      bool add_candidate(int, bool)
-    //  SpectrumAnalyzer:
-    //      integrate_spectrum(uint16_t[])
 
     void start_song(int position, const std::string &path);
     void end_song(bool at_the_end, bool jumped, bool bad);
@@ -46,7 +42,6 @@ protected:
     struct LastInfo {
         time_t set_on;
         int sid;
-        std::string spectrum, bpm;
     };
 
     void reset_selection();

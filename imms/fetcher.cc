@@ -50,7 +50,6 @@ InfoFetcher::SongData::SongData(int _position, const string &_path)
     color_rating = rating = relation = 0;
     identified = unrated = false;
     last_played = 0;
-    bpm = spectrum = "";
 }
 
 bool InfoFetcher::playlist_identify_item(int pos)
@@ -142,9 +141,6 @@ bool InfoFetcher::fetch_song_info(SongData &data)
 
     data.last_played = (data.id.second != next_sid) ?
                             time(0) - immsdb.get_last() : 0;
-    data.spectrum = immsdb.get_spectrum();
-    data.bpm = immsdb.get_bpm();
-
     return true;
 }
 
