@@ -122,8 +122,7 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
     list<string> path_parts;
     imms_magic_parse_path(path_parts, path_get_dirname(path));
 
-#ifdef DEBUG
-#if 0
+#if defined(DEBUG) && 0
     cerr << "path parts: " << endl;
     for (list<string>::iterator i = path_parts.begin();
             i != path_parts.end(); ++i)
@@ -136,7 +135,6 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
     {
         cerr << " >> " << *i << endl;
     }
-#endif
 #endif
 
     //////////////////////////////////////////////
