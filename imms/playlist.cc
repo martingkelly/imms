@@ -4,7 +4,7 @@
 void PlaylistDb::sql_create_tables()
 {
     run_query(
-        "CREATE TABLE 'Playlist' ("
+        "CREATE TEMPORARY TABLE 'Playlist' ("
             "'pos' INTEGER PRIMARY KEY, "
             "'path' VARCHAR(4096) NOT NULL, "
             "'uid' INTEGER DEFAULT NULL, "

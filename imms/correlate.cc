@@ -51,10 +51,11 @@ void CorrelationDb::expire_recent(const string &where_clause)
     abort_requested = false;
     gettimeofday(&start, 0);
 
-    select_query(
-            "SELECT sid, weight FROM 'Recent' " + where_clause + ";",
-            reinterpret_cast<SqlCallback>
-                (&CorrelationDb::expire_recent_callback_1), 2);
+    ImmsCallback<CorrelationDb> callback(this,
+            &CorrelationDb::expire_recent_callback_1);
+
+    select_query("SELECT sid, weight FROM 'Recent' " + where_clause + ";",
+             &callback, 2);
 
 #ifdef DEBUG
     struct timeval now;
@@ -75,10 +76,10 @@ int CorrelationDb::expire_recent_callback_1(int argc, char **argv)
 
     run_query("DELETE FROM 'Recent' WHERE sid = '" + itos(from) + "';");
 
-    select_query("SELECT sid, weight FROM 'Recent';",
-            reinterpret_cast<SqlCallback>
-                (&CorrelationDb::expire_recent_callback_2));
+    ImmsCallback<CorrelationDb> callback(this,
+            &CorrelationDb::expire_recent_callback_2);
 
+    select_query("SELECT sid, weight FROM 'Recent';", &callback);
     return 0;
 }
 
@@ -117,6 +118,9 @@ int CorrelationDb::expire_recent_callback_2(int argc, char **argv)
     if (fabs(weight) < 3)
         return 0;
 
+    ImmsCallback<CorrelationDb> callback(this,
+            &CorrelationDb::update_secondaty_correlations);
+
     // Update secondary links
     select_query(
             "SELECT origin,destination,weight FROM 'Correlations' "
@@ -126,8 +130,7 @@ int CorrelationDb::expire_recent_callback_2(int argc, char **argv)
                     "OR destination = '" + itos(to) + "' "
                     "OR destination = '" + itos(from) + "'"
                 ") AND " + (weight > 0 ? "abs" : "") + " (weight) > 1;",
-            reinterpret_cast<SqlCallback>
-                (&CorrelationDb::update_secondaty_correlations), 3);
+                &callback, 3);
 
     return 0;
 }

@@ -9,19 +9,10 @@ using std::endl;
 using std::cerr;
 using std::ostringstream;
 
-struct CallbackData
-{
-    SqlDb *instance;
-    SqlCallback callback;
-    void *userdata;
-};
-
-typedef int (*SQLiteCallback)(void*,int,char**,char**);
-
 static int callback_helper(void *cbdata, int argc, char **argv, char **)
 {
-    CallbackData *data = reinterpret_cast<CallbackData*>(cbdata);
-    return (data->instance->*(data->callback))(argc, argv);
+    ImmsCallbackBase *callback = (ImmsCallbackBase*)cbdata;
+    return callback->call(argc, argv);
 }
 
 // Fuzzy compare function using levenshtein string distance
@@ -88,7 +79,7 @@ void SqlDb::select_query(const string &query)
     handle_error(query);
 }
 
-void SqlDb::select_query(const string &query, SqlCallback callback,
+void SqlDb::select_query(const string &query, ImmsCallbackBase *callback,
         int tmpcolumns)
 {
     if (!db)
@@ -117,11 +108,7 @@ void SqlDb::select_query(const string &query, SqlCallback callback,
     }
     else
     {
-        CallbackData data;
-        data.instance = this;
-        data.callback = callback;
-
-        sqlite_exec(db, query.c_str(), &callback_helper, &data, &errmsg);
+        sqlite_exec(db, query.c_str(), &callback_helper, callback, &errmsg);
         handle_error(query);
     }
 }
