@@ -3,9 +3,9 @@ XMMSLDFLAGS=`xmms-config --libs`
 XMMSCOMMON=interface.o clientstubbase.o libimmscore.a
 
 libxmmsimms.so: plugin.o $(XMMSCOMMON)
-libxmmsimms-LIBS = $(DBUSLDFLAGS) $(XMMSLDFLAGS)
+libxmmsimms-LIBS = $(XMMSLDFLAGS)
 libxmmsimms2.so: plugin2.o $(XMMSCOMMON)
-libxmmsimms2-LIBS = $(DBUSLDFLAGS) $(XMMSLDFLAGS)
+libxmmsimms2-LIBS = $(XMMSLDFLAGS)
 
 interface-CPPFLAGS=$(XMMSCPPFLAGS)
 plugin-CPPFLAGS=$(XMMSCPPFLAGS)

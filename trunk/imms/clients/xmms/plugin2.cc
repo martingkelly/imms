@@ -6,8 +6,13 @@
 #include <iostream>
 #include <time.h>
 
-#include <xmms/plugin.h>
-#include <xmms/xmmsctrl.h> 
+#ifdef BMP
+# include <bmp/plugin.h>
+# include <bmp/beepctrl.h>
+#else
+# include <xmms/plugin.h>
+# include <xmms/xmmsctrl.h>
+#endif
 
 #include "immsconf.h"
 #include "cplugin.h"
