@@ -113,7 +113,7 @@ bool SongPicker::add_candidate(bool urgent)
 
 bool SongPicker::do_events()
 {
-    if (!playlist_known)
+    if (!playlist_known || !pl_length)
         return true;
 
     for (int i = 0; i < 5 && add_candidate(); ++i);

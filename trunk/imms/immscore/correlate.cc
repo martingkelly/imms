@@ -26,21 +26,21 @@ void CorrelationDb::sql_create_tables()
     RuntimeErrorBlocker reb;
     QueryCacheDisabler qcd;
     try {
-        Q("CREATE TABLE 'Correlations' ("
+        Q("CREATE TABLE C.Correlations' ("
                 "'x' INTEGER NOT NULL, "
                 "'y' INTEGER NOT NULL, "
                 "'weight' INTEGER DEFAULT '0');").execute();
 
-        Q("CREATE TEMP TABLE 'TmpCorr' ("
+        Q("CREATE TEMP TABLE C.TmpCorr ("
                 "'x' INTEGER NOT NULL, "
                 "'y' INTEGER NOT NULL, "
                 "'weight' INTEGER DEFAULT '0');").execute();
 
-        Q("CREATE UNIQUE INDEX 'Correlations_x_y_i' "
-                "ON 'Correlations' (x, y);").execute();
+        Q("CREATE UNIQUE INDEX C.Correlations_x_y_i "
+                "ON Correlations (x, y);").execute();
 
-        Q("CREATE INDEX 'Correlations_x_i' ON 'Correlations' (x);").execute();
-        Q("CREATE INDEX 'Correlations_y_i' ON 'Correlations' (y);").execute();
+        Q("CREATE INDEX C.Correlations_x_i ON Correlations (x);").execute();
+        Q("CREATE INDEX C.Correlations_y_i ON Correlations (y);").execute();
     }
     WARNIFFAILED();
 }
@@ -63,7 +63,7 @@ void CorrelationDb::get_related(vector<int> &out, int pivot_sid, int limit)
     string query =
         "SELECT pos FROM Playlist NATURAL INNER JOIN Library "
             "WHERE sid IN ("
-            "SELECT L.sid FROM Correlations AS C INNER JOIN Last AS L "
+            "SELECT L.sid FROM C.Correlations AS C INNER JOIN Last AS L "
                 "ON CASE WHEN C.x = ? THEN C.y ELSE C.x END = L.sid "
             "WHERE C.weight > 0 AND (C.x = ? OR C.y = ?) AND L.last > ? "
             "ORDER BY C.weight DESC LIMIT " + itos(limit) + ");";
@@ -166,12 +166,13 @@ void CorrelationDb::expire_recent_helper()
         return;
     
     try {
-        Q("DELETE FROM TmpCorr;").execute();
+        Q("DELETE FROM C.TmpCorr;").execute();
     } catch (SQLException &e) {}
 
     {
-        string query("INSERT INTO TmpCorr SELECT x, y, weight "
-            "FROM 'Correlations' WHERE (x IN (?, ?) OR y IN (?, ?)) AND ");
+        string query("INSERT INTO C.TmpCorr SELECT x, y, weight "
+            "FROM C.Correlations "
+            "WHERE (x IN (?, ?) OR y IN (?, ?)) AND ");
         query += (weight > 0 ? string("abs") : string("")) + " (weight) > 1;";
 
         Q q(query);
@@ -180,7 +181,7 @@ void CorrelationDb::expire_recent_helper()
     }
 
     {
-        Q q("SELECT * FROM TmpCorr;");
+        Q q("SELECT * FROM C.TmpCorr;");
         while (q.next())
         {
             int node1, node2;
@@ -218,7 +219,8 @@ void CorrelationDb::update_correlation(int from, int to, float weight)
 
 
     try {
-        Q q("INSERT INTO 'Correlations' ('x', 'y', 'weight') VALUES (?, ?, ?);");
+        Q q("INSERT INTO C.Correlations "
+                "('x', 'y', 'weight') VALUES (?, ?, ?);");
         q << min << max << weight;
         q.execute();
         return;
@@ -226,7 +228,7 @@ void CorrelationDb::update_correlation(int from, int to, float weight)
     catch (SQLException &e) { }
 
     {
-        Q q("UPDATE 'Correlations' SET weight = "
+        Q q("UPDATE C.Correlations SET weight = "
                 "max(min(weight + ?, " MAX_CORR_STR "), -" MAX_CORR_STR ") "
                 "WHERE x = ? AND y = ?;");
         q << weight << min << max;
@@ -241,7 +243,7 @@ float CorrelationDb::correlate(int sid1, int sid2)
 
     int min = std::min(sid1, sid2), max = std::max(sid1, sid2);
     
-    Q q("SELECT weight FROM 'Correlations' WHERE x = ? AND y = ?;");
+    Q q("SELECT weight FROM C.Correlations WHERE x = ? AND y = ?;");
     q << min << max;
     
     float correlation = 0;
@@ -274,6 +276,17 @@ void CorrelationDb::sql_schema_upgrade(int from)
             }
             WARNIFFAILED();
             Q("DROP TABLE Correlations_backup;").execute();
+        }
+        if (from < 10)
+        {
+            // Backup the existing tables
+            Q("CREATE TABLE C.Correlations "
+                    "AS SELECT * FROM Correlations;").execute();
+            Q("DROP TABLE Correlations;").execute();
+
+            sql_create_tables();
+
+            Q("VACUUM;").execute();
         }
     }
     WARNIFFAILED();

@@ -73,7 +73,6 @@ void Imms::setup(bool use_xidle)
 
 void Imms::get_metacandidates()
 {
-    StackTimer t;
     AutoTransaction a;
     if (last.sid != -1)
         CorrelationDb::get_related(metacandidates, last.sid, 20);
@@ -134,8 +133,10 @@ void Imms::start_song(int position, string path)
 
     at.commit();
 
-    if (acoustic.first == "")
-        system(string("analyzer \"" + path + "\" &").c_str());
+    if (acoustic.first == "") {
+        string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
+        system(string("analyzer '" + epath + "' &").c_str());
+    }
 }
 
 void Imms::print_song_info()

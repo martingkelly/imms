@@ -17,6 +17,7 @@ protected:
     int changes();
 
 private:
+    AttachedDatabase *correlations;
     SQLDatabaseConnection dbcon;
 };
 

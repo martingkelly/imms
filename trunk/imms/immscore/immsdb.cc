@@ -21,6 +21,8 @@ void ImmsDb::sql_create_tables()
 
 void ImmsDb::sql_schema_upgrade(int from)
 {
+    QueryCacheDisabler q;
+
     try {
         Q("CREATE TABLE 'Schema' ('version' TEXT NOT NULL, "
                 "'description' TEXT UNIQUE NOT NULL);").execute();

@@ -26,7 +26,7 @@ static void fuzzy_like(sqlite3_context *context, int argc, sqlite3_value** val)
 
 extern sqlite3 *db();
 
-SqlDb::SqlDb()
+SqlDb::SqlDb() : correlations(new AttachedDatabase())
 {
     if (!access(get_imms_root("imms.db").c_str(), R_OK)
             && access(get_imms_root("imms2.db").c_str(), F_OK))
@@ -47,6 +47,8 @@ SqlDb::SqlDb()
 
     dbcon.open(get_imms_root("imms2.db"));
     sqlite3_create_function(db(), "similar", 2, 1, 0, fuzzy_like, 0, 0);
+
+    correlations->attach(get_imms_root("imms.correlations.db"), "C");
 }
 
 SqlDb::~SqlDb()
@@ -56,6 +58,8 @@ SqlDb::~SqlDb()
 
 void SqlDb::close_database()
 {
+    delete correlations;
+    correlations = 0;
     dbcon.close();
 }
 

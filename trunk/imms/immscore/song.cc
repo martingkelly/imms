@@ -38,7 +38,7 @@ Song::Song(const string &path_, int _uid, int _sid) : path(path_)
 
 void Song::identify(time_t modtime)
 {
-    AutoTransaction a;
+    AutoTransaction a(true);
 
     {
         Q q("SELECT Library.uid, sid, modtime "
