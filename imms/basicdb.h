@@ -2,17 +2,11 @@
 #define __BASICDB_H
 
 #include <string>
-#include <utility>
-#include <time.h>
 
 #include "sqldb2.h"
 #include "song.h"
 
 using std::string;
-using std::pair;
-
-typedef pair<string, string> StringPair;
-typedef pair<int, int> IntPair;
 
 class BasicDb : protected SqlDb, public Song
 {
@@ -20,36 +14,18 @@ public:
     BasicDb();
     virtual ~BasicDb();
 
-    int get_rating();
-    time_t get_last();
-    IntPair get_id();
-    StringPair get_info();
-
-    void set_last(time_t last);
-    void set_title(const string &_title);
-    void set_artist(const string &_artist);
-    void set_rating(int rating);
-    void set_id(const IntPair &p);
-
     bool check_artist(string &artist);
-    bool check_title(string &title);
+    bool check_title(const string &artist, string &title);
 
-    int avg_rating();
+    int avg_rating(const string &title, const string &artist);
 
     bool identify(const string &path)
         { *((Song*)this) = Song::identify(path); return uid != -1; }
 
 protected:
-    void register_new_sid();
-
     void sql_set_pragma();
     virtual void sql_create_tables();
     virtual void sql_schema_upgrade(int from = 0);
-
-    // state cache
-    string bpm;
-    int uid, sid;
-    string artist, title;
 };
 
 #endif

@@ -39,10 +39,10 @@ bool SongPicker::add_candidate(bool urgent)
     if (acquired >= std::min(want, Player::get_playlist_length()))
         return false;
 
-    int position = immsdb.random_playlist_position();
+    int position = ImmsDb::random_playlist_position();
     if (position < 0)
         position = imms_random(Player::get_playlist_length());
-    string path = immsdb.get_playlist_item(position);
+    string path = ImmsDb::get_playlist_item(position);
     string realpath = Player::get_playlist_item(position);
 
     if (path != realpath)
@@ -74,7 +74,7 @@ void SongPicker::identify_more()
 {
     if (playlist_ready)
         return;
-    int pos = immsdb.get_unknown_playlist_item();
+    int pos = ImmsDb::get_unknown_playlist_item();
     if (pos < 0)
     {
         playlist_ready = true;
@@ -181,7 +181,7 @@ int SongPicker::select_next()
 
     reset();
 
-    next_sid = winner.id.second;
+    next_sid = winner.get_sid();
 
     return winner.position;
 }

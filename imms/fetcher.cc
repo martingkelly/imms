@@ -1,10 +1,7 @@
-#include <sys/stat.h>   // for mkdir
-#include <sys/types.h>
 #include <stdlib.h>
 
 #include <iostream>
 #include <algorithm>
-#include <sstream>
 
 #include "fetcher.h"
 #include "player.h"
@@ -14,30 +11,7 @@
 
 using std::endl;
 using std::cerr;
-using std::ostringstream;
 
-ImmsBase::DirMaker::DirMaker()
-{
-    string dotimms = getenv("HOME");
-    dotimms.append("/.imms");
-    mkdir(dotimms.c_str(), 0700);
-    if (!access((dotimms + "/imms.db").c_str(), R_OK)
-            && access((dotimms + "/imms2.db").c_str(), F_OK))
-    {
-        cerr << string(60, '*') << endl;
-        cerr << "Old database format detected, "
-            "will attempt an upgrade..." << endl;
-        ostringstream command;
-        command << "sqlite " << dotimms << "/imms.db .dump | sqlite3 "
-            << dotimms << "/imms2.db" << endl;
-        cerr << "Running: " << command.str() << endl;
-        system(command.str().c_str());
-        cerr << "If you see errors above verify that you have *both*"
-            " sqlite 2.8.x" << endl;
-        cerr << "and 3.0.x installed and rerun the command by hand." << endl;
-        cerr << string(60, '*') << endl;
-    }
-}
 
 InfoFetcher::SongData::SongData(int _position, const string &_path)
     : position(_position), path(path_simplifyer(_path))
@@ -49,10 +23,10 @@ InfoFetcher::SongData::SongData(int _position, const string &_path)
 
 bool InfoFetcher::playlist_identify_item(int pos)
 {
-    string path = immsdb.get_playlist_item(pos);
+    string path = ImmsDb::get_playlist_item(pos);
 
-    immsdb.identify(path);
-    immsdb.playlist_update_identity(pos);
+    ImmsDb::identify(path);
+    ImmsDb::playlist_update_identity(pos);
 
     return true;
 }
@@ -60,24 +34,27 @@ bool InfoFetcher::playlist_identify_item(int pos)
 void InfoFetcher::playlist_changed()
 {
     StackTimer t;
-    immsdb.playlist_clear();
+    ImmsDb::playlist_clear();
 
     for (int i = 0; i < Player::get_playlist_length(); ++i)
     {
         string path = path_simplifyer(Player::get_playlist_item(i));
-        immsdb.playlist_insert_item(i, path);
+        ImmsDb::playlist_insert_item(i, path);
     }
 }
 
 bool InfoFetcher::fetch_song_info(SongData &data)
 {
-    if (!immsdb.playlist_id_from_item(data.position))
+    if (!ImmsDb::playlist_id_from_item(data.position))
         if (!playlist_identify_item(data.position))
             return false;
 
     const string &path = data.path;
 
-    StringPair info = immsdb.get_info();
+    if (!access(path.c_str(), R_OK))
+        return false;
+
+    StringPair info = ImmsDb::get_info();
 
     string artist = info.first;
     string title = info.second;
@@ -89,35 +66,34 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     else
     {
         if ((data.identified = parse_song_info(path, title)))
-            immsdb.set_title(title);
+            ImmsDb::set_title(title);
     }
 
-    data.rating = immsdb.get_rating();
+    data.rating = ImmsDb::get_rating();
 
     data.unrated = false;
     if (data.rating < 1)
     {
         data.unrated = true;
-        data.rating = immsdb.avg_rating();
+        data.rating = ImmsDb::avg_rating(artist, title);
         if (data.rating < 1)
             data.rating = 100;
 
-        immsdb.set_rating(data.rating);
+        ImmsDb::set_rating(data.rating);
     }
 
 #ifdef DEBUG
 #if 0
-    cerr << "path:\t" << path << endl;
     cerr << "path:\t" << path << endl;
     cerr << "artist:\t" << artist << (identified ? " *" : "") << endl;
     cerr << "title:\t" << title << (identified ? " *" : "") << endl;
 #endif
 #endif
 
-    data.id = immsdb.get_id();
+    *((Song*)&data) = *((Song*)this);
 
-    data.last_played = (data.id.second != next_sid) ?
-                            time(0) - immsdb.get_last() : 0;
+    data.last_played = (data.get_sid() != next_sid) ?
+                            time(0) - ImmsDb::get_last() : 0;
     return true;
 }
 
@@ -179,7 +155,7 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
         for (list<string>::iterator i = file_parts.begin();
                 !artist_confirmed && i != file_parts.end(); ++i)
         {
-            if (immsdb.check_artist(*i)
+            if (ImmsDb::check_artist(*i)
                     || (!bad_tag_artist && string_like(*i, tag_artist, 4)))
             {
                 artist_confirmed = true;
@@ -196,7 +172,7 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
         if (Regexx(*i, BADARTIST))
             continue;
         if (artist_confirmed =
-                (immsdb.check_artist(*i) || string_like(*i, artist, 4)))
+                (ImmsDb::check_artist(*i) || string_like(*i, artist, 4)))
             artist = *i;
         // And while we are at it find the uppermost related directory
         else if (outermost == "" && fm.first.find(*i) != string::npos)
@@ -219,7 +195,7 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
     // Give the tag artist an opportunity to override the guessed artist
     if (!bad_tag_artist && !string_like(tag_artist, artist, 4))
     {
-        if (immsdb.check_artist(tag_artist)
+        if (ImmsDb::check_artist(tag_artist)
                 || fm.first.find(tag_artist) != string::npos)
         {
             artist = tag_artist;
@@ -238,7 +214,7 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
         file_parts.erase(i);
 
     // By this point the artist had to have been confirmed
-    immsdb.set_artist(artist); 
+    ImmsDb::set_artist(artist); 
     //////////////////////////////////////////////
     // Try (not very hard) to identify the album
 
@@ -253,7 +229,7 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
     string tag_title = string_tolower(get_title());
     title = title_filter(tag_title);
     // If we know the title and were only missing the artist
-    if (title != "" && (identified = immsdb.check_title(title)))
+    if (title != "" && (identified = ImmsDb::check_title(artist, title)))
         return identified;
 
     if (identified = Regexx(title, album + ".*(" REMIXCLUES ")"))
@@ -265,7 +241,7 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
     for (list<string>::reverse_iterator i = file_parts.rbegin();
             !identified && i != file_parts.rend(); ++i)
     {
-        if (immsdb.check_title(*i) || string_like(*i, title, 4))
+        if (ImmsDb::check_title(artist, *i) || string_like(*i, title, 4))
         {
             identified = true;
             title = *i;
@@ -302,7 +278,7 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
         title = file_parts.back();
     }
     // nothing left. maybe a remix album??
-    else if (!file_parts.size() && immsdb.check_title(album))
+    else if (!file_parts.size() && ImmsDb::check_title(artist, album))
     {
         identified = true;
         title = album;

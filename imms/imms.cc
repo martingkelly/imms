@@ -83,7 +83,7 @@ void Imms::playlist_changed()
         local_max = MAX_TIME;
 
     history.clear();
-    immsdb.clear_recent();
+    ImmsDb::clear_recent();
     SongPicker::reset();
 
     playlist_ready = false;
@@ -96,7 +96,7 @@ void Imms::reset_selection()
     SongPicker::reset();
     Player::reset_selection();
 
-    local_max = immsdb.get_effective_playlist_length() * 8 * 60;
+    local_max = ImmsDb::get_effective_playlist_length() * 8 * 60;
     if (local_max > MAX_TIME)
         local_max = MAX_TIME;
 }
@@ -121,8 +121,8 @@ void Imms::start_song(int position, const string &path)
     if (history.size() > 10)
         history.pop_front();
 
-    immsdb.set_id(current.id);
-    immsdb.set_last(time(0));
+    *static_cast<Song*>(this) = *static_cast<Song*>(&current);
+    ImmsDb::set_last(time(0));
 
     print_song_info();
 }
@@ -155,7 +155,7 @@ void Imms::print_song_info()
 void Imms::set_lastinfo(LastInfo &last)
 {
     last.set_on = time(0);
-    last.sid = current.id.second;
+    last.sid = current.get_sid();
 }
 
 void Imms::end_song(bool at_the_end, bool jumped, bool bad)
@@ -201,7 +201,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     if (bad)
         mod = 0;
 
-    immsdb.set_id(current.id);
+    *static_cast<Song*>(this) = *static_cast<Song*>(&current);
 
 #ifdef DEBUG
     cerr << " *** " << path_get_filename(current.path) << endl;
@@ -221,7 +221,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     last_jumped = jumped;
 
-    immsdb.add_recent(mod);
+    ImmsDb::add_recent(mod);
 
     int new_rating = current.rating + mod;
     if (new_rating > MAX_RATING)
@@ -229,8 +229,8 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     else if (new_rating < MIN_RATING)
         new_rating = MIN_RATING;
 
-    immsdb.set_last(time(0));
-    immsdb.set_rating(new_rating);
+    ImmsDb::set_last(time(0));
+    ImmsDb::set_rating(new_rating);
 }
 
 float rescale(float score) { return score < 0 ? score * 2 : score; }
@@ -244,7 +244,7 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     if (last.sid == -1)
         return;
 
-    float rel = immsdb.correlate(last.sid) / MAX_CORRELATION;
+    float rel = ImmsDb::correlate(last.sid) / MAX_CORRELATION;
     rel = rel > 1 ? 1 : rel < -1 ? -1 : rel;
     data.relation += ROUND(rel * weight * CORRELATION_IMPACT);
 }

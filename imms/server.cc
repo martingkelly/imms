@@ -110,7 +110,7 @@ void ImmsServer::do_events()
         if (str == "clear" || str == "reset")
         {
             filter = "";
-            immsdb.install_filter(filter);
+            ImmsDb::install_filter(filter);
             reset_selection();
             break;
         }
@@ -148,7 +148,7 @@ void ImmsServer::do_events()
                 filter += "Rating.rating " + params + " ";
             reset_selection();
 
-            int n = immsdb.install_filter(filter);
+            int n = ImmsDb::install_filter(filter);
             *conn << itos(n) << " hits" << "\n";
             break;
         }

@@ -67,6 +67,11 @@ SQLException::SQLException(const string &file, int line, const string &error)
 
 SQLDatabaseConnection::SQLDatabaseConnection(const string &filename)
 {
+    open(filename);
+}
+
+void SQLDatabaseConnection::open(const string &filename)
+{
     SQLDatabase::open(filename);
 }
 
