@@ -168,8 +168,10 @@ void ImmsTool::do_lint()
 
 void ImmsTool::do_distance()
 {
-    select_query("SELECT path, spectrum, sid FROM 'Library' "
-            "WHERE spectrum NOT NULL;",
+    select_query(
+            "SELECT Library.path, Acoustic.spectrum, Library.sid "
+            "FROM 'Library' INNER JOIN 'Acoustic' ON "
+            "Library.uid = Acoustic.uid WHERE Acoustic.spectrum NOT NULL;",
             (SqlCallback)&ImmsTool::distance_callback);
 }
 

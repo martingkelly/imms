@@ -134,6 +134,7 @@ bool SqlDb::handle_error(const string &query)
             && !strstr(errmsg, "already exists")
             && !strstr(errmsg, "uniqueness constraint failed")
             && !strstr(errmsg, "is not unique")
+            && !strstr(errmsg, "requested query abort")
             && !strstr(errmsg, "no such table"))
     {
         result = true;
