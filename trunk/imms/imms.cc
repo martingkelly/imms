@@ -50,7 +50,7 @@ Imms::Imms()
 
     handpicked.set_on = 0;
     last.sid = handpicked.sid = -1;
-    handpicked.bpm = 0;
+    handpicked.bpm = "";
 
     string homedir = getenv("HOME");
     fout.open(homedir.append("/.imms/imms.log").c_str(),
@@ -260,13 +260,11 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     rel = rel > 1 ? 1 : rel < -1 ? -1 : rel;
     data.relation += ROUND(rel * weight * CORRELATION_IMPACT);
 
-    if (data.spectrum != "" && last.spectrum != "")
-        data.color_rating += ROUND(rescale(color_transition(
-                last.spectrum, data.spectrum)) * weight * SPECTRUM_IMPACT);
+    data.color_rating += ROUND(rescale(color_transition(
+                    last.spectrum, data.spectrum)) * weight * SPECTRUM_IMPACT);
 
-    if (data.bpm_value && last.bpm)
-        data.bpm_rating += ROUND(rescale(bpm_transition(
-                    last.bpm, data.bpm_value)) * weight * BPM_IMPACT);
+    data.bpm_rating += ROUND(rescale(bpm_transition(
+                    last.bpm, data.bpm)) * weight * BPM_IMPACT);
 }
 
 bool Imms::fetch_song_info(SongData &data)

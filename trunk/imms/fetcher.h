@@ -19,11 +19,11 @@ protected:
         { return position == other.position; }
 
         IntPair id;
-        int position, rating, relation, bpm_value;
+        int position, rating, relation;
         int composite_rating, color_rating, bpm_rating;
         bool identified, unrated;
         time_t last_played;
-        string path, spectrum;
+        string path, spectrum, bpm;
     };
 
     bool playlist_identify_item(int pos);

@@ -43,12 +43,12 @@ void BasicDb::sql_create_tables()
                 "'sid' INTEGER DEFAULT '-1', "
                 "'path' VARCHAR(4096) UNIQUE NOT NULL, "
                 "'modtime' TIMESTAMP NOT NULL, "
-                "'checksum' VARCHAR(34) NOT NULL);").execute();
+                "'checksum' TEXT NOT NULL);").execute();
 
         Q("CREATE TABLE 'Acoustic' ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
-                "'bpm' INTEGER DEFAULT '0', "
-                "'spectrum' VARCHAR(16) DEFAULT NULL);").execute();
+                "'bpm' TEXT DEFAULT NULL, "
+                "'spectrum' TEXT DEFAULT NULL);").execute();
 
         Q("CREATE TABLE 'Rating' ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
@@ -56,8 +56,8 @@ void BasicDb::sql_create_tables()
 
         Q("CREATE TABLE 'Info' ("
                 "'sid' INTEGER UNIQUE NOT NULL," 
-                "'artist' VARCHAR(255) NOT NULL, "
-                "'title' VARCHAR(255) NOT NULL);").execute();
+                "'artist' TEXT NOT NULL, "
+                "'title' TEXT NOT NULL);").execute();
 
         Q("CREATE TABLE 'Last' ("
                 "'sid' INTEGER UNIQUE NOT NULL, " 
@@ -310,7 +310,7 @@ string BasicDb::get_spectrum()
     return spectrum;
 }
 
-int BasicDb::get_bpm()
+string BasicDb::get_bpm()
 {
     if (uid < 0)
         return 0;
@@ -434,8 +434,6 @@ void BasicDb::register_new_sid()
         ++sid;
     }
 
-    cerr << "will set sid to " << sid << endl;
-
     {
         Q q("UPDATE 'Library' SET sid = ? WHERE uid = ?;");
         q << sid << uid;
@@ -473,7 +471,7 @@ void BasicDb::set_spectrum(const string &spectrum)
     WARNIFFAILED();
 }
 
-void BasicDb::set_bpm(int bpm)
+void BasicDb::set_bpm(const string &bpm)
 {
     if (uid < 0)
         return;
@@ -523,6 +521,21 @@ void BasicDb::sql_schema_upgrade(int from)
                     "SELECT uid, sid, path, modtime, checksum "
                     "FROM Library_backup;").execute();
             Q("DROP TABLE Library_backup;").execute();
+        }
+        if (from < 6)
+        {
+            // Backup the existing tables
+            Q("CREATE TEMP TABLE Acoustic_backup "
+                    "AS SELECT * FROM Acoustic;").execute();
+            Q("DROP TABLE Acoustic;").execute();
+
+            // Create new tables
+            sql_create_tables();
+
+            // Copy the data into new tables, and drop the backups
+            Q("INSERT INTO Acoustic (uid, spectrum) "
+                    "SELECT uid, spectrum FROM Acoustic_backup;").execute();
+            Q("DROP TABLE Acoustic_backup;").execute();
         }
 
         a.commit();

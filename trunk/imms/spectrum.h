@@ -29,7 +29,8 @@ class BeatKeeper
 public:
     BeatKeeper(const string &_name) : name(_name) { reset(); }
     void reset();
-    int getBPM();
+    string get_bpm_graph();
+    int guess_actual_bpm();
     void integrate_beat(float power);
     const BeatKeeper &operator +=(const BeatKeeper &other);
 
@@ -58,17 +59,19 @@ public:
 
 protected:
     float color_transition(const string &from, const string &to);
-    float bpm_transition(int from, int to);
+    float bpm_transition(const string &from, const string &to);
     const string& get_last_spectrum() { return last_spectrum; }
-    int get_last_bpm() { return last_bpm; }
+    string get_last_bpm() { return last_bpm; }
     void reset();
 
 private:
+    float rms_string_distance(const string &from, const string &to);
+
     BeatKeeper bpm_low, bpm_hi;
     int have_spectrums;
     double spectrum[SHORTSPECTRUM];
     string last_spectrum;
-    int last_bpm;
+    string last_bpm;
 };
 
 #endif
