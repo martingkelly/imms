@@ -13,7 +13,7 @@
 #include "immsconf.h"
 #include "plugin.h"
 #include "utils.h"
-#include "players/serverstub.h"
+#include "players/clientstub.h"
 
 using std::string;
 using std::cerr;
@@ -73,9 +73,9 @@ struct FilterOps
     }
 }; 
 
-typedef IMMSServer< ClientFilter<FilterOps> > XMMSServer;
+typedef IMMSClient< ClientFilter<FilterOps> > XMMSClient;
 
-XMMSServer *imms = 0;
+XMMSClient *imms = 0;
 
 void imms_setup(int use_xidle)
 {
@@ -88,7 +88,7 @@ void imms_init()
     if (!imms)
     {
         try {
-            imms = new XMMSServer();
+            imms = new XMMSClient();
         } catch (IDBusException &e) {
             cerr << "Error: " << e.what() << endl;
         }
