@@ -31,20 +31,12 @@ int usage()
     return -1;
 }
 
-int main(int argc, char *argv[])
+float infftdata[WINDOWSIZE];
+fftwf_complex outfftdata[NFREQS];
+fftwf_plan plan;
+
+int analyze(const string &path)
 {
-    if (argc != 2 || access(argv[1], R_OK))
-        return usage();
-
-    string path = argv[1];
-
-    StackLockFile lock(get_imms_root() + ".analyzer_lock");
-    if (!lock.isok())
-    {
-        cerr << "analyzer: Another instance already active - exiting." << endl;
-        return -7;
-    }
-
     if (access(path.c_str(), R_OK))
     {
         cerr << "could not open file " << path << endl;
@@ -52,7 +44,7 @@ int main(int argc, char *argv[])
     }
 
     ostringstream command;
-    command << "sox \"" << argv[1] << "\" -t .raw -w -u -c 1 "
+    command << "sox \"" << path << "\" -t .raw -w -u -c 1 "
         "-r " << SAMPLERATE << " -";
     cout << "running " << command.str() << endl;
     FILE *p = popen(command.str().c_str(), "r");
@@ -64,8 +56,6 @@ int main(int argc, char *argv[])
     }
 
     sample_t indata[WINDOWSIZE];
-    fftwf_complex outfftdata[NFREQS];
-    float infftdata[WINDOWSIZE];
     float outdata[NFREQS];
     int counter = 0;
 
@@ -79,12 +69,14 @@ int main(int argc, char *argv[])
     if (r != OVERLAP)
         return -3;
 
-    fftwf_plan plan = fftwf_plan_dft_r2c_1d(WINDOWSIZE,
-            infftdata, outfftdata, 0);
-
     try {
-        ImmsDb immsdb;
         SpectrumAnalyzer analyzer(path);
+
+        if (analyzer.is_known())
+        {
+            cout << "Already analyzed - skipping." << endl;
+            return 1;
+        }
 
         while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p)
                 == READSIZE)
@@ -111,9 +103,31 @@ int main(int argc, char *argv[])
     }
     catch (std::string &s) { cerr << s << endl; }
 
-    fftwf_destroy_plan(plan);
-
     pclose(p);
 
     cout << "processed " << counter << " windows" << endl;
+
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2)
+        return usage();
+
+    StackLockFile lock(get_imms_root() + ".analyzer_lock");
+    if (!lock.isok())
+    {
+        cerr << "analyzer: Another instance already active - exiting." << endl;
+        return -7;
+    }
+
+    ImmsDb immsdb;
+
+    plan = fftwf_plan_dft_r2c_1d(WINDOWSIZE, infftdata, outfftdata, 0);
+
+    for (int i = 1; i < argc; ++i)
+        analyze(argv[i]);
+
+    fftwf_destroy_plan(plan);
 }
