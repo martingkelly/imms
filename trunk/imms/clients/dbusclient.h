@@ -11,7 +11,6 @@ public:
     IDBusClient(const string &path, IDBusFilter *filter);
     ~IDBusClient();
 
-    bool isok();
     void connection_lost();
     void connect();
 private:

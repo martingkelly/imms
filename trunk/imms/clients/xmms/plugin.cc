@@ -78,12 +78,6 @@ struct FilterOps
         xmms_remote_play(session);
     }
     static void reset_selection() {}
-    static void connected()
-    {
-        imms->setup(xidle_val);
-        if (xmms_remote_is_playing(session))
-            imms->start_song(cur_plpos, cur_path);
-    }
     static void disconnected() { imms->connection_lost(); }
     static string get_item(int index)
     {
@@ -139,7 +133,12 @@ void do_more_checks()
     }
 
     if (imms->check_connection())
+    {
+        imms->setup(xidle_val);
         imms->playlist_changed(pl_length);
+        if (xmms_remote_is_playing(session))
+            imms->start_song(cur_plpos, cur_path);
+    }
 
     // check if xmms is reporting the song length correctly
     song_length = xmms_remote_get_playlist_time(session, cur_plpos);

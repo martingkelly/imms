@@ -88,8 +88,7 @@ public:
     void send(IDBusOMessage &message);
     DBusMessage *send_with_reply(IDBusOMessage &message, int timeout);
 
-    void store(int index, void *p);
-    void *retrieve(int index);
+    bool isok();
 
     bool operator!=(const IDBusConnection &other)
         { return other.con != con; }
