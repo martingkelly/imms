@@ -47,7 +47,7 @@ ImmsBase::DirMaker::DirMaker()
 InfoFetcher::SongData::SongData(int _position, const string &_path)
     : position(_position), path(path_simplifyer(_path))
 {
-    color_rating = rating = relation = 0;
+    rating = relation = 0;
     identified = unrated = false;
     last_played = 0;
 }
@@ -72,10 +72,7 @@ bool InfoFetcher::playlist_identify_item(int pos)
 
 void InfoFetcher::playlist_changed()
 {
-#ifdef DEBUGX
-    struct timeval start;
-    gettimeofday(&start, 0);
-#endif
+    StackTimer t;
     immsdb.playlist_clear();
 
     for (int i = 0; i < Player::get_playlist_length(); ++i)
@@ -83,13 +80,6 @@ void InfoFetcher::playlist_changed()
         string path = path_simplifyer(Player::get_playlist_item(i));
         immsdb.playlist_insert_item(i, path);
     }
-
-#ifdef DEBUGX
-    struct timeval now;
-    gettimeofday(&now, 0);
-    int msec = usec_diff(start, now) / 1000;
-    cerr << "Playlist update took " << msec << " microseconds." << endl;
-#endif
 }
 
 bool InfoFetcher::fetch_song_info(SongData &data)

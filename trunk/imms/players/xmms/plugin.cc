@@ -26,8 +26,8 @@ int good_length = 0, song_length = 0, delay = 0;
 string cur_path = "", last_path = "";
 
 // Extern from interface.c
-extern VisPlugin imms_vp;
-int &session = imms_vp.xmms_session;
+extern GeneralPlugin imms_gp;
+int &session = imms_gp.xmms_session;
 
 static enum
 {

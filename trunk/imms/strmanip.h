@@ -112,4 +112,6 @@ string path_get_extension(const string &path);
 bool string_like(const string &s1, const string &s2, int slack = 0);
 pair<string, string> get_simplified_filename_mask(const string &path);
 
+float rms_string_distance(const string &s1, const string &s2);
+
 #endif

@@ -1,5 +1,5 @@
 # usage compile(compiler, source, output, flags) 
-DEPFILE = $(if $(filter %.o,$1),$(dir $1).$(notdir $(1:.o=.d)),/dev/null)
+DEPFILE = $(if $(filter %.o,$3),$(dir $3).$(notdir $(3:.o=.d)),/dev/null)
 define compile
         @$1 $4 $2 -M -E > $(DEPFILE)
         $1 $4 -c $2 -o $3
@@ -8,7 +8,7 @@ endef
 # usage link(objects, output, flags) 
 link = $(CXX) $3 $(filter-out %.a,$1) $(filter %.a,$1) -o $2
 
-%.o: %.cc $(call compile, $(CXX), $<, $@, $($*-CXXFLAGS) $(CXXFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
+%.o: %.cc; $(call compile, $(CXX), $<, $@, $($*-CXXFLAGS) $(CXXFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
 %.o: %.c; $(call compile, $(CC), $<, $@, $($*-CFLAGS) $(CFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
 %: %.o; $(call link, $^ $($*-OBJ) $($*-LIBS) $(LIBS), $@, $(LDFLAGS))
 
@@ -21,7 +21,7 @@ objects_cc=$(patsubst %.cc,%.o,$(wildcard $(addsuffix /*.cc,$1)))
 
 clean:
 	rm -f $(wildcard *.o)
-	rm -f $(libimms.so libimmscore.a analyzer immstool immsremote imms-*.tar.* imms*.o core* .*.d)
+	rm -f $(wildcard libimms.so libimmscore.a analyzer immstool immsremote imms-*.tar.* imms*.o core* .*.d)
 
 distclean: clean
 	rm -f $(wildcard ../.\#* ../config.* ../configure ../immsconf.h* ../vars.mk)
