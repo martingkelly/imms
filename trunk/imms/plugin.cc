@@ -140,7 +140,8 @@ void do_checks()
 
     // check the time to catch the end of the song
     int cur_time = xmms_remote_get_output_time(session);
-    time_left = (song_length - cur_time) / 500;
+    if (cur_time > 1000 || good_length < 3)
+        time_left = (song_length - cur_time) / 500;
 
     spectrum_ok = (cur_time > song_length * SPECTRUM_SKIP
             && cur_time < song_length * (1 - SPECTRUM_SKIP));

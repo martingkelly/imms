@@ -1,6 +1,5 @@
 #include <sys/stat.h>   // for mkdir
 #include <sys/types.h>
-#include <unistd.h>
 
 #include <iostream>
 #include <algorithm>
@@ -30,11 +29,10 @@ InfoFetcher::SongData::SongData(int _position, const string &_path)
 int InfoFetcher::fetch_song_info(SongData &data)
 {
     const string &path = data.path;
-    if (access(path.c_str(), R_OK))
-        return -1;
 
     struct stat statbuf;
-    stat(path.c_str(), &statbuf);
+    if (stat(path.c_str(), &statbuf))
+        return -1;
 
     int result = 1;
     if (immsdb.identify(path, statbuf.st_mtime) < 0)
