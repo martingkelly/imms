@@ -21,11 +21,6 @@ IDBusClient::~IDBusClient()
     connection_lost();
 }
 
-bool IDBusClient::isok()
-{
-    return con && dbus_connection_get_is_connected(con);
-}
-
 void IDBusClient::connection_lost()
 {
     if (con)

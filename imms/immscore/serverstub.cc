@@ -41,14 +41,3 @@ void IMMSServer::reset_selection()
         cerr << "Error: " << e.what() << endl;
     }
 }
-
-void IMMSServer::ready()
-{
-    try {
-        IDBusOMessage m(IMMSCLIENTDBUSID, "Ready");
-        con.send(m);
-        conready = true;
-    } catch (IDBusException &e) {
-        cerr << "Error: " << e.what() << endl;
-    }
-}

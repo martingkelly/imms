@@ -41,13 +41,14 @@ public:
         m << bad;
         client.send(m);
     }
-    void select_next()
+    bool select_next()
     {
         if (!client.isok())
-            return;
+            return false;
 
         IDBusOMessage m(IMMSDBUSID, "SelectNext");
         client.send(m);
+        return true;
     }
     void playlist_changed(int length)
     {
@@ -109,11 +110,6 @@ public:
             if (message.get_member() == "ResetSelection")
             {
                 Ops::reset_selection();
-                return true;
-            }
-            if (message.get_member() == "Ready")
-            {
-                Ops::connected();
                 return true;
             }
             if (message.get_member() == "EnqueueNext")

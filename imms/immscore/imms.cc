@@ -72,12 +72,9 @@ void Imms::setup(bool use_xidle)
 
 void Imms::do_events()
 {
-    if (conready)
-    {
-        SongPicker::identify_more();
-        SongPicker::do_events();
-        XIdle::query();
-    }
+    SongPicker::identify_more();
+    SongPicker::do_events();
+    XIdle::query();
 }
 
 string Imms::get_playlist_item(int index)
@@ -98,7 +95,6 @@ void Imms::playlist_changed(int length)
 
     playlist_ready = false;
     InfoFetcher::playlist_changed(length);
-    ready();
 } 
 
 void Imms::reset_selection()

@@ -162,6 +162,8 @@ void IDBusConnection::send(IDBusOMessage &message)
     if (!dbus_connection_send(con, message.message, NULL))
         throw IDBusException("dbus_connection_send failed!");
 
+    dbus_connection_flush(con);
+
     dbus_message_unref(message.message);
     message.message = 0;
     delete message.iter;
@@ -190,12 +192,7 @@ DBusMessage *IDBusConnection::send_with_reply(IDBusOMessage &message,
     return reply;
 }
 
-void IDBusConnection::store(int index, void *p)
+bool IDBusConnection::isok()
 {
-    dbus_connection_set_data(con, index, p, 0);
-}
-
-void *IDBusConnection::retrieve(int index)
-{
-    return dbus_connection_get_data(con, index);
+    return con && dbus_connection_get_is_connected(con);
 }
