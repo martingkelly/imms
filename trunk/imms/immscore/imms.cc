@@ -105,11 +105,6 @@ void Imms::playlist_changed(int length)
     SongPicker::playlist_changed(length);
 } 
 
-int Imms::select_next()
-{
-    return SongPicker::select_next();
-}
-
 void Imms::reset_selection()
 {
     SongPicker::reset();

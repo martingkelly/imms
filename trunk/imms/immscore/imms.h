@@ -20,9 +20,9 @@ public:
 
     // Important inherited public methods
     //  SongPicker:
+    //      int select_next()
     //      bool add_candidate(int, bool)
 
-    virtual int select_next();
     void start_song(int position, std::string path);
     void end_song(bool at_the_end, bool jumped, bool bad);
 
