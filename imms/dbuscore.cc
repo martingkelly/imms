@@ -1,9 +1,9 @@
 #include "dbuscore.h"
 
 #include <dbus/dbus.h>
-#include <dbus/dbus-glib.h>
-#include <dbus/dbus-glib-lowlevel.h>
 
+#include <iostream>
+using namespace std;
 
 IDBusMessageBase::IDBusMessageBase() : iter(new DBusMessageIter) {}
 
@@ -106,7 +106,15 @@ string IDBusIMessage::get_error()
     return dbus_message_get_error_name(message);
 }
 
-IDBusIMessage& IDBusIMessage::operator>>(int i)
+IDBusIMessage& IDBusIMessage::operator>>(bool &b)
+{
+    int i;
+    *this >> i;
+    b = i;
+    return *this;
+}
+
+IDBusIMessage& IDBusIMessage::operator>>(int &i)
 {
     verify_type(DBUS_TYPE_INT32);
     i = dbus_message_iter_get_int32(iter);
@@ -134,7 +142,7 @@ IDBusOMessage& IDBusOMessage::operator<<(const string &s)
     return *this;
 } 
 
-static DBusHandlerResult dispatch_wrapper(DBusConnection *con,
+DBusHandlerResult dispatch_wrapper(DBusConnection *con,
         DBusMessage *message, void *userdata)
 {
     IDBusFilter *filter = (IDBusFilter*)userdata;
@@ -143,57 +151,6 @@ static DBusHandlerResult dispatch_wrapper(DBusConnection *con,
     IDBusIMessage imessage(message);
     return filter->dispatch(icon, imessage) ?
         DBUS_HANDLER_RESULT_HANDLED : DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-}
-
-static void new_connection_callback(DBusServer *server,
-        DBusConnection *new_connection, void *userdata)
-{
-    dbus_connection_ref(new_connection);
-    dbus_connection_setup_with_g_main(new_connection, NULL);
-
-    IDBusConnection con(new_connection);
-    reinterpret_cast<IDBusFilter*>(userdata)->new_connection(con);
-
-    dbus_connection_add_filter(new_connection, dispatch_wrapper,
-            userdata, NULL);
-}
-
-IDBusServer::IDBusServer(const string &path, IDBusFilter *filter)
-{
-    DBusError error;
-    dbus_error_init(&error);
-
-    server = dbus_server_listen(("unix:abstract=" + path).c_str(), &error);
-    if (!server)
-    {
-        string errormsg = error.message;
-        dbus_error_free(&error);
-        throw IDBusException("Could not create a socked at "
-                + path  + ": " + errormsg);
-    }
-
-    dbus_server_set_new_connection_function(server,
-            new_connection_callback, filter, NULL);
-
-    dbus_server_setup_with_g_main(server, NULL);
-}
-
-IDBusClient::IDBusClient(const string &path, IDBusFilter *filter)
-{
-    DBusError error;
-    dbus_error_init(&error);
-
-    con = dbus_connection_open(("unix:abstract=" + path).c_str(), &error);
-    if (!con)
-    {
-        string msg = "Failed to connect to " + path + ": " + error.message;
-        dbus_error_free(&error);
-        throw IDBusException(msg);
-    }
-
-    dbus_connection_setup_with_g_main(con, NULL);
-    if (filter)
-        dbus_connection_add_filter(con, dispatch_wrapper, filter, NULL);
 }
 
 void IDBusConnection::send(IDBusOMessage &message)

@@ -11,7 +11,7 @@ include ../rules.mk
 all: libxmmsimms.so immsd analyzer immstool immsremote
 
 libxmmsimms.so: $(XMMS_OBJ)
-libxmmsimms-LIBS = $(XMMSLDFLAGS) $(DBUSLDFLAGS)
+libxmmsimms-LIBS = $(DBUSLDFLAGS) $(XMMSLDFLAGS)
 
 libimmscore.a: $(call objects,..)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
@@ -40,8 +40,13 @@ plugin-CPPFLAGS=$(XMMSCPPFLAGS)
 plugin2-CPPFLAGS=$(XMMSCPPFLAGS)
 songinfo-CPPFLAGS=$(TAGCPPFLAGS)
 dbuscore-CPPFLAGS=$(DBUSCPPFLAGS)
+dbusclient-CPPFLAGS=$(DBUSCPPFLAGS) `pkg-config glib --cflags`
+
+immsd: $(call objects,../immsd)
 immsd-CPPFLAGS=$(GLIBCPPFLAGS)
 immsd-LIBS=$(GLIBLDFLAGS) $(DBUSLDFLAGS)
+
+dbusserver-CPPFLAGS=$(DBUSCPPFLAGS) $(GLIBCPPFLAGS)
 
 dbus-server-CPPFLAGS=$(DBUSCPPFLAGS)
 dbus-server-LIBS=$(DBUSLDFLAGS) -limmscore -L.
@@ -50,3 +55,7 @@ dbus-server: dbus-server.o
 dbus-client-CPPFLAGS=$(DBUSCPPFLAGS)
 dbus-client-LIBS=$(DBUSLDFLAGS) -limmscore -L.
 dbus-client: dbus-client.o
+
+glib-test-CPPFLAGS=`pkg-config glib --cflags`
+glib-test-LIBS=-limmscore -L. `pkg-config glib --libs`
+glib-test: glib-test.o

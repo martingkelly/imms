@@ -42,7 +42,7 @@ bool SongPicker::add_candidate(bool urgent)
     int position = ImmsDb::random_playlist_position();
     if (position < 0)
         position = imms_random(pl_length);
-    string path = ImmsDb::get_playlist_item(position);
+    string path = ImmsDb::get_item_from_playlist(position);
     string realpath = path_normalize(get_playlist_item(position));
 
     if (path != realpath)

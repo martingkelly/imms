@@ -52,13 +52,13 @@ protected:
 
     void reset_selection();
 
-    virtual string get_playlist_item(int index);
-
     // Helper functions
     bool fetch_song_info(SongData &data);
     void print_song_info();
     void set_lastinfo(LastInfo &last);
     void evaluate_transition(SongData &data, LastInfo &last, float weight);
+
+    virtual string get_playlist_item(int index);
 
     // State variables
     bool last_skipped, last_jumped;

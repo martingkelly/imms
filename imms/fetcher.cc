@@ -35,7 +35,7 @@ bool InfoFetcher::SongData::get_song_from_playlist()
 
 bool InfoFetcher::identify_playlist_item(int pos)
 {
-    Song song(PlaylistDb::get_playlist_item(pos));
+    Song song(PlaylistDb::get_item_from_playlist(pos));
     if (!song.isok())
         return false;
 
@@ -48,9 +48,16 @@ void InfoFetcher::playlist_changed(int length)
     StackTimer t;
     ImmsDb::playlist_clear();
 
+#ifdef DEBUG
+    cerr << "playlist changed. new length = " << length << endl;
+#endif
+
     for (int i = 0; i < pl_length; ++i)
     {
         string path = path_normalize(get_playlist_item(i));
+#ifdef DEBUG
+        cerr << "item " << i << " = " << path << endl;
+#endif
         ImmsDb::playlist_insert_item(i, path);
     }
 }
