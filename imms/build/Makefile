@@ -45,6 +45,8 @@ glib-test-CPPFLAGS=$(GLIB1CPPFLAGS)
 glib-test-LIBS=-limmscore -L. $(GLIB1LDFLAGS)
 glib-test: glib-test.o
 
+socket-client-CPPFLAGS=$(GLIB1CPPFLAGS)
+socket-client-LIBS=-limmscore -L. $(GLIB1LDFLAGS)
 socket-client: socket-client.o
 
 PLUGINS_INSTALL=$(patsubst %,%_install,$(PLUGINS))

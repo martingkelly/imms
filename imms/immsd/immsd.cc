@@ -79,8 +79,8 @@ public:
         if (command == "PlaylistItem")
         {
             int pos;
-            string path;
-            sstr >> pos >> path;
+            sstr >> pos;
+            string path = sstr.str();
             string oldpath = imms->get_item_from_playlist(pos);
             cerr << "item " << pos << ": " << path << endl;
             if (oldpath != "")
