@@ -11,14 +11,16 @@ XMMS_OBJ = @PLUGIN_OBJ@ interface.o dbusclient.o glib1dbus.o libimmscore.a
 
 XMMSCPPFLAGS= `xmms-config --cflags`
 DBUSCPPFLAGS=`pkg-config dbus-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE
-GLIBCPPFLAGS=`pkg-config glib-2.0 --cflags`
+GLIB2CPPFLAGS=`pkg-config glib-2.0 --cflags`
+GLIB1CPPFLAGS=`pkg-config glib --cflags`
 TAGCPPFLAGS=@TAGCPPFLAGS@
 
 CPPFLAGS=@XCPPFLAGS@ -Wall -fPIC -D_REENTRANT -I../
 CXXFLAGS=-fno-rtti
 
 XMMSLDFLAGS=`xmms-config --libs`
-GLIBLDFLAGS=`pkg-config dbus-glib-1 --libs`
+GLIB2LDFLAGS=`pkg-config dbus-glib-1 --libs`
+GLIB1LDFLAGS=`pkg-config glib --libs`
 DBUSLDFLAGS=`pkg-config dbus-1 --libs`
 LDFLAGS=-L. @LIBS@
 
