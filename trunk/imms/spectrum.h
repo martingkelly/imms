@@ -3,8 +3,12 @@
 
 #include <stdint.h>
 
+#include <string>
+
 #include "immsconf.h"
 #include "immsbase.h"
+
+using std::string;
 
 static const int short_spectrum_size = 16;
 static const int long_spectrum_size = 256;
@@ -17,6 +21,8 @@ public:
     void finalize();
 
 protected:
+    float evaluate_transition(const string &from, const string &to);
+    string get_last_spectrum() { return last_spectrum; }
     void reset();
 
 private:

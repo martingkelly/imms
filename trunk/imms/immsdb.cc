@@ -359,6 +359,18 @@ StringPair ImmsDb::get_info()
     return StringPair(artist, title);
 }
 
+string ImmsDb::get_spectrum()
+{
+    if (uid == -1)
+        return "";
+
+    select_query(
+            "SELECT spectrum FROM 'Library' "
+            "WHERE uid = '" + itos(uid) + "';");
+
+    return nrow && resultp[1] ? resultp[1] : "";
+}
+
 time_t ImmsDb::get_last()
 {
     if (sid == -1)

@@ -31,9 +31,16 @@ using std::setprecision;
 #define     HOUR                    (60*60)
 #define     DAY                     (24*HOUR)
 
+#define     MAX_CORRELATION         15.0
+#define     SPECTRUM_IMPACT         25
+#define     SPECTRUM_PRIMARY        0.80
+#define     CORRELATION_IMPACT      40
+
 #define     TERM_WIDTH              80
 
 //////////////////////////////////////////////
+
+string last_song;
 
 // Random
 int imms_random(int max)
@@ -124,9 +131,12 @@ void Imms::print_song_info()
         fout << winner.path;
 
     fout << "]\n  [Rating: " << winner.rating;
+    fout << setiosflags(std::ios::showpos);
     if (winner.relation)
-        fout << setiosflags(std::ios::showpos) << winner.relation
-            << resetiosflags(std::ios::showpos) << "x";
+        fout << winner.relation << "r";
+    if (winner.extra)
+        fout << winner.extra << "s";
+    fout << resetiosflags(std::ios::showpos);
 
     fout << "] [Last: " << strtime(winner.last_played) <<
         (winner.last_played == local_max ?  "!" : "") << "] ";
@@ -184,15 +194,23 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     immsdb.set_id(winner.id);
 
+#ifdef DEBUG
+    cerr << " *** " << path_get_filename(winner.path) << endl;
+#endif
+
     SpectrumAnalyzer::finalize();
 
     if (mod > CONS_NON_SKIP_RATE + INTERACTIVE_BONUS)
+    {
         last_handpicked = winner.id.second;
+        last_hp_spectrum = SpectrumAnalyzer::get_last_spectrum();
+    }
 
     fout << (jumped ? "[Jumped] " : "");
     fout << (!jumped && last_skipped ? "[Skipped] " : "");
     fout << "[Delta " << setiosflags(std::ios::showpos) << mod <<
         resetiosflags (std::ios::showpos) << "] ";
+    fout << "[" << SpectrumAnalyzer::get_last_spectrum() << "]";
     fout << endl;
 
     last_jumped = jumped;
@@ -213,15 +231,37 @@ int Imms::fetch_song_info(SongData &data)
 {
     int result = InfoFetcher::fetch_song_info(data);
 
-    data.relation = 0;
-    if (last_handpicked != -1)
-        data.relation = immsdb.correlate(last_handpicked);
-
-    if (data.relation > 15)
-        data.relation = 15;
-
     if (data.last_played > local_max)
         data.last_played = local_max;
+
+    data.extra = data.relation = 0;
+    if (last_handpicked == -1)
+        return result;
+
+    float rel = immsdb.correlate(last_handpicked) / MAX_CORRELATION;
+    rel = rel > 1 ? 1 : rel;
+    rel = rel < -1 ? -1 : rel;
+
+    data.relation = ROUND(rel * CORRELATION_IMPACT);
+
+    string candidate_spectrum = immsdb.get_spectrum();
+
+    float primary = 0, secondary = 0;
+    if (candidate_spectrum != "")
+    {
+        if (last_hp_spectrum != "")
+            primary = evaluate_transition(last_hp_spectrum,
+                    candidate_spectrum) * SPECTRUM_PRIMARY;
+        if (!last_skipped && SpectrumAnalyzer::get_last_spectrum() != "")
+            secondary = evaluate_transition(get_last_spectrum(),
+                    candidate_spectrum) * (1 - SPECTRUM_PRIMARY);
+    }
+#ifdef DEBUG
+    if (secondary)
+        cerr << "[last] > [" << path_get_filename(data.path)
+            << "] = " << secondary / (1 - SPECTRUM_PRIMARY) << endl;
+#endif
+    data.extra = ROUND((primary + secondary) * SPECTRUM_IMPACT);
 
     return result;
 }

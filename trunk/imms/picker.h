@@ -15,7 +15,8 @@ class SongPicker : protected InfoFetcher
 public:
     SongPicker();
     int  select_next();
-    bool add_candidate(int position, std::string path, bool urgent = false);
+    bool add_candidate(int position, std::string path,
+            bool urgent = false);
 
 protected:
     void revalidate_winner(const std::string &path);

@@ -53,6 +53,7 @@ protected:
 
     std::vector<int> history;
     std::ofstream fout;
+    std::string last_hp_spectrum;
 };
 
 #endif

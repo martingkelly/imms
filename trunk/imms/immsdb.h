@@ -19,13 +19,15 @@ public:
     ImmsDb();
     ~ImmsDb();
     int identify(const string &path, time_t modtime);
-    int identify(const string &path, time_t modtime, const string &checksum);
+    int identify(const string &path, time_t modtime,
+            const string &checksum);
 
     int get_rating();
     int correlate(int from);
     time_t get_last();
     IntPair get_id();
     StringPair get_info();
+    string get_spectrum();
 
     void set_last(time_t last);
     void set_title(const string &_title);

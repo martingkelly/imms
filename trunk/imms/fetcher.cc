@@ -20,7 +20,7 @@ ImmsBase::DirMaker::DirMaker()
 InfoFetcher::SongData::SongData(int _position, const string &_path)
     : position(_position), path(path_simplifyer(_path))
 {
-    rating = relation = 0;
+    extra = rating = relation = 0;
     identified = unrated = false;
     last_played = 0;
 }
@@ -34,14 +34,15 @@ int InfoFetcher::fetch_song_info(SongData &data)
     struct stat statbuf;
     stat(path.c_str(), &statbuf);
 
+    int result = 1;
     if (immsdb.identify(path, statbuf.st_mtime) < 0)
     {
+        ++result;
         if (immsdb.identify(path, statbuf.st_mtime,
                 Md5Digest::digest_file(path)) < 0)
             return -1;
     }
 
-    int result = 1;
     data.rating = immsdb.get_rating();
 
     data.unrated = false;
@@ -62,14 +63,14 @@ int InfoFetcher::fetch_song_info(SongData &data)
         data.identified = true;
     else
     {
-        ++result;
+        result += 2;
         if ((data.identified = parse_song_info(path, title)))
             immsdb.set_title(title);
     }
 
 #ifdef DEBUG
-    cerr << "path:\t" << path << endl;
 #if 0
+    cerr << "path:\t" << path << endl;
     cerr << "path:\t" << path << endl;
     cerr << "artist:\t" << artist << (identified ? " *" : "") << endl;
     cerr << "title:\t" << title << (identified ? " *" : "") << endl;
