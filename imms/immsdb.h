@@ -30,6 +30,7 @@ public:
     void set_last(time_t last);
     void set_title(const string &_title);
     void set_artist(const string &_artist);
+    void set_spectrum(const string &spectrum);
     void set_rating(int rating);
     void set_id(const IntPair &p);
 

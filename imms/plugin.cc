@@ -28,8 +28,9 @@ string cur_path = "", last_path = "";
 bool need_more = false;
 
 // Extern from interface.c
-extern GeneralPlugin imms_gp;
-int &session = imms_gp.xmms_session;
+extern VisPlugin imms_vp;
+int &session = imms_vp.xmms_session;
+extern int spectrum_ok;
 
 static enum
 {
@@ -78,6 +79,12 @@ void imms_cleanup(void)
     imms = 0;
 }
 
+void imms_spectrum(uint16_t spectrum[256])
+{
+    if (imms)
+        imms->integrate_spectrum(spectrum);
+}
+
 void imms_poll()
 {
     if (--delay < 0)
@@ -97,7 +104,7 @@ void imms_poll()
 
             state = BUSY;
 
-            if (!delay)
+            if (last_pl_length < 0 || !delay)
             {
                 if (xmms_remote_is_shuffle(session))
                     xmms_remote_toggle_shuffle(session);
@@ -113,7 +120,7 @@ void imms_poll()
             cur_plpos = xmms_remote_get_playlist_pos(session);
             cur_path = imms_get_playlist_item(cur_plpos);
 
-            if (last_path != cur_path || (good_length > 5 && time_left == 0))
+            if (last_path != cur_path || (good_length > 2 && time_left == 0))
             {
                 xmms_remote_stop(session);
                 if (last_path == cur_path)
@@ -123,7 +130,7 @@ void imms_poll()
                 return;
             }
 
-            if (!delay)
+            if (good_length < 3 || !delay)
             {
                 song_length = xmms_remote_get_playlist_time(session,
                         cur_plpos);
@@ -131,10 +138,15 @@ void imms_poll()
                     good_length++;
             }
 
-            time_left =
-                (song_length - xmms_remote_get_output_time(session)) / 500;
+            {
+                int cur_time = xmms_remote_get_output_time(session);
+                time_left = (song_length - cur_time) / 500;
 
-            last_plpos = cur_plpos;
+                last_plpos = cur_plpos;
+
+                spectrum_ok = (cur_time > song_length * 0.1
+                        && cur_time < song_length * 0.9);
+            }
 
             if (need_more && delay % 2)
             {
@@ -160,7 +172,7 @@ void imms_poll()
             bool forced = (last_plpos + 1 != cur_plpos) &&
                 (cur_plpos != 0 || last_plpos != pl_length - 1);
 
-            bool bad = good_length < 5 || song_length <= 30*1000;
+            bool bad = good_length < 3 || song_length <= 30*1000;
 
             if (last_path != "")
                 imms->end_song(!time_left, forced, bad);

@@ -9,7 +9,7 @@
 using std::endl;
 using std::cerr; 
 
-#define SCHEMA_VERSION 2
+#define SCHEMA_VERSION 3
 
 #define CORRELATION_TIME    (15*30)   // n * 30 ==> n minutes
 #define MAX_CORR_STR        "15"
@@ -39,7 +39,8 @@ void ImmsDb::sql_create_tables()
                 "'sid' INTEGER DEFAULT '-1', "
                 "'path' VARCHAR(4096) UNIQUE NOT NULL, "
                 "'modtime' TIMESTAMP NOT NULL, "
-                "'checksum' VARCHAR(34) NOT NULL);");
+                "'checksum' VARCHAR(34) NOT NULL, "
+                "'spectrum' VARCHAR(16) DEFAULT NULL);");
 
     run_query(
             "CREATE TABLE 'Rating' ("
@@ -456,6 +457,16 @@ void ImmsDb::set_id(const IntPair &p)
     sid = p.second;
 }
 
+void ImmsDb::set_spectrum(const string &spectrum)
+{
+    if (uid == -1)
+        return;
+
+    run_query(
+            "UPDATE 'Library' SET spectrum = '" + spectrum +  "' "
+            "WHERE uid = '" + itos(uid) + "';");
+}
+
 void ImmsDb::set_rating(int rating)
 {
     if (uid == -1)
@@ -478,40 +489,62 @@ void ImmsDb::sql_schema_upgrade()
         return;
     }
 
-    if (nrow && resultp[1] && atoi(resultp[1]) == SCHEMA_VERSION)
+    int schema = nrow && resultp[1] ? atoi(resultp[1]) : 0;
+
+    if (schema == SCHEMA_VERSION)
         return;
 
     cerr << "IMMS: Outdated database schema detected." << endl;
     cerr << "IMMS: Attempting to update." << endl;
 
-    run_query("DROP TABLE Info;");
-    run_query("DROP TABLE Last;");
-    run_query("DROP TABLE UnknownLast;");
+    if (schema < 2)
+    {
+        run_query("DROP TABLE Info;");
+        run_query("DROP TABLE Last;");
+        run_query("DROP TABLE UnknownLast;");
 
-    // Backup the existing tables
-    run_query("CREATE TEMP TABLE Library_backup AS SELECT * FROM Library;");
-    run_query("DROP TABLE Library;");
+        // Backup the existing tables
+        run_query("CREATE TEMP TABLE Library_backup "
+                   "AS SELECT * FROM Library;");
+        run_query("DROP TABLE Library;");
 
-    run_query("CREATE TEMP TABLE Rating_backup AS SELECT * FROM Rating;");
-    run_query("DROP TABLE Rating;");
+        run_query("CREATE TEMP TABLE Rating_backup AS SELECT * FROM Rating;");
+        run_query("DROP TABLE Rating;");
 
-    // Create new tables
-    sql_create_tables();
+        // Create new tables
+        sql_create_tables();
 
-    // Copy the data into new tables, and drop the backups
-    run_query(
-            "INSERT INTO Library (uid, path, modtime, checksum) "
-            "SELECT * FROM Library_backup;");
-    run_query("DROP TABLE Library_backup;");
+        // Copy the data into new tables, and drop the backups
+        run_query(
+                "INSERT INTO Library (uid, path, modtime, checksum) "
+                "SELECT * FROM Library_backup;");
+        run_query("DROP TABLE Library_backup;");
 
-    run_query("INSERT INTO Rating SELECT * FROM Rating_backup;");
-    run_query("DROP TABLE Rating_backup;");
+        run_query("INSERT INTO Rating SELECT * FROM Rating_backup;");
+        run_query("DROP TABLE Rating_backup;");
 
-    // Mark the new version
-    run_query(
-            "CREATE TABLE 'Schema' ("
+        // Mark the new version
+        run_query(
+                "CREATE TABLE 'Schema' ("
                 "'description' VARCHAR(10) UNIQUE NOT NULL, "
                 "'version' INTEGER NOT NULL);");
+    }
+    if (schema < 3)
+    {
+        // Backup the existing tables
+        run_query("CREATE TEMP TABLE Library_backup "
+                   "AS SELECT * FROM Library;");
+        run_query("DROP TABLE Library;");
+
+        // Create new tables
+        sql_create_tables();
+
+        // Copy the data into new tables, and drop the backups
+        run_query(
+                "INSERT INTO Library (uid, sid, path, modtime, checksum) "
+                "SELECT * FROM Library_backup;");
+        run_query("DROP TABLE Library_backup;");
+    }
 
     run_query(
             "INSERT OR REPLACE INTO 'Schema' ('description', 'version') "
