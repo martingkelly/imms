@@ -73,10 +73,10 @@ if test "$with_zlib" = "no"; then
     AC_MSG_ERROR([zlib required and missing.])
 fi
 
-AC_CHECK_LIB(sqlite, sqlite_open,, [with_sqlite=no])
-AC_CHECK_HEADERS(sqlite.h,, [with_sqlite=no])
+AC_CHECK_LIB(sqlite3, sqlite3_open,, [with_sqlite=no])
+AC_CHECK_HEADERS(sqlite3.h,, [with_sqlite=no])
 if test "$with_sqlite" = "no"; then
-    AC_MSG_ERROR([sqlite required and missing.])
+    AC_MSG_ERROR([sqlite >= 3.0 required and missing.])
 fi
 
 AC_CHECK_LIB(pcre, pcre_compile,, [with_pcre=no])

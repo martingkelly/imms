@@ -4,58 +4,71 @@
 
 #include "strmanip.h"
 #include "immsdb.h"
+#include "utils.h"
 
 using std::endl;
 using std::cerr; 
 
 BasicDb::BasicDb()
-    : SqlDb(string(getenv("HOME")).append("/.imms/imms.db"))
+    : SqlDb(string(getenv("HOME")).append("/.imms/imms2.db"))
 {
     sql_set_pragma();
 }
 
 BasicDb::~BasicDb()
 {
+    try {
+        Q q("DELETE FROM 'Journal' WHERE time < ?;");
+        q << time(0) - 30 * DAY ;
+        q.execute();
+    }
+    WARNIFFAILED();
 }
 
 void BasicDb::sql_set_pragma()
 {
-    run_query("PRAGMA cache_size = 10000");
-    run_query("PRAGMA synchronous = OFF;");
-    run_query("PRAGMA temp_store = MEMORY;");
+    Q("PRAGMA cache_size = 10000").execute();
+    Q("PRAGMA synchronous = OFF;").execute();
+    Q("PRAGMA temp_store = MEMORY;").execute();
 }
 
 void BasicDb::sql_create_tables()
 {
-    run_query(
-            "CREATE TABLE 'Library' ("
+    QueryCacheDisabler qcd;
+    RuntimeErrorBlocker reb;
+    try
+    {
+        Q("CREATE TABLE 'Library' ("
                 "'uid' INTEGER NOT NULL, "
                 "'sid' INTEGER DEFAULT '-1', "
                 "'path' VARCHAR(4096) UNIQUE NOT NULL, "
                 "'modtime' TIMESTAMP NOT NULL, "
-                "'checksum' VARCHAR(34) NOT NULL);");
+                "'checksum' VARCHAR(34) NOT NULL);").execute();
 
-    run_query(
-            "CREATE TABLE 'Acoustic' ("
+        Q("CREATE TABLE 'Acoustic' ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'bpm' INTEGER DEFAULT '0', "
-                "'spectrum' VARCHAR(16) DEFAULT NULL);");
+                "'spectrum' VARCHAR(16) DEFAULT NULL);").execute();
 
-    run_query(
-            "CREATE TABLE 'Rating' ("
+        Q("CREATE TABLE 'Rating' ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
-                "'rating' INTEGER NOT NULL);");
+                "'rating' INTEGER NOT NULL);").execute();
 
-    run_query(
-            "CREATE TABLE 'Info' ("
+        Q("CREATE TABLE 'Info' ("
                 "'sid' INTEGER UNIQUE NOT NULL," 
                 "'artist' VARCHAR(255) NOT NULL, "
-                "'title' VARCHAR(255) NOT NULL);");
+                "'title' VARCHAR(255) NOT NULL);").execute();
 
-    run_query(
-            "CREATE TABLE 'Last' ("
+        Q("CREATE TABLE 'Last' ("
                 "'sid' INTEGER UNIQUE NOT NULL, " 
-                "'last' TIMESTAMP);");
+                "'last' TIMESTAMP);").execute();
+
+        Q("CREATE TABLE 'Journal' ("
+                "'uid' INTEGER NOT NULL, " 
+                "'delta' INTEGER NOT NULL, " 
+                "'time' TIMESTAMP NOT NULL);").execute();
+    }
+    WARNIFFAILED();
 }
 
 
@@ -64,19 +77,20 @@ int BasicDb::identify(const string &path, time_t modtime)
     title = artist = "";
     sid = uid = -1;
 
-    select_query(
-            "SELECT uid, sid, modtime FROM 'Library' "
-            "WHERE path = '" + escape_string(path) + "';");
+    try {
+        Q q("SELECT uid, sid, modtime FROM 'Library' WHERE path = ?;");
+        q << escape_string(path);
 
-    if (nrow)
-    {
-        uid = atoi(resultp[ncol]);
-        sid = atoi(resultp[ncol + 1]);
-        time_t last_modtime = atol(resultp[ncol + 2]);
+        if (q.next())
+        {
+            time_t last_modtime;
+            q >> uid >> sid >> last_modtime;
 
-        if (modtime == last_modtime)
-            return uid;
+            if (modtime == last_modtime)
+                return uid;
+        }
     }
+    WARNIFFAILED();
 
     return -1;
 }
@@ -84,140 +98,165 @@ int BasicDb::identify(const string &path, time_t modtime)
 int BasicDb::identify(const string &path, time_t modtime,
         const string &checksum)
 {
-    // old path but modtime has changed - update checksum
-    if (nrow)
-    {
-        run_query(
-                "UPDATE 'Library' SET "
-                    "modtime = '" + itos(modtime) + "', "
-                    "checksum = '" + checksum + "' "
-                "WHERE path = '" + escape_string(path) + "';");
+    try {
+        AutoTransaction a;
+
+        // old path but modtime has changed - update checksum
+        if (uid != -1)
+        {
+            Q q("UPDATE 'Library' SET modtime = ?, "
+                    "checksum = ? WHERE path = ?';");
+            q << modtime << checksum << escape_string(path);
+            q.execute();
+            a.commit();
+            return uid;
+        }
+
+        // moved or new file and path needs updating
+        sid = uid = -1;
+
+        Q q("SELECT uid, sid, path FROM 'Library' WHERE checksum = ?;");
+        q << checksum;
+
+        if (q.next())
+        {
+            // Check if any of the old paths no longer exist 
+            // (aka file was moved) so that we can reuse their uid
+            do
+            {
+                string oldpath;
+                q >> uid >> sid >> oldpath;
+
+                if (access(oldpath.c_str(), F_OK))
+                {
+                    q.reset();
+
+                    {
+                        Q q("UPDATE 'Library' SET sid = -1, "
+                                "path = ?, modtime = ? WHERE path = ?;");
+
+                        q << escape_string(path) << modtime
+                            << escape_string(oldpath);
+
+                        q.execute();
+                    }
+#ifdef DEBUG
+                    cerr << "identify: moved: uid = " << uid << endl;
+#endif
+                    a.commit();
+                    return uid;
+                }
+            } while (q.next());
+        }
+        else
+        {
+            // figure out what the next uid should be
+            Q q("SELECT max(uid) FROM Library;");
+            if (q.next())
+                q >> uid;
+            ++uid;
+        }
+
+        {
+            // new file - insert into the database
+            Q q("INSERT INTO 'Library' "
+                    "('uid', 'sid', 'path', 'modtime', 'checksum') "
+                    "VALUES (?, -1, ?, ?, ?);");
+
+            q << uid << escape_string(path) << modtime << checksum;
+
+            q.execute();
+        }
+
+#ifdef DEBUG
+        cerr << "identify: new: uid = " << uid << endl;
+#endif
+
+        a.commit();
         return uid;
     }
-
-    // moved or new file and path needs updating
-
-    sid = uid = -1;
-
-    select_query(
-            "SELECT uid, sid, path FROM 'Library' "
-            "WHERE checksum = '" + checksum + "';");
-
-    if (nrow)
-    {
-        // Check if any of the old paths no longer exist 
-        // (aka file was moved) so that we can reuse their uid
-        
-        for (int col = ncol; nrow--; col += ncol)
-        {
-            // We do not update the sid here because since
-            // the path changed it might now parse differently
-            uid = atoi(resultp[col]);
-
-            if (access(resultp[col + 2], F_OK))
-            {
-                run_query(
-                        "UPDATE 'Library' SET "
-                            "sid = '-1', "
-                            "path = '" + escape_string(path) + "', "
-                            "modtime = '" + itos(modtime) + "' "
-                        "WHERE path = '" + escape_string(resultp[col + 2])
-                        + "';");
-
-#ifdef DEBUG
-                cerr << "identify: moved: uid = " << uid << endl;
-#endif
-
-                return uid;
-            }
-        }
-    }
-    else
-    {
-        // figure out what the next uid should be
-        select_query("SELECT max(uid) FROM Library;");
-        uid = resultp[1] ? atoi(resultp[1]) + 1 : 1;
-    }
-
-    // new file - insert into the database
-    run_query(
-            "INSERT INTO 'Library' ('uid', 'path', 'modtime', 'checksum') "
-            "VALUES ('" +
-                itos(uid) + "', '" +
-                escape_string(path) + "', '" +
-                itos(modtime) + "', '" +
-                checksum + "'"
-            ");");
-
-#ifdef DEBUG
-    cerr << "identify: new: uid = " << uid << endl;
-#endif
-
-    return uid;
+    WARNIFFAILED();
+    return -1;
 }
 
 int BasicDb::avg_rating()
 {
-    if (title != "")
+    try
     {
-        select_query(
-                "SELECT avg(rating) FROM Library "
+        if (title != "")
+        {
+            Q q("SELECT avg(rating) FROM Library "
                     "NATURAL INNER JOIN Info "
                     "INNER JOIN Rating ON Library.uid = Rating.uid "
-                    "WHERE Info.artist = '" + artist + "' "
-                    "AND Info.title = '" + title + "';");
+                    "WHERE Info.artist = ? AND Info.title = ?;");
 
-        if (nrow && resultp[1] && (int)atof(resultp[1]))
-            return (int)atof(resultp[1]);
-    }
+            q << artist << title;
 
-    if (artist != "")
-    {
-        select_query(
-                "SELECT avg(rating) FROM Library "
+            if (q.next())
+            {
+                float avg;
+                q >> avg;
+                return (int)avg;
+            }
+        }
+
+        if (artist != "")
+        {
+            Q q("SELECT avg(rating) FROM Library "
                     "NATURAL INNER JOIN Info "
                     "INNER JOIN Rating ON Rating.uid = Library.uid "
-                    "WHERE Info.artist = '" + artist + "';");
+                    "WHERE Info.artist = ?;");
+            q << artist;
 
-        int rating;
-        if (!(nrow && resultp[1] && (rating = (int)atof(resultp[1]))))
-            return -1;
-
-        rating = std::min(rating, 115);
-        rating = std::max(rating, 90);
-
-        return rating;
+            if (q.next())
+            {
+                float avg;
+                q >> avg;
+                if (avg)
+                {
+                    int rating = (int)avg;
+                    rating = std::min(rating, 115);
+                    rating = std::max(rating, 90);
+                    return rating;
+                }
+            }
+        }
     }
-
+    WARNIFFAILED();
     return -1;
 }
 
 bool BasicDb::check_artist(string &artist)
 {
-    select_query(
-            "SELECT artist FROM 'Info' "
-            "WHERE similar(artist, '" + artist + "') LIMIT 1;");
-
-    if (nrow && resultp[1])
+    try
     {
-        artist = resultp[1];
-        return true;
+        Q q("SELECT artist FROM 'Info' WHERE similar(artist, ?);");
+        q << artist;
+
+        if (q.next())
+        {
+            q >> artist;
+            return true;
+        }
     }
+    WARNIFFAILED();
     return false;
 }
 
 bool BasicDb::check_title(string &title)
 {
-    select_query(
-            "SELECT title FROM 'Info' "
-            "WHERE artist = '" + artist + "' "
-                "AND similar(title, '" + title + "') LIMIT 1;");
-
-    if (nrow && resultp[1])
+    try
     {
-        title = resultp[1];
-        return true;
+        Q q("SELECT title FROM 'Info' WHERE artist = ? AND similar(title, ?)");
+        q << artist << title;
+
+        if (q.next())
+        {
+            q >> title;
+            return true;
+        }
     }
+    WARNIFFAILED();
     return false;
 }
 
@@ -231,12 +270,18 @@ StringPair BasicDb::get_info()
     if (sid < 0)
         return StringPair("", "");
 
-    select_query(
-            "SELECT title, artist FROM 'Info' "
-            "WHERE sid = '" + itos(sid) + "';");
+    artist = title = "";
 
-    artist = nrow ? resultp[3] : "";
-    title = nrow ? resultp[2] : "";
+    try
+    {
+        Q q("SELECT title, artist FROM 'Info' WHERE sid = ?;");
+        q << sid;
+
+        if (q.next())
+            q >> title >> artist;
+    }
+    WARNIFFAILED();
+
 #if defined(DEBUG) && 0
     if (title != "" && artist != "")
     {
@@ -253,13 +298,16 @@ string BasicDb::get_spectrum()
     if (uid < 0)
         return "";
 
-    select_query(
-            "SELECT spectrum, bpm FROM 'Acoustic' "
-            "WHERE uid = '" + itos(uid) + "';");
+    string spectrum;
+    try {
+        Q q("SELECT spectrum, bpm FROM 'Acoustic' WHERE uid = ?;");
+        q << uid;
+        if (q.next())
+            q >> spectrum >> bpm;
+    }
+    WARNIFFAILED();
 
-    bpm = nrow && resultp[3] ? atoi(resultp[3]) : 0;
-
-    return nrow && resultp[2] ? resultp[2] : "";
+    return spectrum;
 }
 
 int BasicDb::get_bpm()
@@ -275,11 +323,17 @@ time_t BasicDb::get_last()
     if (sid < 0)
         return 0;
 
-    select_query(
-            "SELECT last FROM 'Last' "
-            "WHERE sid = '" + itos(sid) + "';");
+    time_t result = 0;
 
-    return nrow && resultp[1] ? atol(resultp[1]) : 0;
+    try
+    {
+        Q q("SELECT last FROM 'Last' WHERE sid = ?;");
+        q << sid;
+        if (q.next())
+            q >> result;
+    }
+    WARNIFFAILED();
+    return result;
 }
 
 int BasicDb::get_rating()
@@ -287,11 +341,18 @@ int BasicDb::get_rating()
     if (uid < 0)
         return -1;
 
-    select_query(
-            "SELECT rating FROM 'Rating' "
-            "WHERE uid = '" + itos(uid) + "';");
+    int rating = -1;
 
-    return nrow ? atoi(resultp[1]) : -1;
+    try
+    {
+        Q q("SELECT rating FROM 'Rating' WHERE uid = ?;");
+        q << uid;
+
+        if (q.next())
+            q >> rating;
+    }
+    WARNIFFAILED();
+    return rating;
 }
 
 void BasicDb::set_artist(const string &_artist)
@@ -306,15 +367,36 @@ void BasicDb::set_title(const string &_title)
 
     title = _title;
 
-    select_query(
-            "SELECT sid FROM 'Info' "
-            "WHERE artist = '" + artist + "' AND title = '" + title + "';");
+    try {
+        AutoTransaction a;
 
-    register_new_sid(nrow && resultp[1] ? atoi(resultp[1]) : sid);
+        sid = -1;
+        Q q("SELECT sid FROM 'Info' WHERE artist = ? AND title = ?;");
+        q << artist << title;
+        if (q.next())
+        {
+            q >> sid;
+            q.execute();
 
-    run_query(
-            "INSERT INTO 'Info' ('sid', 'artist', 'title') "
-            "VALUES ('" + itos(sid) + "', '" + artist + "', '" + title + "');");
+            {
+                Q q("UPDATE 'Library' SET sid = ? WHERE uid = ?;");
+                q << sid << uid;
+                q.execute();
+            }
+        }
+        else
+        {
+            register_new_sid();
+
+            Q q("INSERT INTO 'Info' "
+                    "('sid', 'artist', 'title') VALUES (?, ?, ?);");
+            q << sid << artist << title;
+            q.execute();
+        }
+
+        a.commit();
+    }
+    WARNIFFAILED();
 
 #ifdef DEBUG
     cerr << " >> cached as: " << endl;
@@ -323,48 +405,43 @@ void BasicDb::set_title(const string &_title)
 #endif
 }
 
-void BasicDb::register_new_sid(int new_sid)
-{
-    if (new_sid < 0)
-    {
-        select_query("SELECT max(sid) FROM Library;");
-        new_sid = resultp[1] ? atoi(resultp[1]) + 1 : 1;
-    }
-    else
-    {
-        run_query(
-                "UPDATE 'Correlations' SET "
-                    "origin = '" + itos(new_sid) + "', "
-                    "key = '" + itos(new_sid) + "'||'|'||destination "
-                "WHERE origin = '" + itos(sid) + "';");
-
-        run_query(
-                "UPDATE 'Correlations' SET "
-                    "destination = '" + itos(new_sid) + "', "
-                    "key = origin||'|'||'" + itos(new_sid) + "' "
-                "WHERE destination = '" + itos(sid) + "';");
-    }
-
-    sid = new_sid;
-
-    run_query(
-            "UPDATE 'Library' SET sid = '" + itos(sid) + "' "
-            "WHERE uid = '" + itos(uid) + "';");
-}
-
 void BasicDb::set_last(time_t last)
 {
     if (uid < 0)
         return;
 
-    if (sid < 0)
-        register_new_sid();
+    try {
+        AutoTransaction a;
 
-    run_query(
-            "INSERT OR REPLACE INTO 'Last' ('sid', 'last') "
-            "VALUES ('" + itos(sid) + "', '" +  itos(last) + "');");
+        if (sid < 0)
+            register_new_sid();
+
+        Q q("INSERT OR REPLACE INTO 'Last' ('sid', 'last') VALUES (?, ?);");
+        q << sid << last;
+        q.execute();
+
+        a.commit();
+    }
+    WARNIFFAILED();
 }
 
+void BasicDb::register_new_sid()
+{
+    {
+        Q q("SELECT max(sid) FROM Library;");
+        if (q.next())
+            q >> sid;
+        ++sid;
+    }
+
+    cerr << "will set sid to " << sid << endl;
+
+    {
+        Q q("UPDATE 'Library' SET sid = ? WHERE uid = ?;");
+        q << sid << uid;
+        q.execute();
+    }
+}
 
 void BasicDb::set_id(const IntPair &p)
 {
@@ -377,11 +454,23 @@ void BasicDb::set_spectrum(const string &spectrum)
     if (uid < 0)
         return;
 
-    run_query("INSERT INTO 'Acoustic' ('uid') VALUES ('" + itos(uid) + "');");
+    try
+    {
+        AutoTransaction a;
+        {
+            Q q("INSERT INTO 'Acoustic' ('uid') VALUES (?);");
+            q << uid;
+            q.execute();
+        }
 
-    run_query(
-            "UPDATE 'Acoustic' SET spectrum = '" + spectrum +  "' "
-            "WHERE uid = '" + itos(uid) + "';");
+        {
+            Q q("UPDATE 'Acoustic' SET spectrum = ? WHERE uid = ?;");
+            q << spectrum << uid;
+            q.execute();
+        }
+        a.commit();
+    }
+    WARNIFFAILED();
 }
 
 void BasicDb::set_bpm(int bpm)
@@ -389,9 +478,13 @@ void BasicDb::set_bpm(int bpm)
     if (uid < 0)
         return;
 
-    run_query(
-            "UPDATE 'Acoustic' SET bpm = '" + itos(bpm) +  "' "
-            "WHERE uid = '" + itos(uid) + "';");
+    try
+    {
+        Q q("UPDATE 'Acoustic' SET bpm = ? WHERE uid = ?;");
+        q << bpm << uid;
+        q.execute();
+    }
+    WARNIFFAILED();
 }
 
 void BasicDb::set_rating(int rating)
@@ -399,60 +492,40 @@ void BasicDb::set_rating(int rating)
     if (uid < 0)
         return;
 
-    run_query(
-            "INSERT OR REPLACE INTO 'Rating' ('uid', 'rating') "
-            "VALUES ('" + itos(uid) + "', '" +  itos(rating) + "');");
+    try
+    {
+        Q q("INSERT OR REPLACE INTO 'Rating' ('uid', 'rating') VALUES (?, ?);");
+        q << uid << rating;
+        q.execute();
+    }
+    WARNIFFAILED();
 }
 
 void BasicDb::sql_schema_upgrade(int from)
 {
-    if (from < 2)
+    QueryCacheDisabler qcd;
+    RuntimeErrorBlocker reb;
+    try 
     {
-        run_query("DROP TABLE Info;");
-        run_query("DROP TABLE Last;");
-        run_query("DROP TABLE UnknownLast;");
+        AutoTransaction a;
+        if (from < 4)
+        {
+            // Backup the existing tables
+            Q("CREATE TEMP TABLE Library_backup "
+                    "AS SELECT * FROM Library;").execute();
+            Q("DROP TABLE Library;").execute();
 
-        // Backup the existing tables
-        run_query("CREATE TEMP TABLE Library_backup "
-                   "AS SELECT * FROM Library;");
-        run_query("DROP TABLE Library;");
+            // Create new tables
+            sql_create_tables();
 
-        run_query("CREATE TEMP TABLE Rating_backup AS SELECT * FROM Rating;");
-        run_query("DROP TABLE Rating;");
+            // Copy the data into new tables, and drop the backups
+            Q("INSERT INTO Library (uid, sid, path, modtime, checksum) "
+                    "SELECT uid, sid, path, modtime, checksum "
+                    "FROM Library_backup;").execute();
+            Q("DROP TABLE Library_backup;").execute();
+        }
 
-        // Create new tables
-        sql_create_tables();
-
-        // Copy the data into new tables, and drop the backups
-        run_query(
-                "INSERT INTO Library (uid, path, modtime, checksum) "
-                "SELECT * FROM Library_backup;");
-        run_query("DROP TABLE Library_backup;");
-
-        run_query("INSERT INTO Rating SELECT * FROM Rating_backup;");
-        run_query("DROP TABLE Rating_backup;");
-
-        // Mark the new version
-        run_query(
-                "CREATE TABLE 'Schema' ("
-                "'description' VARCHAR(10) UNIQUE NOT NULL, "
-                "'version' INTEGER NOT NULL);");
+        a.commit();
     }
-    if (from < 4)
-    {
-        // Backup the existing tables
-        run_query("CREATE TEMP TABLE Library_backup "
-                   "AS SELECT * FROM Library;");
-        run_query("DROP TABLE Library;");
-
-        // Create new tables
-        sql_create_tables();
-
-        // Copy the data into new tables, and drop the backups
-        run_query(
-                "INSERT INTO Library (uid, sid, path, modtime, checksum) "
-                "SELECT uid, sid, path, modtime, checksum "
-                "FROM Library_backup;");
-        run_query("DROP TABLE Library_backup;");
-    }
+    WARNIFFAILED();
 }

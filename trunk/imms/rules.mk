@@ -7,6 +7,8 @@ libimms.so: $(XMMS_OBJ) immsconf.h
 
 immstool: libimmscore.a
 
+sqlite_speed_test: libimmscore.a -lsqlite3
+
 immsremote: comm.o immsremote.o
 	$(CXX) -lreadline -lcurses $+ -o $@
 

@@ -5,7 +5,7 @@
 #include <utility>
 #include <time.h>
 
-#include "sqldb.h"
+#include "sqldb2.h"
 
 using std::string;
 using std::pair;
@@ -43,7 +43,7 @@ public:
     int avg_rating();
 
 protected:
-    void register_new_sid(int new_sid = -1);
+    void register_new_sid();
 
     void sql_set_pragma();
     virtual void sql_create_tables();

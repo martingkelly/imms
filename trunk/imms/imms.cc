@@ -30,8 +30,6 @@ using std::ofstream;
 #define     JUMPED_TO_SKIPPED       1
 
 #define     MAX_TIME                20*DAY
-#define     HOUR                    (60*60)
-#define     DAY                     (24*HOUR)
 
 #define     MAX_CORRELATION         12.0
 #define     SPECTRUM_IMPACT         10
