@@ -24,8 +24,8 @@ using std::list;
 //////////////////////////////////////////////
 // Constants
 
-#define     FIRST_SKIP_RATE         -5
-#define     CONS_SKIP_RATE          -3
+#define     FIRST_SKIP_RATE         -6
+#define     CONS_SKIP_RATE          -4
 #define     FIRST_NON_SKIP_RATE     5
 #define     CONS_NON_SKIP_RATE      1
 #define     JUMPED_TO_FINNISHED     7
@@ -38,7 +38,7 @@ using std::list;
 #define     MIN_SAMPLE_SIZE         15
 #define     MAX_ATTEMPTS            (SAMPLE_SIZE+MIN_SAMPLE_SIZE)
 #define     BASE_BIAS               10
-#define     DISPERSION_FACTOR       3.75
+#define     DISPERSION_FACTOR       4
 #define     MAX_TIME                20*DAY
 #define     MAX_RATING              150
 #define     MIN_RATING              75
@@ -82,6 +82,7 @@ Imms::Imms() : last_handpicked(-1)
 {
     winner_valid = last_skipped = last_jumped = false;
     have_candidates = attempts = 0;
+    local_max = MAX_TIME;
 
     string dotimms = getenv("HOME");
     mkdir(dotimms.append("/.imms").c_str(), 0700);
@@ -109,6 +110,11 @@ void Imms::pump()
 void Imms::playlist_changed(int _playlist_size)
 {
     playlist_size = _playlist_size;
+    local_max = playlist_size * 7;
+#ifdef DEBUG
+    cerr << " *** playlist changed!" << endl;
+    cerr << "local_max is now " << local_max / (24 * 60) << endl;
+#endif
 }
 
 bool Imms::add_candidate(int playlist_num, string path, bool urgent)
@@ -254,7 +260,9 @@ void Imms::print_song_info()
         fout << setiosflags(std::ios::showpos) << winner.relation
             << resetiosflags(std::ios::showpos) << "!";
 
-    fout << "] [Last: " << strtime(winner.last_played) << "] ";
+    fout << "] [Last: " << 
+        (winner.last_played == local_max ?
+            "max" : strtime(winner.last_played)) << "] ";
 
     fout << (!winner.identified ? "[Unknown] " : "");
     fout << (winner.unrated ? "[New] " : "");
@@ -385,6 +393,9 @@ bool Imms::fetch_song_info(SongData &data)
 #endif
 
     data.last_played = (time(0) - immsdb->get_last()) / 60;
+
+    if (data.last_played > local_max)
+        data.last_played = local_max;
 
     if (data.last_played > MAX_TIME)
         data.last_played = MAX_TIME;

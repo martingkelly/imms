@@ -63,7 +63,7 @@ protected:
     // State variables
     string email;
     bool last_skipped, last_jumped, use_xidle, winner_valid;
-    int have_candidates, attempts;
+    int have_candidates, attempts, local_max;
     int last_handpicked, playlist_size, current_rating;
 
     // Helper objects
