@@ -10,7 +10,7 @@
 #include <xmms/xmmsctrl.h> 
 
 #include "immsconf.h"
-#include "plugin.h"
+#include "cplugin.h"
 #include "utils.h"
 #include "clientstub.h"
 

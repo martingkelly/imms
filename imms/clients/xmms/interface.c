@@ -5,7 +5,7 @@
 #include <xmms/plugin.h>
 
 #include "immsconf.h"
-#include "plugin.h"
+#include "cplugin.h"
 
 
 int use_xidle = 1;
