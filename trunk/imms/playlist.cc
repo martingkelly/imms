@@ -112,7 +112,7 @@ void PlaylistDb::playlist_insert_item(int pos, const string &path)
 {
     try {
         Q q("INSERT INTO 'Playlist' ('pos', 'path', 'uid') "
-                "VALUES (?, ?, (SELECT uid FROM Library WHERE path = ?));");
+                "VALUES (?, ?, (SELECT uid FROM 'Identify' WHERE path = ?));");
         q << pos << path << path;
         q.execute();
     }

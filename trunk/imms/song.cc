@@ -26,7 +26,9 @@ Song::Song(const string &path_) : path(path_)
         AutoTransaction a;
 
         {
-            Q q("SELECT uid, sid, modtime FROM 'Library' WHERE path = ?;");
+            Q q("SELECT Library.uid, sid, modtime "
+                    "FROM 'Identify' NATURAL JOIN 'Library' "
+                    "WHERE path = ?;");
             q << path;
 
             if (q.next())
@@ -44,10 +46,11 @@ Song::Song(const string &path_) : path(path_)
         // old path but modtime has changed - update checksum
         if (uid != -1)
         {
-            Q q("UPDATE 'Library' SET modtime = ?, "
+            Q q("UPDATE 'Identify' SET modtime = ?, "
                     "checksum = ? WHERE path = ?;");
             q << modtime << checksum << path;
             q.execute();
+
             a.commit();
             return;
         }
@@ -55,7 +58,7 @@ Song::Song(const string &path_) : path(path_)
         // moved or new file and path needs updating
         reset();
 
-        Q q("SELECT uid, sid, path FROM 'Library' WHERE checksum = ?;");
+        Q q("SELECT uid, path FROM 'Identify' WHERE checksum = ?;");
         q << checksum;
 
         if (q.next())
@@ -71,12 +74,19 @@ Song::Song(const string &path_) : path(path_)
                 {
                     q.reset();
 
-                    Q q("UPDATE 'Library' SET sid = -1, "
-                            "path = ?, modtime = ? WHERE path = ?;");
+                    sid = -1;
 
-                    q << path << modtime << oldpath;
-
-                    q.execute();
+                    {
+                        Q q("UPDATE 'Identify' SET path = ?, "
+                                "modtime = ? WHERE path = ?;");
+                        q << path << modtime << oldpath;
+                        q.execute();
+                    }
+                    {
+                        Q q("UPDATE 'Library' SET sid = -1 WHERE uid = ?;");
+                        q << uid;
+                        q.execute();
+                    }
 #ifdef DEBUG
                     cerr << "identify: moved: uid = " << uid << endl;
 #endif
@@ -94,14 +104,19 @@ Song::Song(const string &path_) : path(path_)
             ++uid;
         }
 
+        // new file - insert into the database
         {
-            // new file - insert into the database
+            Q q("INSERT INTO 'Identify' "
+                    "('path', 'uid', 'modtime', 'checksum') "
+                    "VALUES (?, ?, ?, ?);");
+            q << path << uid << modtime << checksum;
+            q.execute();
+        }
+        {
             Q q("INSERT INTO 'Library' "
-                    "('uid', 'sid', 'path', 'modtime', 'checksum') "
-                    "VALUES (?, -1, ?, ?, ?);");
-
-            q << uid << path << modtime << checksum;
-
+                    "('uid', 'sid', 'lastseen', 'firstseen') "
+                    "VALUES (?, ?, ?, ?);");
+            q << uid << sid << time(0) << time(0);
             q.execute();
         }
 

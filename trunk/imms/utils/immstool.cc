@@ -222,8 +222,9 @@ void do_identify(const string &path)
 time_t get_last(const string &path)
 {
     Q q("SELECT last FROM 'Last' "
-                "INNER JOIN Library ON Last.sid = Library.sid "
-                "WHERE Library.path = ?;");
+                "INNER JOIN 'Library' ON Last.sid = Library.sid "
+                "JOIN 'Identify' ON Identify.uid = Library.uid "
+                "WHERE Identify.path = ?;");
     q << path;
     if (!q.next())
         return 0;
@@ -235,7 +236,7 @@ time_t get_last(const string &path)
 
 void do_purge(const string &path)
 {
-    Q q("DELETE FROM 'Library' WHERE path = ?;");
+    Q q("DELETE FROM 'Identify' WHERE path = ?;");
     q << path;
     q.execute();
 }
@@ -250,7 +251,7 @@ void do_lint()
             vector<string> cleanme;
 
             {
-                Q q("SELECT path FROM Library;");
+                Q q("SELECT path FROM Identify;");
                 while (q.next())
                 {
                     string path;
@@ -260,7 +261,7 @@ void do_lint()
                     if (path == simple)
                         continue;
 
-                    Q q("SELECT path FROM Library WHERE path = ?");
+                    Q q("SELECT path FROM Identify WHERE path = ?");
                     q << simple;
 
                     if (q.next())
@@ -275,7 +276,7 @@ void do_lint()
             for (vector<string>::iterator i = deleteme.begin(); 
                     i != deleteme.end(); ++i)
             {
-                Q q("DELETE FROM Library WHERE path = ?");
+                Q q("DELETE FROM Identify WHERE path = ?");
                 q << *i;
                 q.execute();
                 cout << *i << endl;
@@ -286,7 +287,7 @@ void do_lint()
             for (vector<string>::iterator i = cleanme.begin(); 
                     i != cleanme.end(); ++i)
             {
-                Q q("UPDATE Library SET path = ? WHERE path = ?");
+                Q q("UPDATE Identify SET path = ? WHERE path = ?");
                 q << path_normalize(*i) << *i;
                 q.execute();
                 cout << *i << endl;
@@ -294,6 +295,9 @@ void do_lint()
 
             at.commit();
         }
+
+        Q("DELETE FROM Library "
+                "WHERE uid NOT IN (SELECT uid FROM Identify);").execute();
 
         Q("DELETE FROM Info "
                 "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
@@ -313,6 +317,7 @@ void do_lint()
 
         QueryCacheDisabler qcd;
 
+        Q("VACUUM Identify;").execute();
         Q("VACUUM Library;").execute();
         Q("VACUUM Correlations;").execute();
     }
@@ -324,9 +329,10 @@ void do_bpm_distance(const string &to)
 {
     string rescaled = rescale_bpmgraph(to);
 
-    Q q("SELECT Library.path, Acoustic.bpm, Library.sid "
-            "FROM 'Library' INNER JOIN 'Acoustic' ON "
-            "Library.uid = Acoustic.uid WHERE Acoustic.bpm NOT NULL;");
+    Q q("SELECT Identify.path, Acoustic.bpm, Library.sid FROM 'Library' "
+            "INNER JOIN 'Acoustic' ON Library.uid = Acoustic.uid "
+            "JOIN 'Identify' ON Identify.uid = Library.uid "
+            "WHERE Acoustic.bpm NOT NULL;");
 
     while(q.next())
     {
@@ -355,9 +361,10 @@ void do_bpm_distance(const string &to)
 
 void do_spec_distance(const string &to)
 {
-    Q q("SELECT Library.path, Acoustic.spectrum, Library.sid "
-            "FROM 'Library' INNER JOIN 'Acoustic' ON "
-            "Library.uid = Acoustic.uid WHERE Acoustic.spectrum NOT NULL;");
+    Q q("SELECT Identify.path, Acoustic.spectrum, Library.sid FROM 'Library' "
+            "INNER JOIN 'Acoustic' ON Library.uid = Acoustic.uid "
+            "JOIN 'Identify' ON Identify.uid = Library.uid "
+            "WHERE Acoustic.spectrum NOT NULL;");
 
     while(q.next())
     {
@@ -386,7 +393,7 @@ void do_spec_distance(const string &to)
 
 void do_missing()
 {
-    Q q("SELECT path FROM 'Library';");
+    Q q("SELECT path FROM 'Identify';");
 
     while (q.next())
     {

@@ -42,16 +42,23 @@ void BasicDb::sql_create_tables()
     RuntimeErrorBlocker reb;
     try
     {
-        Q("CREATE TABLE 'Library' ("
-                "'uid' INTEGER NOT NULL, "
-                "'sid' INTEGER DEFAULT -1, "
+        Q("CREATE TABLE 'Identify' ("
                 "'path' VARCHAR(4096) UNIQUE NOT NULL, "
+                "'uid' INTEGER NOT NULL, "
                 "'modtime' TIMESTAMP NOT NULL, "
                 "'checksum' TEXT NOT NULL);").execute();
+                
+        Q("CREATE TABLE 'Library' ("
+                "'uid' INTEGER UNIQUE NOT NULL, "
+                "'sid' INTEGER DEFAULT -1, "
+                "'playcounter' INTEGER DEFAULT 0, "
+                "'lastseen' TIMESTAMP DEFAULT 0, "
+                "'firstseen' TIMESTAMP DEFAULT 0);").execute();
 
         Q("CREATE TABLE 'Rating' ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
-                "'rating' INTEGER NOT NULL);").execute();
+                "'rating' INTEGER NOT NULL, "
+                "'trend' INTEGER DEFAULT 0);").execute();
 
         Q("CREATE TABLE 'Acoustic' ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
@@ -153,17 +160,12 @@ bool BasicDb::check_title(const string &artist, string &title)
 void BasicDb::sql_schema_upgrade(int from)
 {
     QueryCacheDisabler qcd;
-    RuntimeErrorBlocker reb;
+    //RuntimeErrorBlocker reb;
     try 
     {
         AutoTransaction a;
-        if (from < 4)
+        if (from < 6)
         {
-            // Backup the existing tables
-            Q("CREATE TEMP TABLE Library_backup "
-                    "AS SELECT * FROM Library;").execute();
-            Q("DROP TABLE Library;").execute();
-
             // Create new tables
             sql_create_tables();
 
@@ -176,8 +178,38 @@ void BasicDb::sql_schema_upgrade(int from)
         if (from < 7)
         {
             Q("DROP TABLE Acoustic;").execute();
+        }
+        if (from < 8)
+        {
+            // Backup the existing tables
+            Q("CREATE TEMP TABLE Library_backup "
+                    "AS SELECT * FROM Library;").execute();
+            Q("DROP TABLE Library;").execute();
+
+            // Backup the existing tables
+            Q("CREATE TEMP TABLE Rating_backup "
+                    "AS SELECT * FROM Rating;").execute();
+            Q("DROP TABLE Rating;").execute();
+
             // Create new tables
             sql_create_tables();
+
+            Q("INSERT INTO Rating (uid, rating) "
+                    "SELECT uid, rating FROM Rating_backup;").execute();
+            Q("DROP TABLE Rating_backup;").execute();
+
+            Q("INSERT INTO Identify (path, uid, modtime, checksum) "
+                    "SELECT path, uid, modtime, checksum "
+                    "FROM Library_backup;").execute();
+
+            {
+                Q q("INSERT INTO Library (uid, sid, lastseen, firstseen) "
+                        "SELECT DISTINCT uid, sid, ?, ? FROM Library_backup;");
+                q << time(0) << time(0);
+                q.execute();
+            }
+
+            Q("DROP TABLE Library_backup;").execute();
         }
 
         a.commit();
