@@ -65,4 +65,5 @@ user-message:
 
 install-user: libimms.so
 	mkdir -p ${HOME}/.xmms/Plugins/Visualization/
+	rm -f ${HOME}/.xmms/Plugins/General/libimms.so
 	${INSTALL_PROGRAM} libimms.so ${HOME}/.xmms/Plugins/Visualization/

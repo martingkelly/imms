@@ -41,9 +41,9 @@ inline string path_simplifyer(string path)
 }
 
 
-inline string strtime(double mins)
+inline string strtime(double seconds)
 {
-    int hours = (int)mins / 60;
+    int hours = (int)seconds / (60*60);
     if (!hours)
         return "0h";
 

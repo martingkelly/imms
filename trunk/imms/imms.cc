@@ -2,8 +2,6 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <math.h>
-#include <sys/stat.h>   // for mkdir
-#include <sys/types.h>
 #include <stdlib.h>     // for (s)random
 
 #include <list>
@@ -13,7 +11,6 @@
 
 #include "imms.h"
 #include "strmanip.h"
-#include "md5digest.h"
 
 using std::endl;
 using std::cerr;
@@ -39,15 +36,15 @@ using std::list;
 #define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
 #define     BASE_BIAS               10
 #define     DISPERSION_FACTOR       4.0
-#define     MAX_TIME                20*DAY
 #define     MAX_RATING              150
 #define     MIN_RATING              75
 #define     CORRELATION_FACTOR      3
 
-#define     TERM_WIDTH              80
-#define     HOUR                    60
+#define     MAX_TIME                20*DAY
+#define     HOUR                    (60*60)
 #define     DAY                     (24*HOUR)
 
+#define     TERM_WIDTH              80
 
 //////////////////////////////////////////////
 
@@ -68,13 +65,47 @@ int imms_random(int max)
     return (int)(max * cof);
 }
 
-// SongData
-SongData::SongData(int _position, const string &_path)
-    : position(_position), path(path_simplifyer(_path))
+static int bounds[] =
+    { -1, 1, 2, 3, 5, 7, 10, 14, 20, 28, 40, 54, 74, 101, 137, 187, 255 };
+
+static int scales[] = 
+    { 11000, 4100, 3600, 3000, 2400, 2000, 1700, 2000, 1500, 1000, 750,
+        650, 550, 450, 200, 80 };
+
+// BeatKeeper
+BeatKeeper::BeatKeeper()
 {
-    rating = relation = 0;
-    identified = unrated = false;
-    last_played = 0;
+    beats = max_bass = average_bass = 0;
+}
+
+inline int weighted_merge(int v1, int v2, double v2_weight)
+{ return ROUND(pow(sqrt(v1) * (1 - v2_weight) + sqrt(v2) * v2_weight, 2)); }
+
+void BeatKeeper::integrate_bass(int bass)
+{
+    if (bass > average_bass + (max_bass - average_bass) * 0.8)
+    {
+        if (!above_average)
+            ++beats;
+        above_average = true;
+    }
+
+    if (bass < average_bass)
+        above_average = false;
+
+    if (bass > max_bass)
+        max_bass = bass;
+
+    max_bass = weighted_merge(max_bass, bass, 0.01);
+    average_bass = weighted_merge(average_bass, bass, 0.05);
+}
+
+int BeatKeeper::get_BPM(time_t seconds)
+{
+    int bpm = ROUND(beats * 60.0 / seconds);
+    beats = max_bass = average_bass = 0;
+    above_average = false;
+    return bpm;
 }
 
 // Imms
@@ -85,16 +116,12 @@ Imms::Imms() : last_handpicked(-1)
     local_max = MAX_TIME;
     last_spectrum = "";
 
-    string dotimms = getenv("HOME");
-    mkdir(dotimms.append("/.imms").c_str(), 0700);
-
-    fout.open(dotimms.append("/imms.log").c_str(),
+    string homedir = getenv("HOME");
+    fout.open(homedir.append("/.imms/imms.log").c_str(),
             ofstream::out | ofstream::app);
 
     time_t t = time(0);
     fout << endl << endl << ctime(&t) << setprecision(3);
-
-    immsdb.reset(new ImmsDb());
 }
 
 void Imms::setup(const char* _email, bool _use_xidle)
@@ -108,13 +135,42 @@ void Imms::pump()
     xidle.query();
 }
 
+void Imms::start_spectrum_analysis()
+{
+    spectrum_start_time = time(0);
+    have_spectrums = 0;
+}
+
+void Imms::stop_spectrum_analysis()
+{
+    time_t seconds = time(0) - spectrum_start_time;
+
+    int bpmv0 = bpm0.get_BPM(seconds);
+    int bpmv1 = bpm1.get_BPM(seconds);
+
+    int min = bpmv0;
+    if (bpmv1 < min)
+        min = bpmv1;
+
+    bpm = min;
+
+    cerr << "BPM: " << min << " (" << bpmv0 << "/" << bpmv1 << ")" << endl;
+}
+
 void Imms::integrate_spectrum(uint16_t _long_spectrum[long_spectrum_size])
 {
-    for (int i = 0; i < long_spectrum_size; ++i)
-        long_spectrum[i] =
-            long_spectrum[i] * have_spectrums / (have_spectrums + 1) 
-            + _long_spectrum[i] / (have_spectrums + 1);
-    ++have_spectrums;
+    static char delay = 0;
+    if (++delay % 32 == 0)
+    {
+        for (int i = 0; i < long_spectrum_size; ++i)
+            long_spectrum[i] = (long_spectrum[i] * have_spectrums 
+                    + _long_spectrum[i]) / (have_spectrums + 1);
+
+        ++have_spectrums;
+    }
+
+    bpm0.integrate_bass(1000 * _long_spectrum[0] / scales[0]);
+    bpm1.integrate_bass(1000 * _long_spectrum[1] / scales[1]);
 }
 
 void Imms::finalize_spectrum()
@@ -122,21 +178,20 @@ void Imms::finalize_spectrum()
     if (!have_spectrums)
         return;
 
-    static int bounds[] =
-        { -1, 1, 2, 3, 5, 7, 10, 14, 20, 28, 40, 54, 74, 101, 137, 187, 255 };
-
-    static int scales[] = 
-        { 11000, 4100, 3600, 3000, 2400, 2000, 1700, 2000, 1500, 1000, 750,
-            650, 550, 450, 200, 80 };
-
     string short_spectrum = "";
 
     for (int i = 0; i < short_spectrum_size; ++i)
     {
-        int sum = 0;
+        double average = 0;
         for (int j = bounds[i] + 1; j <= bounds[i + 1]; ++j)
-            sum += 'a' + ROUND(('z' - 'a') * long_spectrum[j] / scales[i]);
-        short_spectrum += ROUND(sum / (bounds[i + 1] - bounds[i]));
+            average += long_spectrum[j];
+
+        average /= (bounds[i + 1] - bounds[i]);
+        char c = 'a' + ROUND(('z' - 'a') * average / scales[i]); 
+        if (c > 'z')
+            c = 'z';
+                
+        short_spectrum += c;
     }
 
 #ifdef DEBUG
@@ -144,7 +199,7 @@ void Imms::finalize_spectrum()
 #endif
 
     if (have_spectrums > 100)
-        immsdb->set_spectrum(short_spectrum);
+        immsdb.set_spectrum(short_spectrum);
 
     int distance = 0;
 
@@ -162,7 +217,10 @@ void Imms::finalize_spectrum()
 void Imms::playlist_changed(int _playlist_size)
 {
     playlist_size = _playlist_size;
-    local_max = playlist_size * 7;
+    local_max = playlist_size * 8 * 60;
+
+    if (local_max > MAX_TIME)
+        local_max = MAX_TIME;
 #ifdef DEBUG
     cerr << " *** playlist changed!" << endl;
     cerr << "local_max is now " << strtime(local_max) << endl;
@@ -172,8 +230,7 @@ void Imms::playlist_changed(int _playlist_size)
 bool Imms::add_candidate(int playlist_num, string path, bool urgent)
 {
     ++attempts;
-    if (attempts > (playlist_size > MAX_ATTEMPTS / 2 ?
-                MAX_ATTEMPTS : playlist_size * 2))
+    if (attempts > MAX_ATTEMPTS)
         return false;
 
     SongData data(playlist_num, path);
@@ -185,8 +242,8 @@ bool Imms::add_candidate(int playlist_num, string path, bool urgent)
     if (!fetch_song_info(data))
     {
         // In case the playlist just a has a lot of songs that are not
-        // currently accessible, don't count a failure to fetch info about it
-        // as an attempt, unless we need to select the next song quickly
+        // currently accessible, don't count a failure to fetch info about
+        // it as an attempt, unless we need to select the next song quickly
         attempts -= !urgent;
         return true;
     }
@@ -194,10 +251,7 @@ bool Imms::add_candidate(int playlist_num, string path, bool urgent)
     ++have_candidates;
     candidates.push_back(data);
 
-    if (have_candidates >= (urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE))
-        return false;
-
-    return true;
+    return have_candidates < (urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE);
 }
 
 int Imms::select_next()
@@ -219,19 +273,20 @@ int Imms::select_next()
         i->composite_rating =
             ROUND((i->rating + i->relation * CORRELATION_FACTOR)
                     * i->last_played / (double)max_last_played);
-        
+
         if (i->composite_rating > max_composite)
             max_composite = i->composite_rating;
         if (i->composite_rating < min_composite)
             min_composite = i->composite_rating;
     }
 
-    if (max_composite > MIN_RATING && min_composite < MIN_RATING)
+    bool have_good = (max_composite > MIN_RATING);
+    if (have_good && min_composite < MIN_RATING)
         min_composite = MIN_RATING;
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
-        if (i->composite_rating < MIN_RATING)
+        if (have_good && i->composite_rating < MIN_RATING)
         {
             i->composite_rating = 0;
             continue;
@@ -239,7 +294,7 @@ int Imms::select_next()
 
         i->composite_rating =
             ROUND(pow(((double)(i->composite_rating - min_composite))
-                    / DISPERSION_FACTOR, DISPERSION_FACTOR));
+                        / DISPERSION_FACTOR, DISPERSION_FACTOR));
         i->composite_rating += BASE_BIAS;
         total += i->composite_rating;
     }
@@ -275,8 +330,6 @@ int Imms::select_next()
     cerr << endl;
 #endif
 
-    have_candidates = attempts = 0;
-
     return winner.position;
 }
 
@@ -284,6 +337,7 @@ void Imms::start_song(const string &path)
 {
     xidle.reset();
     candidates.clear();
+    have_candidates = attempts = 0;
 
     if (!winner_valid)
     {
@@ -291,10 +345,9 @@ void Imms::start_song(const string &path)
         fetch_song_info(winner);
     }
 
-    immsdb->set_id(winner.id);
-    immsdb->set_last(time(0));
+    immsdb.set_id(winner.id);
+    immsdb.set_last(time(0));
 
-    have_spectrums = 0;
     memset(long_spectrum, 0, sizeof(long_spectrum));
 
     print_song_info();
@@ -369,7 +422,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     if (bad)
         mod = 0;
 
-    immsdb->set_id(winner.id);
+    immsdb.set_id(winner.id);
 
     finalize_spectrum();
 
@@ -380,13 +433,14 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     fout << (!jumped && last_skipped ? "[Skipped] " : "");
     fout << "[Delta " << setiosflags(std::ios::showpos) << mod <<
         resetiosflags (std::ios::showpos) << "] ";
+    fout << "[BPM: " << bpm << "] ";
     fout << endl;
 
     last_jumped = jumped;
     winner_valid = false;
 
     if (abs(mod) > CONS_NON_SKIP_RATE)
-        immsdb->add_recent(mod);
+        immsdb.add_recent(mod);
 
     int new_rating = winner.rating + mod;
     if (new_rating > MAX_RATING)
@@ -394,255 +448,23 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     else if (new_rating < MIN_RATING)
         new_rating = MIN_RATING;
 
-    immsdb->set_rating(new_rating);
+    immsdb.set_rating(new_rating);
 }
 
 bool Imms::fetch_song_info(SongData &data)
 {
-    const string &path = data.path;
-    if (access(path.c_str(), R_OK))
+    if (!InfoFetcher::fetch_song_info(data))
         return false;
-
-    struct stat statbuf;
-    stat(path.c_str(), &statbuf);
-
-    if (immsdb->identify(path, statbuf.st_mtime) < 0)
-    {
-        if (immsdb->identify(path, statbuf.st_mtime,
-                Md5Digest::digest_file(path)) < 0)
-            return false;
-    }
-
-    songinfo.link(path);
-    data.rating = immsdb->get_rating();
-
-    data.unrated = false;
-    if (data.rating < 0)
-    {
-        data.unrated = true;
-        data.rating = songinfo.get_rating(email);
-        immsdb->set_rating(data.rating);
-    }
-
-    StringPair info = immsdb->get_info();
-    artist = info.first;
-    title = info.second;
-
-    if (artist != "" && title != "")
-        data.identified = true;
-    else if ((data.identified = parse_song_info(path)))
-        immsdb->set_title(title);
 
     data.relation = 0;
     if (last_handpicked != -1)
-        data.relation = immsdb->correlate(last_handpicked);
+        data.relation = immsdb.correlate(last_handpicked);
 
     if (data.relation > 15)
         data.relation = 15;
 
-#ifdef DEBUG
-#if 0
-    cerr << "path:\t" << path << endl;
-    cerr << "artist:\t" << artist << (identified ? " *" : "") << endl;
-    cerr << "title:\t" << title << (identified ? " *" : "") << endl;
-#endif
-#endif
-
-    data.last_played = (time(0) - immsdb->get_last()) / 60;
-
     if (data.last_played > local_max)
         data.last_played = local_max;
 
-    if (data.last_played > MAX_TIME)
-        data.last_played = MAX_TIME;
-
-    data.id = immsdb->get_id();
-
     return true;
-}
-
-bool Imms::parse_song_info(const string &path)
-{
-
-#define REMIXCLUES "rmx|mix|[^a-z]version|edit|original|remaster|" \
-    "cut|instrumental|extended"
-#define BADARTIST "artist|^va$|various|collection|^misc"
-
-    //////////////////////////////////////////////
-    // Initialize
-
-    bool identified = false;
-    bool parser_confident, artist_confirmed = false;
-
-    string tag_artist = artist = string_normalize(songinfo.get_artist());
-
-    StringPair fm = get_simplified_filename_mask(path);
-    fm.second = string_normalize(fm.second);
-
-    list<string> file_parts;
-    parser_confident = imms_magic_parse_filename(file_parts, fm.first);
-
-    // Can't normalize before we pass it to magic parse
-    fm.first = string_normalize(fm.first);
-
-    list<string> path_parts;
-    imms_magic_parse_path(path_parts, path_get_dirname(path));
-
-#ifdef DEBUG
-#if 1
-    cerr << "path parts: " << endl;
-    for (list<string>::iterator i = path_parts.begin();
-            i != path_parts.end(); ++i)
-    {
-        cerr << " >> " << *i << endl;
-    }
-    cerr << "name parts: " << endl;
-    for (list<string>::iterator i = file_parts.begin();
-            i != file_parts.end(); ++i)
-    {
-        cerr << " >> " << *i << endl;
-    }
-#endif
-#endif
-
-    //////////////////////////////////////////////
-    // Try to identify the artist
-    
-    bool bad_tag_artist = tag_artist == "" || Regexx(tag_artist, BADARTIST);
-
-    // See if we can recognize any of the path parts
-    if (file_parts.size() > 1)
-    {
-        for (list<string>::iterator i = file_parts.begin();
-                !artist_confirmed && i != file_parts.end(); ++i)
-        {
-            if (immsdb->check_artist(*i)
-                    || (!bad_tag_artist && string_like(*i, tag_artist, 4)))
-            {
-                artist_confirmed = true;
-                artist = *i;
-            }
-        }
-    } 
-
-    // See if any of the directories look familiar
-    string outermost = "";
-    for (list<string>::iterator i = path_parts.begin();
-            !artist_confirmed && i != path_parts.end(); ++i)
-    {
-        if (Regexx(*i, BADARTIST))
-            continue;
-        if (artist_confirmed =
-                (immsdb->check_artist(*i) || string_like(*i, artist, 4)))
-            artist = *i;
-        // And while we are at it find the uppermost related directory
-        else if (outermost == "" && fm.first.find(*i) != string::npos)
-            outermost = *i;
-    }
-
-    // The path part that is also the outermost directory might be the artist
-    if (!artist_confirmed && outermost != "" && fm.second.find(outermost) < 2)
-    {
-        artist = outermost;
-        artist_confirmed = true;
-    }
-
-    if (!artist_confirmed && parser_confident && file_parts.size() > 1)
-    {
-        artist = file_parts.front();
-        artist_confirmed = true;
-    }
-
-    // Give the tag artist an opportunity to override the guessed artist
-    if (!bad_tag_artist && !string_like(tag_artist, artist, 4))
-    {
-        if (immsdb->check_artist(tag_artist)
-                || fm.first.find(tag_artist) != string::npos)
-        {
-            artist = tag_artist;
-            artist_confirmed = true;
-        }
-    }
-
-    // If we still don't know what to do - give up
-    if (!artist_confirmed)
-        return identified;
-
-    // Erase the first occurrence of the artist
-    list<string>::iterator i = find(file_parts.begin(), file_parts.end(), artist);
-    if (i != file_parts.end())
-        file_parts.erase(i);
-
-    // By this point the artist had to have been confirmed
-    immsdb->set_artist(artist);
-
-    //////////////////////////////////////////////
-    // Try (not very hard) to identify the album
-
-    string album = album_filter(songinfo.get_album());
-    string directory = album_filter(path_parts.back());
-    if (album == "" || Regexx(directory, album))
-        album = directory;
-
-    //////////////////////////////////////////////
-    // Try to identify the title
-
-    string tag_title = string_tolower(songinfo.get_title());
-    title = title_filter(tag_title);
-    // If we know the title and were only missing the artist
-    if (title != "" && (identified = immsdb->check_title(title)))
-        return identified;
-
-    if (identified = Regexx(title, album + ".*(" REMIXCLUES ")"))
-        title = album;
-    else if (identified = Regexx(fm.first, album + "$"))
-        title = album;
-
-    // Can recognize the title by matching filename parts to the database?
-    for (list<string>::reverse_iterator i = file_parts.rbegin();
-            !identified && i != file_parts.rend(); ++i)
-    {
-        if (immsdb->check_title(*i) || string_like(*i, title, 4))
-        {
-            identified = true;
-            title = *i;
-        }
-        else if (identified = Regexx(*i, album + ".*(" REMIXCLUES ")"))
-            title = album;
-    }
-
-    if (identified)
-        return identified;
-
-    // See if we can trust the tag title enough to just default to it
-    if (title != "" && !Regexx(title, "(" REMIXCLUES "|^track$|^title$)")
-            && tag_artist != "" && !Regexx(tag_artist, BADARTIST)
-            && string_like(tag_title, title, 6))
-    {
-        return identified = true;
-    }
-
-    // Filter things that are probably not the title
-    for (list<string>::iterator i = file_parts.begin();
-            i != file_parts.end(); ++i)
-    {
-        if (Regexx(*i, "(" REMIXCLUES "|^track$|^title$)"))
-            *i = "###";
-    }
-
-    file_parts.remove("###");
-
-    // Default to the right most non-suspicious entry as the title
-    if (parser_confident && file_parts.size())
-    {
-        identified = true;
-        title = file_parts.back();
-    }
-    // nothing left. maybe a remix album??
-    else if (!file_parts.size() && immsdb->check_title(album))
-    {
-        identified = true;
-        title = album;
-    }
-    return identified;
 }

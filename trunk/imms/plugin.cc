@@ -213,20 +213,20 @@ void imms_poll()
 {
     switch (state)
     {
-        case BUSY:
-            return;
+    case BUSY:
+        return;
 
-        case IDLE:
-            state = BUSY;
-            do_checks();
-            if (state == BUSY)
-                state = IDLE;
-            return;
-
-        case FIND_NEXT:
-            state = BUSY;
-            do_find_next();
+    case IDLE:
+        state = BUSY;
+        do_checks();
+        if (state == BUSY)
             state = IDLE;
-            return;
+        return;
+
+    case FIND_NEXT:
+        state = BUSY;
+        do_find_next();
+        state = IDLE;
+        return;
     }
 }
