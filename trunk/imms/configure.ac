@@ -35,14 +35,17 @@ AC_ARG_WITH(screensaver,
 AC_ARG_ENABLE(debug,
             AC_HELP_STRING([--enable-debug],
                            [Extra debug output]),
-            [enable_debug='yes' XCPPFLAGS="-ggdb -O0 -DDEBUG"],
-            [enable_debug='no' XCPPFLAGS="-O3"])
+            [enable_debug=$enableval])
 
 AC_ARG_ENABLE(queuecontrol,
             AC_HELP_STRING([--disable-queuecontrol],
                            [Don't use XMMS queue control functions]),
-            [enable_queuecontrol='no'],
-            [enable_queuecontrol='yes'])
+            [enable_queuecontrol=$enableval])
+
+AC_ARG_ENABLE(analyzer,
+            AC_HELP_STRING([--disable-analyzer],
+                           [Disable acoustic song similarity analyzer]),
+            [enable_analyzer=$enableval])
 
 AC_PROG_CXX
 AC_PROG_CC
@@ -52,6 +55,11 @@ AC_LANG(C++)
 
 AC_MSG_CHECKING([for --enable-debug])
 AC_MSG_RESULT([$enable_debug])
+
+XCPPFLAGS="-ggdb -O0 -DDEBUG"
+if test "$enable_debug" != "yes"; then
+    XCPPFLAGS="-O3"
+fi
 
 AC_CHECK_LIB(z, compress,, [with_zlib=no])
 AC_CHECK_HEADERS(zlib.h,, [with_zlib=no])
@@ -85,18 +93,36 @@ if test "$with_pcre" = "no"; then
     AC_MSG_ERROR([PCRE required and missing.])
 fi
 
-PKG_CHECK_MODULES([REQUIRED], [fftw3 >= 3.0 glib-2.0 >= 2.0],
-              [], [AC_MSG_ERROR([Required packages missing.])])
+if test "$enable_analyzer" != "no"; then
+    PKG_CHECK_MODULES([FFTW], [fftw3 >= 3.0],
+                      [], [have_fftw=no])
+    if test "$have_fftw" = "no"; then
+        AC_MSG_WARN([******************************************************]);
+        AC_MSG_WARN("fftw3 >= 3.0 required for analyzer and missing");
+        AC_MSG_WARN("Acoustic analyzer will not be built");
+        AC_MSG_WARN([******************************************************]);
+        enable_analyzer=no
+    fi
+fi
+
+PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.0],
+                  [], [AC_MSG_ERROR([Required packages missing.])])
 
 saved_cppflags="$CPPFLAGS"
 saved_libs="$LIBS"
 
-CPPFLAGS="`pkg-config fftw3 --cflags`"
-LIBS="`pkg-config fftw3 --libs`"
-AC_CHECK_HEADERS(fftw3.h,, [with_fftw=no])
-AC_CHECK_LIB(fftw3, fftw_plan_dft_r2c_1d,, [with_fftw=no])
-if test "$with_fftw" = "no"; then
-    AC_MSG_ERROR([FFTW 3.0 required and missing.])
+if test "$enable_analyzer" != "no"; then
+    CPPFLAGS="`pkg-config fftw3 --cflags`"
+    LIBS="`pkg-config fftw3 --libs`"
+    AC_CHECK_HEADERS(fftw3.h,, [with_fftw=no])
+    AC_CHECK_LIB(fftw3, fftw_plan_dft_r2c_1d,, [with_fftw=no])
+    if test "$with_fftw" = "no"; then
+        AC_MSG_WARN([******************************************************]);
+        AC_MSG_WARN("fftw3 >= 3.0 required for analyzer and missing");
+        AC_MSG_WARN("Acoustic analyzer will not be built");
+        AC_MSG_WARN([******************************************************]);
+        enable_analyzer=no
+    fi
 fi
 
 CPPFLAGS="`pkg-config glib-2.0 --cflags`"
@@ -154,12 +180,14 @@ else
     fi
 fi
 
-AC_CHECK_PROG(have_sox, sox, "yes", "no")
-if test "$have_sox" = "no"; then
-    AC_MSG_WARN([******************************************************]);
-    AC_MSG_WARN([To benefit from acoustic analysis features of IMMS],);
-    AC_MSG_WARN([you need to install sox [http://sox.sourceforge.net/]]);
-    AC_MSG_WARN([******************************************************]);
+if test "$enable_analyzer" != "no"; then
+    AC_CHECK_PROG(have_sox, sox, "yes", "no")
+    if test "$have_sox" = "no"; then
+        AC_MSG_WARN([******************************************************]);
+        AC_MSG_WARN([To benefit from acoustic analysis features of IMMS],);
+        AC_MSG_WARN([you need to install sox [http://sox.sourceforge.net/]]);
+        AC_MSG_WARN([******************************************************]);
+    fi
 fi
 
 if test "$with_screensaver" != "no"; then
@@ -242,11 +270,18 @@ else
     fi
 fi
 
+if test "$enable_analyzer" != "no"; then
+    AC_APPEND(OPTIONAL, analyzer)
+fi
+
 LIBS=$saved_libs
 CPPFLAGS=$saved_cppflags
 
 AC_MSG_CHECKING([which plugins to build])
 AC_MSG_RESULT($PLUGINS)
+
+AC_MSG_CHECKING([which optional packages to build])
+AC_MSG_RESULT($OPTIONAL)
 
 AC_SUBST(CXX)
 AC_SUBST(CC)
@@ -255,6 +290,7 @@ AC_SUBST(XCPPFLAGS)
 AC_SUBST(TAGCPPFLAGS)
 AC_SUBST(LIBS)
 AC_SUBST(PLUGINS)
+AC_SUBST(OPTIONAL)
 
 AC_CONFIG_FILES(vars.mk)
 AC_CONFIG_HEADERS(immsconf.h)
