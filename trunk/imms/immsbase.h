@@ -1,7 +1,7 @@
 #ifndef __IMMSBASE_H
 #define __IMMSBASE_H
 
-#include "playlist.h"
+#include "immsdb.h"
 
 class ImmsBase
 {
@@ -12,7 +12,7 @@ class ImmsBase
     };
 protected:
     DirMaker dirmaker;
-    PlaylistDB immsdb;
+    ImmsDb immsdb;
 };
 
 #endif

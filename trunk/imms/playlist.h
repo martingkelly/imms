@@ -1,9 +1,10 @@
 #ifndef __PLAYLIST_H
 #define __PLAYLIST_H
 
-#include "immsdb.h"
+#include "immsconf.h"
+#include "basicdb.h"
 
-class PlaylistDB : public ImmsDb
+class PlaylistDb : virtual public BasicDb
 {
 public:
     void playlist_insert_item(int pos, const string &path);
@@ -17,6 +18,7 @@ public:
     void clear_playlist();
 protected:
     virtual void sql_create_tables();
+    virtual void sql_schema_upgrade(int from = 0) {};
 private:
     bool all_known;
 };
