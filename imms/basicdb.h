@@ -6,6 +6,7 @@
 #include <time.h>
 
 #include "sqldb2.h"
+#include "song.h"
 
 using std::string;
 using std::pair;
@@ -13,14 +14,11 @@ using std::pair;
 typedef pair<string, string> StringPair;
 typedef pair<int, int> IntPair;
 
-class BasicDb : protected SqlDb
+class BasicDb : protected SqlDb, public Song
 {
 public:
     BasicDb();
     virtual ~BasicDb();
-    int identify(const string &path, time_t modtime);
-    int identify(const string &path, time_t modtime,
-            const string &checksum);
 
     int get_rating();
     time_t get_last();
@@ -37,6 +35,9 @@ public:
     bool check_title(string &title);
 
     int avg_rating();
+
+    bool identify(const string &path)
+        { *((Song*)this) = Song::identify(path); return uid != -1; }
 
 protected:
     void register_new_sid();

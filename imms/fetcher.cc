@@ -24,23 +24,18 @@ ImmsBase::DirMaker::DirMaker()
     if (!access((dotimms + "/imms.db").c_str(), R_OK)
             && access((dotimms + "/imms2.db").c_str(), F_OK))
     {
+        cerr << string(60, '*') << endl;
         cerr << "Old database format detected, "
             "will attempt an upgrade..." << endl;
         ostringstream command;
         command << "sqlite " << dotimms << "/imms.db .dump | sqlite3 "
             << dotimms << "/imms2.db" << endl;
         cerr << "Running: " << command.str() << endl;
-        if (system(command.str().c_str()))
-        {
-            cerr << "Upgrade failed!! " << endl;
-            cerr << "Verify that you have *both* sqlite 2.8.x "
-                "and 3.0.x installed" << endl;
-            cerr << "And rerun the command by hand." << endl;
-        }
-        else
-        {
-            cerr << "Upgrade successful!! " << endl;
-        }
+        system(command.str().c_str());
+        cerr << "If you see errors above verify that you have *both*"
+            " sqlite 2.8.x" << endl;
+        cerr << "and 3.0.x installed and rerun the command by hand." << endl;
+        cerr << string(60, '*') << endl;
     }
 }
 
@@ -56,15 +51,7 @@ bool InfoFetcher::playlist_identify_item(int pos)
 {
     string path = immsdb.get_playlist_item(pos);
 
-    struct stat statbuf;
-    if (stat(path.c_str(), &statbuf))
-        return false;
-
-    if (immsdb.identify(path, statbuf.st_mtime) < 0)
-        if (immsdb.identify(path, statbuf.st_mtime,
-                    Md5Digest::digest_file(path)) < 0)
-            return false;
-
+    immsdb.identify(path);
     immsdb.playlist_update_identity(pos);
 
     return true;

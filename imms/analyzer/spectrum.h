@@ -14,22 +14,30 @@ using std::string;
 using std::vector;
 
 #define MINBPM          50
-#define MAXBPM          225
-#define SAMPLES         100
-#define MINBEATLENGTH   (SAMPLES*60/MAXBPM)
-#define MAXBEATLENGTH   (SAMPLES*60/MINBPM)
+#define MAXBPM          250
+
+#define WINDOWSIZE      512
+#define OVERLAP         256
+#define SAMPLERATE      22050
+
+#define WINDOWSPSEC     (SAMPLERATE/(WINDOWSIZE-OVERLAP)) 
+#define MINBEATLENGTH   (WINDOWSPSEC*60/MAXBPM)
+#define MAXBEATLENGTH   (WINDOWSPSEC*60/MINBPM)
 #define BEATSSIZE       (MAXBEATLENGTH-MINBEATLENGTH)
-#define SHORTSPECTRUM   16
-#define LONGSPECTRUM    256
-#define MICRO           1000000
+#define READSIZE        (WINDOWSIZE - OVERLAP)
+#define NFREQS          (WINDOWSIZE / 2 + 1)
+#define BARKSIZE        (int)(26.81/(1+(2*1960.0/SAMPLERATE)) + 0.47)
+#define SHORTSPECTRUM   BARKSIZE
+#define LONGSPECTRUM    NFREQS
 
 float rms_string_distance(const string &s1, const string &s2);
 
 class BeatKeeper
 {
 public:
-    BeatKeeper(const string &_name) : name(_name) { reset(); }
+    BeatKeeper() { reset(); }
     void reset();
+    void dump(const string &filename);
     string get_bpm_graph();
     int guess_actual_bpm();
     void integrate_beat(float power);
@@ -42,10 +50,7 @@ protected:
     int peak_finder_helper(vector<int> &peaks, int min, int max,
             float cutoff, float range);
 
-    string name;
-    struct timeval prev;
     long unsigned int samples;
-    time_t first, last;
     float average_with, *last_window, *current_window, *current_position;
     float data[2*MAXBEATLENGTH];
     float beats[BEATSSIZE];
@@ -55,7 +60,7 @@ class SpectrumAnalyzer
 {
 public:
     SpectrumAnalyzer();
-    void integrate_spectrum(uint16_t long_spectrum[LONGSPECTRUM]);
+    void integrate_spectrum(float long_spectrum[LONGSPECTRUM]);
     void finalize();
 
 protected:
@@ -68,7 +73,8 @@ protected:
 private:
     BeatKeeper bpm_low, bpm_hi;
     int have_spectrums;
-    double spectrum[SHORTSPECTRUM];
+    float spectrum[SHORTSPECTRUM];
+
     string last_spectrum;
     string last_bpm;
 };

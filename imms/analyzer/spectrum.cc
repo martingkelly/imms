@@ -7,7 +7,6 @@
 #include <map>
 
 #include <utils.h>
-#include <strmanip.h>
 
 #include "spectrum.h"
 
@@ -16,12 +15,52 @@ using std::cerr;
 using std::pair;
 using std::map;
 
+inline int freq2bark(int f) { return (int)(26.81 / (1 + (1960.0 / f)) - 0.53); }
+inline int bark2freq(int b) { return (int)(1960 / (26.81 / (b + 0.53) - 1)); }
+
+inline int indx2freq(int i) { return i * SAMPLERATE / WINDOWSIZE; }
+inline int freq2indx(int i) { return (int)(i * WINDOWSIZE / SAMPLERATE) + 1; }
+
+float scales[] = { 0.6619, 1.384, 1.918, 1.493, 3.261, 2.417, 2.756,
+    2.45, 2.778, 2.915, 2.476, 2.497, 2.052, 2.213, 1.885, 1.859, 1.931,
+    1.65, 1.525, 1.506, 1.302, 2.376, 23.1 };
+
+float bias[] = { 164.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0 };
+
+string encode_spectrum(float spectrum[BARKSIZE])
+{
+    string spec;
+    for (int i = 0; i < BARKSIZE; ++i)
+    {
+        char c = 'a' + ROUND((spectrum[i] - bias[i]) * scales[i]);
+        c = std::min('z', std::max('a', c));
+
+        spec += c;
+    }
+    return spec;
+}
+
+void freq2bark(float freqs[NFREQS], float bark[BARKSIZE])
+{
+    for (int i = 0; i < NFREQS; )
+    {
+        int b = freq2bark(indx2freq(i));
+        int last = std::min(freq2indx(bark2freq(b + 1)), NFREQS);
+
+        bark[b] = 0;
+        for (int j = i; j < last; ++j)
+            bark[b] += freqs[j];
+        //bark[b] /= (float)(last - i);
+
+        i = last;
+    }
+}
+
 void BeatKeeper::reset()
 {
     samples = 0;
-    first = last = 0;
     memset(data, 0, sizeof(data));
-    memset(&prev, 0, sizeof(prev));
     memset(beats, 0, sizeof(beats));
     current_position = current_window = data;
     last_window = &data[MAXBEATLENGTH];
@@ -58,12 +97,12 @@ const BeatKeeper &BeatKeeper::operator +=(const BeatKeeper &other)
 
 static inline int offset2bpm(int offset)
 {
-    return ROUND(60 * SAMPLES / (float)(MINBEATLENGTH + offset));
+    return ROUND(60 * WINDOWSPSEC / (float)(MINBEATLENGTH + offset));
 }
 
 static inline int bpm2offset(int bpm)
 {
-    return ROUND(60 * SAMPLES / (float)bpm  - MINBEATLENGTH);
+    return ROUND(60 * WINDOWSPSEC / (float)bpm  - MINBEATLENGTH);
 }
 
 static inline bool roughly_double(int a, int b)
@@ -134,16 +173,18 @@ int BeatKeeper::maybe_double(int bpm, float min, float range)
     return bpm;
 }
 
+void BeatKeeper::dump(const string &filename)
+{
+    std::ofstream bstats(filename.c_str(), std::ios::trunc);
+
+    for (int i = 0; i < BEATSSIZE; ++i)
+        bstats << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
+
+    bstats.close();
+}
+
 string BeatKeeper::get_bpm_graph()
 {
-    {
-        string fullname = "/tmp/beats-" + name;
-        std::ofstream bstats(fullname.c_str(), std::ios::trunc);
-
-        for (int i = 0; i < BEATSSIZE; ++i)
-            bstats << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
-    }
-    
     bool empty = true;
     string graph;
     for (int i = 3; i < BEATSSIZE; i += 4)
@@ -159,17 +200,9 @@ string BeatKeeper::get_bpm_graph()
 
 int BeatKeeper::guess_actual_bpm()
 {
-#ifdef DEBUG
 #if 0
     cerr << samples << " samples in " << last - first << " seconds: "
         << ROUND(samples / (float)(last - first)) << " samples/sec" << endl;
-#endif
-
-    string fullname = "/tmp/beats-" + name;
-    std::ofstream bstats(fullname.c_str(), std::ios::trunc);
-
-    for (int i = 0; i < BEATSSIZE; ++i)
-        bstats << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
 #endif
 
     float max = 0, min = INT_MAX;
@@ -287,19 +320,7 @@ void BeatKeeper::process_window()
     last_window = tmp;
 }
 
-static int bounds[] =
-    { -1, 1, 2, 3, 5, 7, 10, 14, 20, 28, 40, 54, 74, 101, 137, 187, 255 };
-
-static float scales[] =
-    { 186, 160, 128, 80, 64, 50, 36, 31, 28, 24, 15, 11, 10, 9, 8, 2.5 };
-
-static const float scale_scale = 1.7;
-
-#ifdef DEBUG
-double max_vals[SHORTSPECTRUM] = { 0 };
-#endif
-
-SpectrumAnalyzer::SpectrumAnalyzer() : bpm_low("low"), bpm_hi("hi")
+SpectrumAnalyzer::SpectrumAnalyzer()
 {
     last_bpm = last_spectrum = "";
     reset();
@@ -366,41 +387,39 @@ float SpectrumAnalyzer::bpm_transition(const string &from,
     return 0;
 }
 
-void SpectrumAnalyzer::integrate_spectrum(
-        uint16_t long_spectrum[LONGSPECTRUM])
+void SpectrumAnalyzer::integrate_spectrum(float long_spectrum[LONGSPECTRUM])
 {
+    float bark[BARKSIZE];
+    freq2bark(long_spectrum, bark);
+
     float power = 0;
     for (int i = 0; i < 3; ++i)
-        power += long_spectrum[i] / scales[i];
+        power += bark[i];
 
-    bpm_low.integrate_beat(power);
+    bpm_low.integrate_beat(power / 70);
 
     power = 0;
-    for (int i = 255; i > 150; --i)
-        power += long_spectrum[i];
+    for (int i = BARKSIZE; i > BARKSIZE - 3; --i)
+        power += bark[i];
 
-    bpm_hi.integrate_beat(power / 2000.0);
+    bpm_hi.integrate_beat(power * 10);
 
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-    {
-        float average = 0;
-        for (int j = bounds[i] + 1; j <= bounds[i + 1]; ++j)
-            average += long_spectrum[j];
-
-        average /= ((bounds[i + 1] - bounds[i]) * scales[i] * scale_scale);
-
-        spectrum[i] = (spectrum[i] * have_spectrums + average)
+    for (int i = 0; i < BARKSIZE; ++i)
+        spectrum[i] = (spectrum[i] * have_spectrums + bark[i])
             / (float)(have_spectrums + 1);
-    }
     ++have_spectrums;
 }
 
 void SpectrumAnalyzer::finalize()
 {
-    BeatKeeper bpm_com("com");
+    BeatKeeper bpm_com;
 
     bpm_com += bpm_low; 
     bpm_com += bpm_hi; 
+
+    bpm_low.dump("/tmp/beats-low");
+    bpm_hi.dump("/tmp/beats-high");
+    bpm_com.dump("/tmp/beats-com");
 
     last_bpm = bpm_com.get_bpm_graph();
     int bpmval = bpm_com.guess_actual_bpm();
@@ -409,22 +428,18 @@ void SpectrumAnalyzer::finalize()
     if (!have_spectrums)
         return;
 
-    last_spectrum = "";
+    last_spectrum = encode_spectrum(spectrum);
 
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-    {
-#if 0 && defined(DEBUG)
-        if (max_vals[i] < spectrum[i])
-            max_vals[i] = spectrum[i];
-        cerr << max_vals[i] << endl;
+#if 0
+    std::ofstream bstats("/tmp/spectrums", std::ios::app);
+    for (int i = 0; i < BARKSIZE; ++i)
+        bstats << spectrum[i] << " ";
+    bstats << endl;
+    bstats.close();
 #endif
-        int c = 'a' + ROUND(spectrum[i]);
-        c = c > 'z' ? 'z' : (c < 'a' ? 'a' : c);
-
-        last_spectrum += (char)c;
-    }
 
 #ifdef DEBUG
-    cerr << "spectrum [" << last_spectrum << "] " << endl;
+    cerr << "spectrum  [" << last_spectrum << "] " << endl;
+    cerr << "bpm graph [" << last_bpm << "] " << endl;
 #endif
 }
