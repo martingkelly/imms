@@ -36,6 +36,44 @@ void BasicDb::sql_set_pragma()
     WARNIFFAILED();
 }
 
+void BasicDb::sql_create_v7_tables()
+{
+    QueryCacheDisabler qcd;
+    RuntimeErrorBlocker reb;
+    try
+    {
+        Q("CREATE TABLE 'Library' ("
+                "'uid' INTEGER NOT NULL, "
+                "'sid' INTEGER DEFAULT -1, "
+                "'path' VARCHAR(4096) UNIQUE NOT NULL, "
+                "'modtime' TIMESTAMP NOT NULL, "
+                "'checksum' TEXT NOT NULL);").execute();
+
+        Q("CREATE TABLE 'Rating' ("
+                "'uid' INTEGER UNIQUE NOT NULL, "
+                "'rating' INTEGER NOT NULL);").execute();
+
+        Q("CREATE TABLE 'Acoustic' ("
+                "'uid' INTEGER UNIQUE NOT NULL, "
+                "'spectrum' TEXT, 'bpm' TEXT);").execute();
+
+        Q("CREATE TABLE 'Info' ("
+                "'sid' INTEGER UNIQUE NOT NULL," 
+                "'artist' TEXT NOT NULL, "
+                "'title' TEXT NOT NULL);").execute();
+
+        Q("CREATE TABLE 'Last' ("
+                "'sid' INTEGER UNIQUE NOT NULL, " 
+                "'last' TIMESTAMP);").execute();
+
+        Q("CREATE TABLE 'Journal' ("
+                "'uid' INTEGER NOT NULL, " 
+                "'delta' INTEGER NOT NULL, " 
+                "'time' TIMESTAMP NOT NULL);").execute();
+    }
+    WARNIFFAILED();
+}
+
 void BasicDb::sql_create_tables()
 {
     QueryCacheDisabler qcd;
@@ -163,11 +201,21 @@ void BasicDb::sql_schema_upgrade(int from)
     try 
     {
         AutoTransaction a;
-        if (from < 6)
+        if (from < 4)
         {
-            cerr << "IMMS: Direct upgrade from SCHEMA version < 6 unsupported"
-                << endl << "Please upgrade to IMMS 1.2 first" << endl;
-            exit(-1);
+            // Backup the existing tables
+            Q("CREATE TEMP TABLE Library_backup "
+                    "AS SELECT * FROM Library;").execute();
+            Q("DROP TABLE Library;").execute();
+
+            // Create new tables
+            sql_create_v7_tables();
+
+            // Copy the data into new tables, and drop the backups
+            Q("INSERT INTO Library (uid, sid, path, modtime, checksum) "
+                    "SELECT uid, sid, path, modtime, checksum "
+                    "FROM Library_backup;").execute();
+            Q("DROP TABLE Library_backup;").execute();
         }
         if (from < 7)
         {
