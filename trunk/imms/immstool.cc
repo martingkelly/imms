@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <math.h>
 
 #include "imms.h"
 #include "sqldb.h"
