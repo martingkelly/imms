@@ -16,9 +16,10 @@ Aknowledgements: (see actual files for more details):
     xidle.{h,cc}
         Borrows from xautolock 2.1
         by Michel Eyckmans (MCE) <eyckmans@imec.be>
-
-Major contributors:
-    David Held - testing and bug fixes
+    spectrum.cc
+        The beat detection algorithm is inspired by
+        SoundTouch Audio Processing Library
+        Olli Parviainen <oparviai@iki.fi>
 
 Licence:
     GNU/GPL - see LICENSE for details

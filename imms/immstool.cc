@@ -6,6 +6,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <time.h>
 
 #include "imms.h"
@@ -158,6 +159,10 @@ void ImmsTool::do_lint()
 
     run_query(
             "DELETE FROM Rating "
+            "WHERE uid NOT IN (SELECT uid FROM Library);");
+
+    run_query(
+            "DELETE FROM Acoustic "
             "WHERE uid NOT IN (SELECT uid FROM Library);");
 
     run_query(

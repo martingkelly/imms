@@ -282,9 +282,9 @@ int Imms::fetch_song_info(SongData &data)
 #if defined(DEBUG) && 1
     cerr << "[" << std::setw(60) << path_get_filename(data.path) << "] ";
     if (data.color)
-        cerr << "[ color = " << data.color << "] " << endl;
+        cerr << "[ color = " << data.color << " ] ";
     if (data.bpm)
-        cerr << "[ *bpm* = " << data.bpm << "] " << endl;
+        cerr << "[ *bpm* = " << data.bpm << " ] ";
     cerr << endl;
 #endif
 
