@@ -27,16 +27,16 @@ distclean: clean
 	rm -f $(wildcard ../.\#* ../config.* ../configure ../immsconf.h* ../vars.mk)
 	rm -rf $(wildcard ../autom4te.cache)
 
-configure: configure.ac
+../configure: configure.ac
 	autoheader
 	autoconf
 
-immsconf.h: configure
+immsconf.h: ../configure
 	$(error Please run the "configure" script)
 
 dist: immsconf.h distclean 
 	cp -r .. /tmp/imms-$(VERSION)
-	rm -rf /tmp/imms-$(VERSION)/.svn
+	rm -rf `find /tmp/imms-$(VERSION)/ -name .svn`
 	tar -C /tmp/ -cj imms-$(VERSION)/ -f imms-$(VERSION).tar.bz2
 	tar -C /tmp/ -cz imms-$(VERSION)/ -f imms-$(VERSION).tar.gz
 	rm -rf /tmp/imms-$(VERSION)/
@@ -57,7 +57,7 @@ system-message:
 	$(warning Defaulting to installing for all users.)
 	$(warning Use 'make install-user' to install for the current user only.)
 
-install-system: libimms.so
+install-system: all
 	${INSTALL_PROGRAM} libimms.so `xmms-config --general-plugin-dir`
 	$(call installprogs)
 
@@ -65,7 +65,7 @@ user-message:
 	$(warning Defaulting to installing for current user only.)
 	$(warning Use 'make install-system' to install for all users.)
 
-install-user: libimms.so
+install-user: all
 	mkdir -p ${HOME}/.xmms/Plugins/General/
 	${INSTALL_PROGRAM} libimms.so ${HOME}/.xmms/Plugins/General/
 	$(call installprogs)

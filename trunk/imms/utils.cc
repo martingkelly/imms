@@ -122,3 +122,12 @@ string rescale_bpmgraph(const string &graph)
         result += std::min((char)('a' + cur), 'z');
     return result;
 }
+
+string path_normalize(const string &path)
+{
+    if (access(path.c_str(), R_OK))
+        return path;
+    char resolved[4096];
+    realpath(path.c_str(), resolved);
+    return resolved;
+}

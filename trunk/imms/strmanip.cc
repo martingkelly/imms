@@ -305,12 +305,3 @@ string string_delete(const string &haystack, const string &needle)
 {
     return rex.replace(haystack, needle, "", Regexx::global);
 }
-
-string path_simplifyer(const string &path)
-{
-    if (access(path.c_str(), R_OK))
-        return path;
-    char resolved[4096];
-    realpath(path.c_str(), resolved);
-    return resolved;
-}

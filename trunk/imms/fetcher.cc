@@ -38,7 +38,7 @@ void InfoFetcher::playlist_changed()
 
     for (int i = 0; i < Player::get_playlist_length(); ++i)
     {
-        string path = path_simplifyer(Player::get_playlist_item(i));
+        string path = path_normalize(Player::get_playlist_item(i));
         ImmsDb::playlist_insert_item(i, path);
     }
 }

@@ -127,9 +127,11 @@ sqlite3_stmt *SQLQueryManager::get(const string &query)
     if (i != statements.end())
         return i->second;
 
+#ifdef TRANS
     int tr = 1;
     if (cache)
         tr = sqlite3_exec(SQLDatabase::db(), "BEGIN TRANSACTION;", 0, 0, 0);
+#endif
 
     sqlite3_stmt *statement = 0;
     int qr = sqlite3_prepare(SQLDatabase::db(), query.c_str(),
@@ -137,8 +139,11 @@ sqlite3_stmt *SQLQueryManager::get(const string &query)
 
     SQLException except = SQLStandardException();
 
+#ifdef TRANS
     if (tr == 0) 
-        sqlite3_exec(SQLDatabase::db(), "COMMIT TRANSACTION;", 0, 0, 0);
+        if (sqlite3_exec(SQLDatabase::db(), "COMMIT TRANSACTION;", 0, 0, 0))
+            throw SQLStandardException();
+#endif
 
     if (qr)
     {

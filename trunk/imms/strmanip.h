@@ -89,8 +89,6 @@ string title_filter(const string &title);
 string album_filter(const string &album);
 string string_delete(const string &haystack, const string &needle);
 
-string path_simplifyer(const string &path);
-
 void string_split(list<string> &store, const string &s,
         const string &delims);
 
