@@ -55,9 +55,6 @@ void InfoFetcher::playlist_changed(int length)
     for (int i = 0; i < pl_length; ++i)
     {
         string path = path_normalize(get_playlist_item(i));
-#ifdef DEBUG
-        cerr << "item " << i << " = " << path << endl;
-#endif
         ImmsDb::playlist_insert_item(i, path);
     }
 }

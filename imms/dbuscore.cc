@@ -124,8 +124,11 @@ IDBusIMessage& IDBusIMessage::operator>>(int &i)
 
 IDBusIMessage& IDBusIMessage::operator>>(string &s)
 {
-    verify_type(DBUS_TYPE_STRING);
-    s = dbus_message_iter_get_string(iter);
+    verify_type(DBUS_TYPE_ARRAY);
+    unsigned char *str;
+    int len;
+    dbus_message_iter_get_byte_array(iter, &str, &len);
+    s = (char*)str;
     next();
     return *this;
 }
@@ -138,7 +141,8 @@ IDBusOMessage& IDBusOMessage::operator<<(int i)
 
 IDBusOMessage& IDBusOMessage::operator<<(const string &s)
 {
-    dbus_message_iter_append_string(iter, s.c_str());
+    dbus_message_iter_append_byte_array(iter,
+            (unsigned char*)s.c_str(), s.length() + 1);
     return *this;
 } 
 
