@@ -5,8 +5,10 @@
 #include <algorithm>
 
 #include "fetcher.h"
+#include "player.h"
 #include "strmanip.h"
 #include "md5digest.h"
+#include "utils.h"
 
 using std::endl;
 using std::cerr;
@@ -26,24 +28,59 @@ InfoFetcher::SongData::SongData(int _position, const string &_path)
     spectrum = "";
 }
 
-int InfoFetcher::fetch_song_info(SongData &data)
+bool InfoFetcher::playlist_identify_item(int pos)
 {
-    const string &path = data.path;
+    string path = immsdb.get_playlist_item(pos);
+
+    cerr << "trying to identify playlist entry # " << pos << endl;
 
     struct stat statbuf;
     if (stat(path.c_str(), &statbuf))
-        return -1;
+        return false;
 
-    int result = 1;
     if (immsdb.identify(path, statbuf.st_mtime) < 0)
-    {
-        ++result;
         if (immsdb.identify(path, statbuf.st_mtime,
-                Md5Digest::digest_file(path)) < 0)
-            return -1;
+                    Md5Digest::digest_file(path)) < 0)
+            return false;
+
+    immsdb.playlist_update_identity(pos);
+
+    return true;
+}
+
+void InfoFetcher::playlist_changed()
+{
+#ifdef DEBUG
+    struct timeval start;
+    gettimeofday(&start, 0);
+#endif
+
+    immsdb.clear_playlist();
+
+    for (int i = 0; i < Player::get_playlist_length(); ++i)
+    {
+        string path = path_simplifyer(Player::get_playlist_item(i));
+        immsdb.playlist_insert_item(i, path);
     }
 
+#ifdef DEBUG
+    struct timeval now;
+    gettimeofday(&now, 0);
+    int msec = usec_diff(start, now) / 1000;
+    cerr << "Playlist update took " << msec << " microseconds." << endl;
+#endif
+}
+
+bool InfoFetcher::fetch_song_info(SongData &data)
+{
+    if (!immsdb.playlist_id_from_item(data.position))
+        if (!playlist_identify_item(data.position))
+            return false;
+
+    const string &path = data.path;
+
     StringPair info = immsdb.get_info();
+
     string artist = info.first;
     string title = info.second;
 
@@ -51,7 +88,6 @@ int InfoFetcher::fetch_song_info(SongData &data)
         data.identified = true;
     else
     {
-        result += 2;
         if ((data.identified = parse_song_info(path, title)))
             immsdb.set_title(title);
     }
@@ -85,7 +121,7 @@ int InfoFetcher::fetch_song_info(SongData &data)
     data.spectrum = immsdb.get_spectrum();
     data.bpm_value = immsdb.get_bpm();
 
-    return result;
+    return true;
 }
 
 bool InfoFetcher::parse_song_info(const string &path, string &title)

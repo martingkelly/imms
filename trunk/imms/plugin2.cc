@@ -12,6 +12,7 @@
 #include "immsconf.h"
 #include "plugin.h"
 #include "imms.h"
+#include "utils.h"
 
 using std::string;
 
@@ -152,6 +153,9 @@ void do_checks()
 
     check_playlist();
 
+    // have imms do it's internal processing
+    imms->pump();
+
     // check the time to catch the end of the song
     int cur_time = xmms_remote_get_output_time(session);
 
@@ -179,9 +183,6 @@ void do_checks()
                             ? ending < 10 : -(ending > 0);
 
     do_more_checks();
-
-    // have imms do it's internal processing
-    imms->pump();
 
     if (!shuffle)
         return;
