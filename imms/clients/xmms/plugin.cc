@@ -139,11 +139,13 @@ void do_checks()
     if (imms->check_connection())
     {
         imms->setup(xidle_val);
-        imms->playlist_changed(pl_length);
+        imms->playlist_changed(pl_length
+                = xmms_remote_get_playlist_length(session));
         if (xmms_remote_is_playing(session))
         {
-            int cur = xmms_remote_get_playlist_pos(session);
-            imms->start_song(cur, imms_get_playlist_item(cur));
+            last_plpos = cur_plpos = xmms_remote_get_playlist_pos(session);
+            last_path = cur_path = imms_get_playlist_item(cur_plpos);
+            imms->start_song(cur_plpos, cur_path);
         }
     }
 

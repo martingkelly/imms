@@ -38,8 +38,8 @@ public:
         stringstream sstr;
         sstr << line;
 
-#if defined(DEBUG) && 0
-        cerr << "< " << line << endl;
+#if defined(DEBUG) && 1
+        std::cout << "< " << line << endl;
 #endif
 
         string command = "";

@@ -19,7 +19,7 @@ using std::endl;
 class GIOSocket
 {
 public:
-    GIOSocket() : con(0), outp(0) {}
+    GIOSocket() : con(0), read_tag(0), write_tag(0), outp(0) {}
     virtual ~GIOSocket() { close(); }
 
     bool isok() { return con; }
@@ -28,14 +28,14 @@ public:
         fcntl(fd, F_SETFD, O_NONBLOCK);
 
         con = g_io_channel_unix_new(fd);
-        g_io_add_watch(con,
+        read_tag = g_io_add_watch(con,
                 (GIOCondition)(G_IO_IN | G_IO_PRI | G_IO_ERR | G_IO_HUP),
                 _connection_event, this);
     }
     void write(const string &line)
     {
         if (outbuf.empty())
-            g_io_add_watch(con, G_IO_OUT, _connection_event, this);
+            write_tag = g_io_add_watch(con, G_IO_OUT, _connection_event, this);
 
         outbuf.push_back(line);
     }
@@ -46,6 +46,11 @@ public:
             g_io_channel_close(con);
             g_io_channel_unref(con);
         }
+        if (write_tag)
+            g_source_remove(write_tag);
+        if (read_tag)
+            g_source_remove(read_tag);
+        write_tag = read_tag = 0;
         inbuf = "";
         outbuf.clear();
         outp = 0;
@@ -105,7 +110,7 @@ public:
                     {
                         outbuf.pop_front();
                         outp = 0;
-                        return !outbuf.empty();
+                        return outbuf.empty() ? (write_tag = 0) : 1;
                     }
                     outp += n;
                 }
@@ -127,6 +132,7 @@ public:
 
 private:
     GIOChannel *con;
+    int read_tag, write_tag;
     string inbuf;
     const char *outp;
     std::list<string> outbuf;

@@ -46,13 +46,15 @@ bool SongPicker::add_candidate(bool urgent)
         if (position < 0)
             position = imms_random(pl_length);
 
+        bool found = false;
         for (Candidates::iterator i = candidates.begin();
-              i != candidates.end(); ++i)
+              !found && i != candidates.end(); ++i)
         {
             if (i->position == position)
-                continue;
+                found = true;
         }
-        break;
+        if (!found)
+            break;
     }
 
     string path = ImmsDb::get_item_from_playlist(position);
