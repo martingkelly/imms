@@ -130,8 +130,10 @@ void Imms::start_song(int position, string path)
     if (history.size() > 10)
         history.pop_front();
 
+    AutoTransaction at;
+
     *static_cast<Song*>(this) = *static_cast<Song*>(&current);
-    ImmsDb::set_last(time(0));
+    current.set_last(time(0));
 
     print_song_info();
 
@@ -139,8 +141,11 @@ void Imms::start_song(int position, string path)
         set_lastinfo(handpicked);
 
     StringPair acoustic = ImmsDb::get_acoustic();
+
     if (acoustic.first == "")
         system(string("analyzer \"" + path + "\" &").c_str());
+
+    at.commit();
 }
 
 void Imms::print_song_info()
@@ -167,7 +172,7 @@ void Imms::print_song_info()
         (current.last_played == local_max ?  "!" : "") << "] ";
 
     fout << (!current.identified ? "[Unknown] " : "");
-    fout << (current.unrated ? "[New] " : "");
+    fout << (!current.get_playcounter() ? "[New] " : "");
 
     fout.flush();
 }
@@ -242,19 +247,21 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     last_jumped = jumped;
 
-    ImmsDb::add_recent(mod);
-
     int new_rating = current.rating + mod;
     if (new_rating > MAX_RATING)
         new_rating = MAX_RATING;
     else if (new_rating < MIN_RATING)
         new_rating = MIN_RATING;
 
-    ImmsDb::set_last(time(0));
-    ImmsDb::set_rating(new_rating);
-}
+    AutoTransaction at;
 
-float rescale(float score) { return score < 0 ? score * 2 : score; }
+    ImmsDb::add_recent(mod);
+    current.set_last(time(0));
+    current.set_rating(new_rating);
+    current.increment_playcounter();
+
+    at.commit();
+}
 
 void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
 {
