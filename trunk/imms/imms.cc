@@ -233,8 +233,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     last_jumped = jumped;
 
-    if (abs(mod) > CONS_NON_SKIP_RATE)
-        immsdb.add_recent(mod);
+    immsdb.add_recent(mod);
 
     int new_rating = current.rating + mod;
     if (new_rating > MAX_RATING)

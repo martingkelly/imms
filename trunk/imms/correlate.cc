@@ -67,7 +67,10 @@ void CorrelationDb::expire_recent(time_t cutoff)
                 if (!q.next())
                     break;
 
+                cerr << "time now " << time(0) << endl;
+                cerr << "correlate_from was " << correlate_from << endl;
                 q >> from >> from_weight >> correlate_from;
+                cerr << "setting correlate_from to " << correlate_from << endl;
 
                 while (q.next())
                 {

@@ -65,8 +65,6 @@ protected:
     void reset();
 
 private:
-    float rms_string_distance(const string &from, const string &to);
-
     BeatKeeper bpm_low, bpm_hi;
     int have_spectrums;
     double spectrum[SHORTSPECTRUM];
