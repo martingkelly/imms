@@ -8,7 +8,6 @@
 #define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
 #define     BASE_BIAS               10
 #define     DISPERSION_FACTOR       4.1
-#define     CORRELATION_FACTOR      5
 
 using std::endl;
 using std::cerr;
@@ -37,6 +36,7 @@ bool SongPicker::add_candidate(int position, string path, bool urgent)
         return true;
 
     int cost = fetch_song_info(data);
+
     if (cost < 0)
     {
         // In case the playlist just a has a lot of songs that are not
@@ -46,8 +46,8 @@ bool SongPicker::add_candidate(int position, string path, bool urgent)
         return true;
     }
 
-    acquired += cost;
     candidates.push_back(data);
+    acquired += cost;
 
     return acquired < (urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE);
 }
@@ -79,9 +79,9 @@ int SongPicker::select_next()
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
         i->composite_rating =
-            ROUND((i->rating + i->relation * CORRELATION_FACTOR)
+            ROUND((i->rating + i->relation + i->extra)
                     * i->last_played / (double)max_last_played);
-
+        
         if (i->composite_rating > max_composite)
             max_composite = i->composite_rating;
         if (i->composite_rating < min_composite)

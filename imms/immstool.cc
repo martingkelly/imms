@@ -26,6 +26,7 @@ int usage()
 #include <utility>
 using std::pair;
 extern pair<float, float> spectrum_analyze(const string &spectstr);
+extern string spectrum_normalize(const string &spectr);
 extern int spectrum_distance(const string &s1, const string &s2);
 
 class DistanceSqlDb : public SqlDb
@@ -45,8 +46,9 @@ public:
     int spectrum_callback(int argc, char *argv[])
     {
         assert(argc == 3);
-        string temp = argv[1];
-        cout << setw(4) << spectrum_distance(reference, temp)
+        cout << setw(4) << spectrum_distance(
+                spectrum_normalize(reference),
+                spectrum_normalize(argv[1]))
             << "  " << argv[1] << "  ";
 
         select_query("SELECT artist, title FROM Info "
@@ -98,6 +100,7 @@ int main(int argc, char *argv[])
                 cout << "bad spectrum: " << spectrum << endl;
                 continue;
             }
+            spectrum = spectrum_normalize(spectrum);
             ++count;
             all.push_back(spectrum);
             for (int i = 0; i < short_spectrum_size; ++i)

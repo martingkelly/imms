@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[1.0-pre2],[mag@luminal.org])
+AC_INIT([IMMS],[1.0-pre4],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -18,7 +18,7 @@ AC_ARG_WITH(vorbis,
 
 AC_ARG_WITH(screensaver,
             AC_HELP_STRING([--with-screensaver],
-                           [XScreenSaver extension]))
+                           [Use MIT ScreenSaver extension]))
 
 AC_ARG_ENABLE(debug,
             AC_HELP_STRING([--enable-debug],
