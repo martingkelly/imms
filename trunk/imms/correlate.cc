@@ -9,7 +9,7 @@
 using std::endl;
 using std::cerr;
 
-#define CORRELATION_TIME    (2*30)   // n * 30 ==> n minutes
+#define CORRELATION_TIME    (20*30)   // n * 30 ==> n minutes
 #define MAX_CORR_STR        "10"
 #define MAX_CORRELATION     10
 #define SECOND_DEGREE       0.5
@@ -20,6 +20,11 @@ void CorrelationDb::sql_create_tables()
     QueryCacheDisabler qcd;
     try {
         Q("CREATE TABLE 'Correlations' ("
+                "'x' INTEGER NOT NULL, "
+                "'y' INTEGER NOT NULL, "
+                "'weight' INTEGER DEFAULT '0');").execute();
+
+        Q("CREATE TEMP TABLE 'TmpCorr' ("
                 "'x' INTEGER NOT NULL, "
                 "'y' INTEGER NOT NULL, "
                 "'weight' INTEGER DEFAULT '0');").execute();
@@ -116,12 +121,12 @@ void CorrelationDb::expire_recent_helper()
     //    return 0;
     
     try {
-        Q("DROP TABLE TmpCorr;").execute();
+        Q("DELETE FROM TmpCorr;").execute();
     }
     catch (SQLException &e) {}
 
     {
-        string query("CREATE TEMP TABLE TmpCorr AS SELECT x, y, weight "
+        string query("INSERT INTO TmpCorr SELECT x, y, weight "
             "FROM 'Correlations' WHERE (x IN (?, ?) OR y IN (?, ?)) AND ");
         query += (weight > 0 ? string("abs") : string("")) + " (weight) > 1;";
 
@@ -174,7 +179,7 @@ void CorrelationDb::update_correlation(int from, int to, float weight)
         q.execute();
         return;
     }
-    WARNIFFAILED();
+    catch (SQLException &e) { }
 
     {
         Q q("UPDATE 'Correlations' SET weight = "

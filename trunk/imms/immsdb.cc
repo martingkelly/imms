@@ -22,6 +22,11 @@ void ImmsDb::sql_create_tables()
 void ImmsDb::sql_schema_upgrade(int from)
 {
     try {
+        Q("CREATE TABLE 'Schema' ('version' TEXT NOT NULL, "
+                "'description' TEXT UNIQUE NOT NULL);").execute();
+    } catch (SQLException &e) {}
+
+    try {
         Q q("SELECT version FROM 'Schema' WHERE description ='latest';");
         if (q.next())
             q >> from;
@@ -46,6 +51,9 @@ void ImmsDb::sql_schema_upgrade(int from)
     CorrelationDb::sql_schema_upgrade(from);
     PlaylistDb::sql_schema_upgrade(from);
 
-    Q("INSERT OR REPLACE INTO 'Schema' ('description', 'version') "
-            "VALUES ('latest', '" +  itos(SCHEMA_VERSION) + "');").execute();
+    try {
+        Q("INSERT OR REPLACE INTO 'Schema' ('description', 'version') "
+                "VALUES ('latest', '" +  itos(SCHEMA_VERSION) + "');").execute();
+    }
+    WARNIFFAILED();
 }

@@ -40,7 +40,7 @@ void BasicDb::sql_create_tables()
     {
         Q("CREATE TABLE 'Library' ("
                 "'uid' INTEGER NOT NULL, "
-                "'sid' INTEGER DEFAULT '-1', "
+                "'sid' INTEGER DEFAULT -1, "
                 "'path' VARCHAR(4096) UNIQUE NOT NULL, "
                 "'modtime' TIMESTAMP NOT NULL, "
                 "'checksum' TEXT NOT NULL);").execute();
@@ -64,113 +64,6 @@ void BasicDb::sql_create_tables()
                 "'time' TIMESTAMP NOT NULL);").execute();
     }
     WARNIFFAILED();
-}
-
-
-int BasicDb::identify(const string &path, time_t modtime)
-{
-    title = artist = "";
-    sid = uid = -1;
-
-    try {
-        Q q("SELECT uid, sid, modtime FROM 'Library' WHERE path = ?;");
-        q << path;
-
-        if (q.next())
-        {
-            time_t last_modtime;
-            q >> uid >> sid >> last_modtime;
-
-            if (modtime == last_modtime)
-                return uid;
-        }
-    }
-    WARNIFFAILED();
-
-    return -1;
-}
-
-int BasicDb::identify(const string &path, time_t modtime,
-        const string &checksum)
-{
-    try {
-        AutoTransaction a;
-
-        // old path but modtime has changed - update checksum
-        if (uid != -1)
-        {
-            Q q("UPDATE 'Library' SET modtime = ?, "
-                    "checksum = ? WHERE path = ?';");
-            q << modtime << checksum << path;
-            q.execute();
-            a.commit();
-            return uid;
-        }
-
-        // moved or new file and path needs updating
-        sid = uid = -1;
-
-        Q q("SELECT uid, sid, path FROM 'Library' WHERE checksum = ?;");
-        q << checksum;
-
-        if (q.next())
-        {
-            // Check if any of the old paths no longer exist 
-            // (aka file was moved) so that we can reuse their uid
-            do
-            {
-                string oldpath;
-                q >> uid >> sid >> oldpath;
-
-                if (access(oldpath.c_str(), F_OK))
-                {
-                    q.reset();
-
-                    {
-                        Q q("UPDATE 'Library' SET sid = -1, "
-                                "path = ?, modtime = ? WHERE path = ?;");
-
-                        q << path << modtime << oldpath;
-
-                        q.execute();
-                    }
-#ifdef DEBUG
-                    cerr << "identify: moved: uid = " << uid << endl;
-#endif
-                    a.commit();
-                    return uid;
-                }
-            } while (q.next());
-        }
-        else
-        {
-            // figure out what the next uid should be
-            Q q("SELECT max(uid) FROM Library;");
-            if (q.next())
-                q >> uid;
-            ++uid;
-        }
-
-        {
-            // new file - insert into the database
-            Q q("INSERT INTO 'Library' "
-                    "('uid', 'sid', 'path', 'modtime', 'checksum') "
-                    "VALUES (?, -1, ?, ?, ?);");
-
-            q << uid << path << modtime << checksum;
-
-            q.execute();
-        }
-
-#ifdef DEBUG
-        cerr << "identify: new: uid = " << uid << endl;
-#endif
-
-        a.commit();
-        return uid;
-    }
-    WARNIFFAILED();
-    return -1;
 }
 
 int BasicDb::avg_rating()
@@ -415,6 +308,7 @@ void BasicDb::register_new_sid()
 
 void BasicDb::set_id(const IntPair &p)
 {
+    title = artist = "";
     uid = p.first;
     sid = p.second;
 }

@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <string.h>
 #include <fftw3.h>
 #include <stdint.h>
@@ -11,13 +12,13 @@
 
 #include "spectrum.h"
 
-#define WINDOW_SIZE 512
-#define OVERLAP     292
-#define READSIZE   (WINDOW_SIZE - OVERLAP)
+#define SCALE       100000.0
 
 using std::cout;
 using std::endl;
 using std::string;
+using std::ostringstream;
+using std::vector;
 
 typedef uint16_t sample_t;
 
@@ -29,10 +30,11 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    string command = "mpg123 -s -r 22050 --mono ";
-    command += '"' + string(argv[1]) + '"';
-    cout << "running " << command.c_str() << endl;
-    FILE *p = popen(command.c_str(), "r");
+    ostringstream command;
+    command << "sox \"" <<  argv[1] << "\" -t .raw -w -u -c 1 "
+        "-r " << SAMPLERATE << " -";
+    cout << "running " << command.str() << endl;
+    FILE *p = popen(command.str().c_str(), "r");
 
     if (!p)
     {
@@ -40,60 +42,53 @@ int main(int argc, char *argv[])
         return -2;
     }
 
-    const int nfreqs = WINDOW_SIZE / 2 + 1;
-
-    sample_t indata[WINDOW_SIZE];
-    fftwf_complex outfftdata[nfreqs];
-    float *infftdata = (float*)outfftdata;
-    float outdata[nfreqs];
+    sample_t indata[WINDOWSIZE];
+    fftwf_complex outfftdata[NFREQS];
+    float infftdata[WINDOWSIZE];
+    float outdata[NFREQS];
     int counter = 0;
 
-    float maxes[nfreqs];
+    float maxes[NFREQS];
     memset(maxes, 0, sizeof(maxes));
     
     StackTimer t;
 
     int r = fread(indata, sizeof(sample_t), OVERLAP, p);
 
-    if (r < OVERLAP)
+    if (r != OVERLAP)
         return -3;
 
-    fftwf_plan plan = fftwf_plan_dft_r2c_1d(WINDOW_SIZE,
+    fftwf_plan plan = fftwf_plan_dft_r2c_1d(WINDOWSIZE,
             infftdata, outfftdata, 0);
 
-    BeatKeeper bpm("bpm");
+    SpectrumAnalyzer analyzer;
 
     while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p) == READSIZE)
     {
-        for (int i = 0; i < WINDOW_SIZE; ++i)
-            infftdata[i] = indata[i];
+        for (int i = 0; i < WINDOWSIZE; ++i)
+            infftdata[i] = (float)indata[i];
 
         fftwf_execute(plan);
 
-        for (int i = 0; i < nfreqs; ++i)
+        for (int i = 0; i < NFREQS; ++i)
         {
-            outdata[i] = log(pow(outfftdata[i][0], 2)
-                    + pow(outfftdata[i][1], 2));
+            outdata[i] = sqrt(pow(outfftdata[i][0] / SCALE, 2)
+                    + pow(outfftdata[i][1] / SCALE, 2));
             if (outdata[i] > maxes[i])
                 maxes[i] = outdata[i];
         }
     
-        float power;
-        for (int i = 0; i < 5; ++i)
-            power += outdata[i];
+        analyzer.integrate_spectrum(outdata);
 
-        bpm.integrate_beat(power);
-
-        memmove(indata, indata + READSIZE, OVERLAP);
+        memmove(indata, indata + READSIZE, OVERLAP * sizeof(sample_t));
         counter++;
     }
 
-    bpm.guess_actual_bpm();
+    pclose(p);
 
     fftwf_destroy_plan(plan);
 
-    cout << "processed " << counter << " windows" << endl;
+    analyzer.finalize();
 
-    for (int i = 0; i < nfreqs; ++i)
-        cout << maxes[i] << endl;
+    cout << "processed " << counter << " windows" << endl;
 }

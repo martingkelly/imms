@@ -21,7 +21,8 @@ libimmscore.a: $(call objects,..) immsconf.h
 immstool-CPPFLAGS = -I../analyzer
 immstool: immstool.o libimmscore.a spectrum.o
 
-sqlite_speed_test-LIBS = libimmscore.a
+sqlite_speed_test: libimmscore.a
+sqlite_bork_test: libimmscore.a
 
 immsremote: immsremote.o comm.o 
 immsremote: -lreadline -lcurses

@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <list>
 #include <utility>
@@ -17,8 +18,6 @@
 #include <spectrum.h>
 #include <strmanip.h>
 
-#define SHORTSPECTRUM   16
-
 using std::string;
 using std::cout;
 using std::endl;
@@ -26,6 +25,7 @@ using std::list;
 using std::cin;
 using std::setw;
 using std::pair;
+using std::ifstream;
 
 int Player::get_playlist_length() { return 0; }
 string Player::get_playlist_item(int i) { return ""; }
@@ -51,6 +51,7 @@ public:
 int usage();
 void do_help();
 void do_deviation();
+void do_deviation_2(const string &filename);
 
 int main(int argc, char *argv[])
 {
@@ -75,6 +76,12 @@ int main(int argc, char *argv[])
     else if (!strcmp(argv[1], "deviation"))
     {
         do_deviation();
+    }
+    else if (!strcmp(argv[1], "deviation2"))
+    {
+        if (argc < 3)
+            return usage();
+        do_deviation_2(argv[2]);
     }
     else if (!strcmp(argv[1], "missing"))
     {
@@ -230,6 +237,70 @@ void ImmsTool::do_missing()
         q >> path;
         if (access(path.c_str(), F_OK))
             cout << path << endl;
+    }
+}
+
+void do_deviation_2(const string &filename)
+{
+    ifstream in(filename.c_str());
+
+    int count = 0;
+    double mean[SHORTSPECTRUM];
+    memset(&mean, 0, sizeof(mean));
+    double cur[SHORTSPECTRUM];
+    while (1)
+    {
+        for (int i = 0; i < SHORTSPECTRUM; ++i)
+            in >> cur[i];
+
+        if (in.eof())
+            break;
+
+        ++count;
+        for (int i = 0; i < SHORTSPECTRUM; ++i)
+            mean[i] += cur[i];
+    }
+
+    // total to mean
+    for (int i = 0; i < SHORTSPECTRUM; ++i)
+        mean[i] /= count;
+
+    cout << "Mean     : ";
+    for (int i = 0; i < SHORTSPECTRUM; ++i)
+    cout << endl;
+
+    double deviations[SHORTSPECTRUM];
+    memset(&deviations, 0, sizeof(deviations));
+
+    in.close();
+    ifstream in2(filename.c_str());
+
+    while (1)
+    {
+        for (int i = 0; i < SHORTSPECTRUM; ++i)
+            in2 >> cur[i];
+
+        if (in2.eof())
+            break;
+
+        for (int i = 0; i < SHORTSPECTRUM; ++i)
+            deviations[i] += pow(mean[i] - cur[i], 2);
+    }
+
+    for (int i = 0; i < SHORTSPECTRUM; ++i)
+        deviations[i] = sqrt(deviations[i] / count);
+
+    cout.precision(4);
+    cout << "Results : " << endl;
+    for (int i = 0; i < SHORTSPECTRUM; ++i)
+    {
+        double div = deviations[i] * 2.5;
+        double min = std::max(mean[i] - div, 0.0);
+        double max = mean[i] + div;
+        double scale = 26 / (max - min);
+        cout << setw(7) << min << " .. " << setw(5) << max;
+        cout << "    [" << setw(5) << scale << " / " << setw(6)
+            << (min < 1 ? 0 : min) << "]" << endl;
     }
 }
 
