@@ -34,10 +34,10 @@ int PlaylistDb::install_filter(const string &filter)
     run_query("DELETE FROM 'Matches';");
     run_query("INSERT INTO 'Matches' "
             "SELECT DISTINCT(Library.uid) FROM 'Library' "
-                "INNER JOIN 'Rating' ON Rating.uid = Library.uid "
+                "INNER JOIN 'Rating' ON USING(uid) "
+                "LEFT OUTER JOIN 'Last' ON Last.sid = Library.sid "
                 "LEFT OUTER JOIN 'Acoustic' ON Acoustic.uid = Library.uid "
-                "INNER JOIN 'Last' ON Last.sid = Library.sid "
-                "INNER JOIN 'Info' ON Info.sid = Library.sid "
+                "LEFT OUTER JOIN 'Info' ON Info.sid = Library.sid "
                     "WHERE " + filter + ";");
 
     select_query("SELECT count(uid) FROM 'Matches';");
