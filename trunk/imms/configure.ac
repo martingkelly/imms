@@ -194,6 +194,7 @@ fi
 
 if test "$with_screensaver" != "no"; then
     LDFLAGS="-shared -L/usr/X11R6/lib"
+    AC_CHECK_LIB(X11, XFlush,, [with_screensaver=no])
     AC_CHECK_LIB(Xext, XextFindDisplay,, [with_screensaver=no])
     AC_CHECK_LIB(Xss, XScreenSaverQueryInfo,, [with_screensaver=no])
     AC_CHECK_HEADERS(X11/extensions/scrnsaver.h,,

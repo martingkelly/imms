@@ -14,8 +14,7 @@ void PlaylistDb::sql_create_tables()
         Q("CREATE TEMPORARY TABLE 'Playlist' ("
                 "'pos' INTEGER PRIMARY KEY, "
                 "'path' VARCHAR(4096) NOT NULL, "
-                "'uid' INTEGER DEFAULT NULL, "
-                "'ided' INTEGER DEFAULT '0');").execute();
+                "'uid' INTEGER DEFAULT -1);").execute();
 
         Q("CREATE TEMPORARY TABLE 'Matches' ("
                 "'uid' INTEGER UNIQUE NOT NULL);").execute();
@@ -59,7 +58,7 @@ int PlaylistDb::install_filter(const string &filter)
 int PlaylistDb::get_unknown_playlist_item()
 {
     try {
-        Q q("SELECT pos FROM 'Playlist' WHERE uid IS NULL LIMIT 1;");
+        Q q("SELECT pos FROM 'Playlist' WHERE uid = -1 LIMIT 1;");
 
         if (q.next())
         {
@@ -69,13 +68,6 @@ int PlaylistDb::get_unknown_playlist_item()
         }
     }
     WARNIFFAILED();
-
-#if 0
-    select_query("SELECT pos FROM 'Playlist' WHERE ided = '0' LIMIT 1;");
-
-    if (nrow && resultp[1])
-        return atoi(resultp[1]);
-#endif
 
     return -1;
 }
@@ -103,7 +95,7 @@ Song PlaylistDb::playlist_id_from_item(int pos)
 void PlaylistDb::playlist_update_identity(int pos, int uid)
 {
     try {
-        Q q("UPDATE 'Playlist' SET ided = '1', uid = ? WHERE pos = ?;");
+        Q q("UPDATE 'Playlist' SET uid = ? WHERE pos = ?;");
         q << uid << pos;
         q.execute();
     }
@@ -122,6 +114,21 @@ time_t PlaylistDb::get_average_first_seen()
     WARNIFFAILED();
 
     return avg;
+}
+
+time_t PlaylistDb::get_average_last()
+{
+    time_t average_last = INT_MAX;
+
+    try {
+        Q q("SELECT avg(Last.last) FROM Playlist NATURAL JOIN Library "
+                "INNER JOIN Last on Library.uid = Last.uid;");
+        if (q.next())
+            q >> average_last;
+    }
+    WARNIFFAILED();
+
+    return average_last;
 }
 
 void PlaylistDb::playlist_insert_item(int pos, const string &path)

@@ -45,6 +45,14 @@ int evaluate_artist(const string &artist, const string &album,
     if (length - ascii < 3)
         score += 10;
 
+    if (isdigit(artist[0]))
+        score -= 5;
+
+    if (artist.find(" - ") != string::npos)
+        score -= 8;
+    if (title.find(" - ") != string::npos)
+        score -= 10;
+
     return score;
 }
 
@@ -102,46 +110,50 @@ void Song::update_tag_info()
             return;
     }
 
-    if (artist != "")
     {
-        int count = 0;
-        {
-            Q q("SELECT count(1) FROM Tags WHERE artist = ?;");
-            q << artist;
-            if (q.next())
-                q >> count;
-        }
-
-        int trust = evaluate_artist(artist, album, title, count);
-        int oldtrust = 0, aid = -1;
-
-        {
-            Q q("SELECT A.aid, A.artist, A.trust "
-                    "FROM Library L NATURAL INNER JOIN Info I "
-                    "INNER JOIN Artists A on I.aid = A.aid WHERE L.uid = ?;");
-            q << uid;
-            if (q.next())
-                q >> aid >> oldtrust;
-        }
-
-        if (aid > -1 && trust > oldtrust)
-        {
-            Q q("UPDATE Artists SET readable = ?, trust = ? WHERE aid = ?;");
-            q << artist << trust << aid;
-            q.execute();
-        }
+        Q q("INSERT OR REPLACE INTO Tags "
+                "('uid', 'artist', 'album', 'title') "
+                "VALUES (?, ?, ?, ?);");
+        q << uid << artist << album << title;
+        q.execute();
     }
 
-    Q q("INSERT OR REPLACE INTO Tags "
-            "('uid', 'artist', 'album', 'title') "
-            "VALUES (?, ?, ?, ?);");
-    q << uid << artist << album << title;
-    q.execute();
+    if (artist == "")
+        return;
+    
+    int count = 0;
+    {
+        Q q("SELECT count(1) FROM Tags WHERE artist = ?;");
+        q << artist;
+        if (q.next())
+            q >> count;
+    }
+
+    int trust = evaluate_artist(artist, album, title, count);
+    int oldtrust = 0, aid = -1;
+
+    {
+        Q q("SELECT A.aid, A.artist, A.trust "
+                "FROM Library L NATURAL INNER JOIN Info I "
+                "INNER JOIN Artists A on I.aid = A.aid WHERE L.uid = ?;");
+        q << uid;
+        if (q.next())
+            q >> aid >> oldtrust;
+    }
+
+    if (aid < 0 || oldtrust <= trust)
+        return;
+
+    try {
+        Q q("UPDATE Artists SET readable = ?, trust = ? WHERE aid = ?;");
+        q << artist << trust << aid;
+        q.execute();
+    } catch (SQLException &e) {}
 }
 
 void Song::identify(time_t modtime)
 {
-    AutoTransaction a(true);
+    AutoTransaction a;
 
     {
         Q q("SELECT Library.uid, sid, modtime "

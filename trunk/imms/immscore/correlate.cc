@@ -210,13 +210,15 @@ void CorrelationDb::update_secondary_correlations(int node1, int node2,
 
 void CorrelationDb::update_correlation(int from, int to, float weight)
 {
+    if (fabs(weight) < 0.25)
+        return;
+
 #ifdef DEBUG
     cerr << " >> Updating link from " << std::min(from, to) << " to "
         << std::max(from, to) << " by " << weight << endl;
 #endif
 
     int min = std::min(from, to), max = std::max(from, to);
-
 
     try {
         Q q("INSERT INTO C.Correlations "
@@ -280,6 +282,8 @@ void CorrelationDb::sql_schema_upgrade(int from)
         if (from < 10)
         {
             // Backup the existing tables
+            Q("DELETE FROM Correlations WHERE abs(weight) < 0.25;");
+
             Q("CREATE TABLE C.Correlations "
                     "AS SELECT * FROM Correlations;").execute();
             Q("DROP TABLE Correlations;").execute();
