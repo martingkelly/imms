@@ -8,13 +8,7 @@ first: ../configure
 
 include ../rules.mk
 
-all: immsd analyzer immstool $(TARGETS)
-
-XMMSCOMMON=interface.o dbusclient.o glib1dbus.o libimmscore.a
-libxmmsimms.so: plugin.o $(XMMSCOMMON)
-libxmmsimms-LIBS = $(DBUSLDFLAGS) $(XMMSLDFLAGS)
-libxmmsimms2.so: plugin2.o $(XMMSCOMMON)
-libxmmsimms2-LIBS = $(DBUSLDFLAGS) $(XMMSLDFLAGS)
+all: immsd analyzer immstool $(PLUGINS)
 
 libimmscore.a: $(call objects,../immscore)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
@@ -26,9 +20,6 @@ analyzer: $(call objects,../analyzer)
 analyzer: libimmscore.a
 analyzer-LIBS=`pkg-config fftw3f --libs`
 
-interface-CPPFLAGS=$(XMMSCPPFLAGS)
-plugin-CPPFLAGS=$(XMMSCPPFLAGS)
-plugin2-CPPFLAGS=$(XMMSCPPFLAGS)
 songinfo-CPPFLAGS=$(TAGCPPFLAGS)
 dbuscore-CPPFLAGS=$(DBUSCPPFLAGS)
 dbusclient-CPPFLAGS=$(DBUSCPPFLAGS)
@@ -51,3 +42,6 @@ dbus-client: dbus-client.o
 glib-test-CPPFLAGS=$(GLIB1CPPFLAGS)
 glib-test-LIBS=-limmscore -L. $(GLIB1LDFLAGS)
 glib-test: glib-test.o
+
+PLUGINS_INSTALL=$(patsubst %,%_install,$(PLUGINS))
+plugins_install: $(PLUGINS_INSTALL)

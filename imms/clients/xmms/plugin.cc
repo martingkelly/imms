@@ -124,6 +124,8 @@ void do_more_checks()
         imms->playlist_changed(pl_length);
     }
 
+    imms->check_connection();
+
     // check if xmms is reporting the song length correctly
     song_length = xmms_remote_get_playlist_time(session, cur_plpos);
     if (song_length > 1000)
