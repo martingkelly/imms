@@ -173,12 +173,6 @@ void Song::increment_playcounter()
 
     try
     { 
-        Q q("SELECT playcounter FROM 'Library' WHERE uid = ?;");
-        q << uid;
-
-        if (q.next())
-            q >> playcounter;
-
         Q("UPDATE 'Library' SET playcounter = playcounter + 1 WHERE uid = ?;")
             << uid << execute;
     }
@@ -194,6 +188,19 @@ void Song::set_rating(int rating)
     {
         Q("INSERT OR REPLACE INTO 'Rating' ('uid', 'rating') VALUES (?, ?);")
             << uid << rating << execute;
+    }
+    WARNIFFAILED();
+}
+
+void Song::set_trend(int trend)
+{
+    if (uid < 0)
+        return;
+
+    try
+    {
+        Q("INSERT OR REPLACE INTO 'Rating' ('uid', 'trend') VALUES (?, ?);")
+            << uid << trend << execute;
     }
     WARNIFFAILED();
 }
@@ -307,6 +314,25 @@ int Song::get_rating()
     }
     WARNIFFAILED();
     return rating;
+}
+
+int Song::get_trend()
+{
+    if (uid < 0)
+        return -1;
+
+    int trend = 0;
+
+    try
+    {
+        Q q("SELECT trend FROM 'Rating' WHERE uid = ?;");
+        q << uid;
+
+        if (q.next())
+            q >> trend;
+    }
+    WARNIFFAILED();
+    return trend;
 }
 
 StringPair Song::get_info()

@@ -35,6 +35,11 @@ analyzer: libimmscore.a
 test: test.o
 test: libimmscore.a
 
+interface-CPPFLAGS=$(XMMSCPPFLAGS)
+plugin-CPPFLAGS=$(XMMSCPPFLAGS)
+plugin2-CPPFLAGS=$(XMMSCPPFLAGS)
+songinfo-CPPFLAGS=$(TAGCPPFLAGS)
+
 dbus-server-CPPFLAGS=`pkg-config dbus-1 dbus-glib-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE
 dbus-server-LIBS=`pkg-config dbus-1 dbus-glib-1 --libs`
 dbus-server: dbus-server.o
@@ -42,5 +47,3 @@ dbus-server: dbus-server.o
 dbus-client-CPPFLAGS=`pkg-config dbus-1 dbus-glib-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE
 dbus-client-LIBS=`pkg-config dbus-1 dbus-glib-1 --libs`
 dbus-client: dbus-client.o
-
-realpath-test: libimmscore.a
