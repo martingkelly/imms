@@ -4,6 +4,8 @@
 #include "immsconf.h"
 #include "basicdb.h"
 
+#include <vector>
+
 class PlaylistDb : virtual public BasicDb
 {
 public:
@@ -15,12 +17,16 @@ public:
     string get_playlist_item(int pos);
     int get_unknown_playlist_item();
 
-    int playlist_install_filter(const string &filter);
+    int install_filter(const string &filter);
+    int get_uid_from_filter();
 
     void playlist_clear();
 protected:
     virtual void sql_create_tables();
     virtual void sql_schema_upgrade(int from = 0) {};
+
+private:
+    int filtercount;
 };
 
 #endif

@@ -138,14 +138,16 @@ static void check_time()
 
 void do_checks()
 {
-    // if not playing do nothing
-    if (!xmms_remote_is_playing(session))
-        return;
-
     check_playlist();
 
+    if (!xmms_remote_is_playing(session))
+    {
+        imms->do_idle_events();
+        return;
+    }
+
     // have imms do it's internal processing
-    imms->pump();
+    imms->do_events();
 
     cur_plpos = xmms_remote_get_playlist_pos(session);
     

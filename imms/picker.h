@@ -19,6 +19,7 @@ public:
 protected:
     bool add_candidate(bool urgent = false);
     void revalidate_current(int pos, const std::string &path);
+    void do_events();
     void identify_more();
     void reset();
 
