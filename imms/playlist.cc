@@ -110,6 +110,20 @@ void PlaylistDb::playlist_update_identity(int pos, int uid)
     WARNIFFAILED();
 }
 
+time_t PlaylistDb::get_average_first_seen()
+{
+    time_t avg = time(0);
+
+    try {
+        Q q("SELECT avg(firstseen) FROM 'Playlist' NATURAL JOIN 'Library';");
+        if (q.next())
+            q >> avg;
+    }
+    WARNIFFAILED();
+
+    return avg;
+}
+
 void PlaylistDb::playlist_insert_item(int pos, const string &path)
 {
     try {

@@ -24,9 +24,9 @@ protected:
 
         int position, rating;
         int composite_rating;
-        int relation, bpmrating, specrating;
-        bool identified;
+        int relation, bpmrating, specrating, trend;
         time_t last_played;
+        bool identified;
     };
 
     virtual bool fetch_song_info(SongData &data);

@@ -161,6 +161,8 @@ void Imms::print_song_info()
     fout << setiosflags(std::ios::showpos);
     if (current.relation)
         fout << current.relation << "r";
+    if (current.trend)
+        fout << current.trend << "t";
     if (current.bpmrating)
         fout << current.bpmrating << "b";
     if (current.specrating)
@@ -244,15 +246,24 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     last_jumped = jumped;
 
-    int new_rating = current.rating + mod;
-    if (new_rating > MAX_RATING)
-        new_rating = MAX_RATING;
-    else if (new_rating < MIN_RATING)
-        new_rating = MIN_RATING;
+    int new_rating = std::min(
+            std::max(current.rating + mod, MIN_RATING), MAX_RATING);
+
+    int trend = current.get_trend();
+    if (abs(mod) > INTERACTIVE_BONUS)
+    {
+        if ((trend >= 0 && mod > 0) || (trend <= 0 && mod < 0))
+            trend += mod;
+        else 
+            trend = mod;
+    }
+    else
+        trend = (int)(trend * 0.75);
 
     AutoTransaction at;
 
     ImmsDb::add_recent(current.get_uid(), mod);
+    current.set_trend(trend);
     current.set_last(time(0));
     current.set_rating(new_rating);
     current.increment_playcounter();
@@ -278,7 +289,6 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     {
         float d = rms_string_distance(last.acoustic.first, acoustic.first, 15);
         float rel =  (SPECTRUM_RADIUS - d) / SPECTRUM_RADIUS;
-        rel = std::max(std::min(rel, (float)1), (float)-1);
         data.specrating += ROUND(rel * weight * SPECTRUM_IMPACT);
     }
 
@@ -288,7 +298,6 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
                 rescale_bpmgraph(last.acoustic.second),
                 rescale_bpmgraph(acoustic.second));
         float rel =  (BPM_RADIUS - d) / BPM_RADIUS;
-        rel = std::max(std::min(rel, (float)1), (float)-1);
         data.bpmrating += ROUND(rel * weight * BPM_IMPACT);
     }
 }
