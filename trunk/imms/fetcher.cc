@@ -23,7 +23,7 @@ InfoFetcher::SongData::SongData(int _position, const string &_path)
 void InfoFetcher::SongData::reset()
 {
     bpmrating = specrating = rating = relation = 0;
-    composite_rating = 0;
+    trend = composite_rating = 0;
     identified = false;
     last_played = 0;
 }
@@ -96,6 +96,9 @@ bool InfoFetcher::fetch_song_info(SongData &data)
 
     data.last_played = (data.get_sid() != next_sid) ?
                             time(0) - data.get_last() : 0;
+
+    data.trend = data.get_trend();
+
     return true;
 }
 

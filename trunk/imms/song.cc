@@ -199,8 +199,8 @@ void Song::set_trend(int trend)
 
     try
     {
-        Q("INSERT OR REPLACE INTO 'Rating' ('uid', 'trend') VALUES (?, ?);")
-            << uid << trend << execute;
+        Q("UPDATE 'Rating' SET trend = ? WHERE uid = ?;")
+            << trend << uid << execute;
     }
     WARNIFFAILED();
 }
@@ -263,7 +263,6 @@ void Song::set_info(const StringPair &info)
 
             Q q("INSERT INTO 'Info' "
                     "('sid', 'artist', 'title') VALUES (?, ?, ?);");
-            cerr << "tick 1" << endl;
             q << sid << artist << title;
             q.execute();
         }

@@ -18,7 +18,6 @@
 #include <player.h>
 #include <spectrum.h>
 #include <strmanip.h>
-#include <cluster.h>
 
 using std::string;
 using std::cout;
@@ -40,7 +39,6 @@ void do_missing();
 void do_purge(const string &path);
 time_t get_last(const string &path);
 void do_lint();
-void do_cluster();
 void do_dump_bpm();
 void do_spec_distance(const string &to);
 void do_bpm_distance(const string &to);
@@ -138,10 +136,6 @@ int main(int argc, char *argv[])
     else if (!strcmp(argv[1], "lint"))
     {
         do_lint();
-    }
-    else if (!strcmp(argv[1], "cluster"))
-    {
-        do_cluster();
     }
     else if (!strcmp(argv[1], "help"))
     {
@@ -460,16 +454,6 @@ void do_deviation()
     for (int i = 0; i < SHORTSPECTRUM; ++i)
         cout << std::setw(4) << ROUND(deviations[i] * 10);
     cout << endl;
-}
-
-void do_cluster()
-{
-    try
-    {
-        AcousticCluster ac;
-        ac.calculate_distances();
-    }
-    WARNIFFAILED();
 }
 
 void do_dump_bpm()
