@@ -10,7 +10,7 @@
 using std::endl;
 using std::cerr;
 
-#define CORRELATION_TIME    (20*30)   // n * 30 ==> n minutes
+#define CORRELATION_TIME    (15*30)   // n * 30 ==> n minutes
 #define MAX_CORR_STR        "10"
 #define MAX_CORRELATION     10
 #define SECOND_DEGREE       0.5
@@ -31,7 +31,7 @@ void CorrelationDb::sql_create_tables()
                 "'y' INTEGER NOT NULL, "
                 "'weight' INTEGER DEFAULT '0');").execute();
 
-        Q("CREATE TEMP TABLE C.TmpCorr ("
+        Q("CREATE TEMP TABLE TmpCorr ("
                 "'x' INTEGER NOT NULL, "
                 "'y' INTEGER NOT NULL, "
                 "'weight' INTEGER DEFAULT '0');").execute();
@@ -166,11 +166,11 @@ void CorrelationDb::expire_recent_helper()
         return;
     
     try {
-        Q("DELETE FROM C.TmpCorr;").execute();
+        Q("DELETE FROM TmpCorr;").execute();
     } catch (SQLException &e) {}
 
     {
-        string query("INSERT INTO C.TmpCorr SELECT x, y, weight "
+        string query("INSERT INTO TmpCorr SELECT x, y, weight "
             "FROM C.Correlations "
             "WHERE (x IN (?, ?) OR y IN (?, ?)) AND ");
         query += (weight > 0 ? string("abs") : string("")) + " (weight) > 1;";
@@ -181,7 +181,7 @@ void CorrelationDb::expire_recent_helper()
     }
 
     {
-        Q q("SELECT * FROM C.TmpCorr;");
+        Q q("SELECT * FROM TmpCorr;");
         while (q.next())
         {
             int node1, node2;

@@ -61,7 +61,7 @@ bool InfoFetcher::fetch_song_info(SongData &data)
 
     if (artist != "" && title != "")
         data.identified = true;
-    else if ((data.identified = parse_song_info(data.get_path(), info)))
+    else if ((data.identified = parse_song_info(data, info)))
         data.set_info(info);
 
     data.rating = data.get_rating();
@@ -97,7 +97,7 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     return true;
 }
 
-bool InfoFetcher::parse_song_info(const string &path, StringPair &info)
+bool InfoFetcher::parse_song_info(const SongData &data, StringPair &info)
 {
 
 #define REMIXCLUES "rmx|mix|[^a-z]version|edit|original|remaster|" \
@@ -110,13 +110,15 @@ bool InfoFetcher::parse_song_info(const string &path, StringPair &info)
     bool identified = false;
     bool parser_confident, artist_confirmed = false;
 
+    string path = data.get_path();
     string &artist = info.first;
     string &title = info.second;
 
-    link(path);
+    string tag_artist, tag_album, tag_title;
+    data.get_tag_info(tag_artist, tag_album, tag_title);
 
-    artist = string_normalize(get_artist());
-    string tag_artist = artist;
+    artist = string_normalize(tag_artist);
+    tag_artist = artist;
 
     StringPair fm = get_simplified_filename_mask(path);
     fm.second = string_normalize(fm.second);
@@ -218,7 +220,7 @@ bool InfoFetcher::parse_song_info(const string &path, StringPair &info)
     // By this point the artist had to have been confirmed
     // Try (not very hard) to identify the album
 
-    string album = album_filter(get_album());
+    string album = album_filter(tag_album);
     string directory = album_filter(path_parts.back());
     if (album == "" || Regexx(directory, album))
         album = directory;
@@ -226,7 +228,7 @@ bool InfoFetcher::parse_song_info(const string &path, StringPair &info)
     //////////////////////////////////////////////
     // Try to identify the title
 
-    string tag_title = string_tolower(get_title());
+    tag_title = string_tolower(tag_title);
     title = title_filter(tag_title);
     // If we know the title and were only missing the artist
     if (title != "" && ImmsDb::check_title(artist, title))

@@ -27,11 +27,12 @@ public:
     int get_playcounter();
 
     StringPair get_info();
+    void get_tag_info(string &artist, string &album, string &title) const;
     StringPair get_acoustic();
 
     int get_sid() { return sid; }
     int get_uid() { return uid; }
-    const string &get_path() { return path; }
+    const string &get_path() const { return path; }
 
     bool isok() { return uid != -1 && path != ""; }
 
@@ -39,9 +40,12 @@ public:
 protected:
     void register_new_sid();
     void identify(time_t modtime);
+    void update_tag_info();
 
     int uid, sid, playcounter;
     string title, artist, path;
+private:
+    void _identify(time_t modtime);
 };
 
 #endif
