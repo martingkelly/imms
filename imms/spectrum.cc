@@ -65,7 +65,7 @@ static inline int bpm2offset(int bpm)
 
 static inline bool roughly_double(int a, int b)
 {
-    return abs(a - 2 * b) < 6;
+    return abs(a - 2 * b) <= 6;
 }
 
 float BeatKeeper::check_peak(int index)

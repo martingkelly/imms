@@ -67,9 +67,9 @@ Imms::Imms()
     last_skipped = last_jumped = false;
     local_max = MAX_TIME;
 
-    last_hp.set_on = 0;
-    last_hp.sid = -1;
-    last_hp.bpm = 0;
+    handpicked.set_on = 0;
+    last.sid = handpicked.sid = -1;
+    handpicked.bpm = 0;
 
     string homedir = getenv("HOME");
     fout.open(homedir.append("/.imms/imms.log").c_str(),
@@ -172,6 +172,14 @@ void Imms::print_song_info()
     fout.flush();
 }
 
+void Imms::set_lastinfo(LastInfo &last)
+{
+    last.set_on = time(0);
+    last.sid = current.id.second;
+    last.bpm = SpectrumAnalyzer::get_last_bpm();
+    last.spectrum = SpectrumAnalyzer::get_last_spectrum();
+}
+
 void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 {
     int mod;
@@ -225,13 +233,11 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     SpectrumAnalyzer::finalize();
 
+    if (mod >= CONS_NON_SKIP_RATE)
+        set_lastinfo(last);
+
     if (mod > CONS_NON_SKIP_RATE + INTERACTIVE_BONUS)
-    {
-        last_hp.set_on = time(0);
-        last_hp.sid = current.id.second;
-        last_hp.bpm = SpectrumAnalyzer::get_last_bpm();
-        last_hp.spectrum = SpectrumAnalyzer::get_last_spectrum();
-    }
+        set_lastinfo(handpicked);
 
     fout << (jumped ? "[Jumped] " : "");
     fout << (!jumped && last_skipped ? "[Skipped] " : "");
@@ -254,9 +260,28 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     immsdb.set_rating(new_rating);
 }
 
-float rescale(float score)
+float rescale(float score) { return score < 0 ? score * 2 : score; }
+
+void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
 {
-    return score < 0 ? score * 2 : score;
+    // Reset lasts if we had them for too long
+    if (last.sid != -1 && last.set_on + LAST_EXPIRE < time(0))
+        last.sid = -1;
+
+    if (last.sid == -1)
+        return;
+
+    float rel = immsdb.correlate(last.sid) / MAX_CORRELATION;
+    rel = rel > 1 ? 1 : rel < -1 ? -1 : rel;
+    data.relation += ROUND(rel * weight * CORRELATION_IMPACT);
+
+    if (data.spectrum != "" && last.spectrum != "")
+        data.color_rating += ROUND(rescale(color_transition(
+                last.spectrum, data.spectrum)) * weight * SPECTRUM_IMPACT);
+
+    if (data.bpm_value && last.bpm)
+        data.bpm_rating += ROUND(rescale(bpm_transition(
+                    last.bpm, data.bpm_value)) * weight * BPM_IMPACT);
 }
 
 int Imms::fetch_song_info(SongData &data)
@@ -268,47 +293,8 @@ int Imms::fetch_song_info(SongData &data)
 
     data.bpm_rating = data.color_rating = data.relation = 0;
 
-    if (last_hp.sid != -1 && last_hp.set_on + LAST_EXPIRE < time(0))
-        last_hp.sid = -1;
-
-    if (last_hp.sid != -1)
-    {
-        float rel = immsdb.correlate(last_hp.sid) / MAX_CORRELATION;
-        rel = rel > 1 ? 1 : rel;
-        rel = rel < -1 ? -1 : rel;
-
-        data.relation = ROUND(rel * CORRELATION_IMPACT);
-    }
-
-    // evaluate the transition based on spectrum / song color
-    float score = 0;
-    if (data.spectrum != "")
-    {
-        if (last_hp.sid != -1 && last_hp.spectrum != "")
-            score = rescale(color_transition(
-                        last_hp.spectrum, data.spectrum)) * PRIMARY;
-
-        const string &last_spectrum = SpectrumAnalyzer::get_last_spectrum();
-        if (!last_skipped && last_spectrum != "")
-            score += rescale(color_transition(
-                        last_spectrum, data.spectrum)) * (1 - PRIMARY);
-    }
-    data.color_rating = ROUND(score * SPECTRUM_IMPACT);
-
-    // evaluate the transition based on bpm
-    score = 0;
-    if (data.bpm_value)
-    {
-        if (last_hp.sid != -1 && last_hp.bpm)
-            score = rescale(bpm_transition(
-                        last_hp.bpm, data.bpm_value)) * PRIMARY;
-
-        int last_bpm = SpectrumAnalyzer::get_last_bpm();
-        if (!last_skipped && last_bpm)
-            score += rescale(bpm_transition(
-                        last_bpm, data.bpm_value)) * (1 - PRIMARY);
-    }
-    data.bpm_rating = ROUND(score * BPM_IMPACT);
+    evaluate_transition(data, handpicked, PRIMARY);
+    evaluate_transition(data, last, 1 - PRIMARY);
 
 #if defined(DEBUG) && 1
     cerr << "[" << std::setw(60) << path_get_filename(data.path) << "] ";
