@@ -3,7 +3,6 @@
 
 #include "immsconf.h"
 #include "immsdb.h"
-#include "songinfo.h"
 #include "song.h"
 
 #define     NEW_PLAYS               2
@@ -12,7 +11,7 @@
 #define     TREND_FACTOR            3.0
 #define     MAX_TREND               20
 
-class InfoFetcher : virtual protected ImmsDb, private SongInfo
+class InfoFetcher : virtual protected ImmsDb
 {
 public:
     InfoFetcher() : next_sid(-1) {}
@@ -35,7 +34,7 @@ protected:
     };
 
     virtual bool fetch_song_info(SongData &data);
-    virtual bool parse_song_info(const string &path, StringPair &info);
+    virtual bool parse_song_info(const SongData &data, StringPair &info);
 
     bool identify_playlist_item(int pos);
 

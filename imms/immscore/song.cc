@@ -2,6 +2,7 @@
 #include "md5digest.h"
 #include "sqlite++.h"
 #include "strmanip.h"
+#include "songinfo.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -35,6 +36,34 @@ Song::Song(const string &path_, int _uid, int _sid) : path(path_)
     WARNIFFAILED();
 }
 
+void Song::get_tag_info(string &artist, string &album, string &title) const
+{
+    artist = album = title = "";
+
+    Q q("SELECT artist, album, title FROM Tags WHERE uid = ?;");
+    q << uid;
+
+    if (!q.next())
+        return;
+
+    q >> artist >> album >> title;
+}
+
+void Song::update_tag_info()
+{
+    SongInfo info;
+    info.link(path);
+
+    string artist = info.get_artist();
+    string album = info.get_album();
+    string title = info.get_title();
+
+    Q q("INSERT OR REPLACE INTO Tags "
+            "('uid', 'artist', 'album', 'title') "
+            "VALUES (?, ?, ?, ?);");
+    q << uid << artist << album << title;
+    q.execute();
+}
 
 void Song::identify(time_t modtime)
 {
@@ -56,6 +85,14 @@ void Song::identify(time_t modtime)
         }
     }
 
+    _identify(modtime);
+
+    update_tag_info();
+    a.commit();
+}
+
+void Song::_identify(time_t modtime)
+{
     string checksum = Md5Digest::digest_file(path);
 
     // old path but modtime has changed - update checksum
@@ -65,8 +102,6 @@ void Song::identify(time_t modtime)
                 "checksum = ? WHERE path = ?;");
         q << modtime << checksum << path;
         q.execute();
-
-        a.commit();
         return;
     }
 
@@ -101,7 +136,6 @@ void Song::identify(time_t modtime)
 #ifdef DEBUG
                 cerr << "identify: moved: uid = " << uid << endl;
 #endif
-                a.commit();
                 return;
             }
         } while (q.next());
@@ -130,9 +164,6 @@ void Song::identify(time_t modtime)
                 "('uid', 'sid', 'playcounter', 'lastseen', 'firstseen') "
                 "VALUES (?, ?, ?, ?, ?);")
             << uid << -1 << 0 << time(0) << time(0) << execute;
-
-    a.commit();
-    return;
 }
 
 void Song::set_last(time_t last)

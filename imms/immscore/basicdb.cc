@@ -152,6 +152,12 @@ void BasicDb::sql_create_tables()
                 "'aid' INTEGER NOT NULL, "
                 "'title' TEXT NOT NULL);").execute();
 
+        Q("CREATE TABLE 'Tags' ("
+                "'uid' INTEGER UNIQUE NOT NULL, " 
+                "'title' TEXT NOT NULL, "
+                "'album' TEXT NOT NULL, "
+                "'artist' TEXT NOT NULL);").execute();
+
         Q("CREATE TABLE 'Artists' ("
                 "'aid' INTEGER PRIMARY KEY," 
                 "'artist' TEXT UNIQUE NOT NULL, "
@@ -347,6 +353,12 @@ void BasicDb::sql_schema_upgrade(int from)
             Q("INSERT INTO Info SELECT sid, aid, title "
                     "FROM Info_backup INNER JOIN Artists "
                         "ON Info_backup.artist = Artists.artist;").execute();
+        }
+        if (from < 10) 
+        {
+            sql_create_tables();
+
+            Q("UPDATE Identify SET modtime = 0;").execute();
         }
 
         a.commit();
