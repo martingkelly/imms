@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[1.99.1-rc2],[mag@luminal.org])
+AC_INIT([IMMS],[1.99.1-rc3],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -85,7 +85,7 @@ if test "$with_pcre" = "no"; then
     AC_MSG_ERROR([PCRE required and missing.])
 fi
 
-PKG_CHECK_MODULES([REQUIRED], [fftw3f >= 3.0],
+PKG_CHECK_MODULES([REQUIRED], [fftw3f >= 3.0 glib-2.0 >= 2.0],
               [], [AC_MSG_ERROR([Required packages missing.])])
 
 saved_cppflags="$CPPFLAGS"
@@ -97,6 +97,14 @@ AC_CHECK_HEADERS(fftw3.h,, [with_fftw=no])
 AC_CHECK_LIB(fftw3f, fftwf_plan_dft_r2c_1d,, [with_fftw=no])
 if test "$with_fftw" = "no"; then
     AC_MSG_ERROR([FFTW 3.0 required and missing.])
+fi
+
+CPPFLAGS="`pkg-config glib-2.0 --cflags`"
+LIBS="`pkg-config glib-2.0 --libs`"
+AC_CHECK_HEADERS(glib.h,, [with_glib=no])
+AC_CHECK_LIB(glib-2.0, g_timeout_source_new,, [with_glib=no])
+if test "$with_glib" = "no"; then
+    AC_MSG_ERROR([glib 2.0 required and missing.])
 fi
 
 LIBS=$saved_libs

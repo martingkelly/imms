@@ -65,8 +65,8 @@ public:
 
         string command = "";
         sstr >> command;
-#if defined(DEBUG) && 0
-        cerr << "> " << line << endl;
+#if defined(DEBUG) && 1
+        std::cout << "> " << line << endl;
 #endif
 
         if (command == "Setup")
