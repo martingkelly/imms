@@ -362,8 +362,7 @@ pair<float, float> spectrum_analyze(const string &spectstr)
     return pair<float, float>(mean, deviation);
 }
 
-float SpectrumAnalyzer::rms_string_distance(const string &s1,
-        const string &s2)
+float rms_string_distance(const string &s1, const string &s2)
 {
     if (s1 == "" || s2 == "")
         return 0;

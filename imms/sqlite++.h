@@ -39,8 +39,6 @@ private:
     string msg;
 };
 
-#define SQLStandardException() SQLException(__FILE__, __LINE__, SQLDatabaseConnection::error())
-
 typedef struct sqlite3_stmt sqlite3_stmt;
 
 class SQLQueryManager
@@ -113,11 +111,16 @@ private:
     sqlite3_stmt *stmt;
 };
 
+typedef SQLQuery Q;
+
 #define WARNIFFAILED()                                                      \
     catch (SQLException &e) {                                               \
+        cerr << string(80, '*') << endl;                                    \
         cerr << __FILE__ << ":" << __func__ << ": " << e.what() << endl;    \
+        cerr << string(80, '*') << endl;                                    \
     } do {} while (0)
 
-typedef SQLQuery Q;
+#define SQLStandardException()  \
+    SQLException(__FILE__, __LINE__, SQLDatabaseConnection::error())
 
 #endif

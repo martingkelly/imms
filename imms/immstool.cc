@@ -11,7 +11,7 @@
 #include <math.h>
 
 #include "imms.h"
-#include "sqldb.h"
+#include "sqldb2.h"
 #include "utils.h"
 #include "player.h"
 #include "strmanip.h"
@@ -30,7 +30,7 @@ string Player::get_playlist_item(int i) { return ""; }
 int g_argc;
 char **g_argv;
 
-extern int spectrum_distance(const string &s1, const string &s2);
+extern float rms_string_distance(const string &s1, const string &s2);
 
 class ImmsTool : public SqlDb
 {
@@ -39,9 +39,9 @@ public:
         : SqlDb(string(getenv("HOME")).append("/.imms/imms.db")) { }
 
     void do_distance();
-    int distance_callback(int argc, char *argv[]);
+    int distance_callback(const string &path,
+            const string &spectrum, int sid);
     void do_missing();
-    int missing_callback(int argc, char *argv[]);
     time_t get_last(const string &path);
     void do_purge(const string &path);
     void do_lint();
@@ -118,8 +118,6 @@ int main(int argc, char *argv[])
     }
     else
         return usage();
-
-	return 0;
 }
 
 int usage()
@@ -142,72 +140,80 @@ void do_help()
 
 time_t ImmsTool::get_last(const string &path)
 {
-    select_query(
-            "SELECT last FROM 'Last' "
+    Q q("SELECT last FROM 'Last' "
                 "INNER JOIN Library ON Last.sid = Library.sid "
-                "WHERE Library.path = '" + escape_string(path) + "';");
+                "WHERE Library.path = ?;");
+    q << path;
+    if (!q.next())
+        return 0;
 
-    return nrow && resultp[1] ? atol(resultp[1]) : 0;
+    time_t last;
+    q >> last;
+    return last;
 } 
 
 void ImmsTool::do_purge(const string &path)
 {
-    run_query("DELETE FROM 'Library' WHERE path = '"
-            + escape_string(path) + "'");
+    Q q("DELETE FROM 'Library' WHERE path = ?;");
+    q << path;
+    q.execute();
 }
 
 void ImmsTool::do_lint()
 {
-    run_query(
-            "DELETE FROM Info "
-            "WHERE sid NOT IN (SELECT sid FROM Library);");
+    Q( "DELETE FROM Info "
+            "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
 
-    run_query(
-            "DELETE FROM Last "
-            "WHERE sid NOT IN (SELECT sid FROM Library);");
+    Q("DELETE FROM Last "
+            "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
 
-    run_query(
-            "DELETE FROM Rating "
-            "WHERE uid NOT IN (SELECT uid FROM Library);");
+    Q("DELETE FROM Rating "
+            "WHERE uid NOT IN (SELECT uid FROM Library);").execute();
 
-    run_query(
-            "DELETE FROM Acoustic "
-            "WHERE uid NOT IN (SELECT uid FROM Library);");
+    Q("DELETE FROM Acoustic "
+            "WHERE uid NOT IN (SELECT uid FROM Library);").execute();
 
-    run_query(
-            "DELETE FROM Correlations "
+    Q("DELETE FROM Correlations "
             "WHERE origin NOT IN (SELECT sid FROM Library) "
-            "OR destination NOT IN (SELECT sid FROM Library);");
+            "OR destination NOT IN (SELECT sid FROM Library);").execute();
 
-    run_query("VACUUM Library;");
+    Q("VACUUM Library;").execute();
 }
 
 void ImmsTool::do_distance()
 {
-    ImmsCallback<ImmsTool> callback(this, &ImmsTool::distance_callback);
-    select_query(
-            "SELECT Library.path, Acoustic.spectrum, Library.sid "
+    Q q("SELECT Library.path, Acoustic.spectrum, Library.sid "
             "FROM 'Library' INNER JOIN 'Acoustic' ON "
-            "Library.uid = Acoustic.uid WHERE Acoustic.spectrum NOT NULL;",
-            &callback);
+            "Library.uid = Acoustic.uid WHERE Acoustic.spectrum NOT NULL;");
+    while(q.next())
+    {
+        string path, spectrum;
+        int sid;
+        q >> path >> spectrum >> sid;
+
+        distance_callback(path, spectrum, sid);
+    }
+                
 }
 
-int ImmsTool::distance_callback(int argc, char *argv[])
+int ImmsTool::distance_callback(const string &path,
+        const string &spectrum, int sid)
 {
-    assert(argc == 3);
-    cout << setw(4) << spectrum_distance(g_argv[2], argv[1])
-        << "  " << argv[1] << "  ";
+    cout << setw(4) << rms_string_distance(g_argv[2], spectrum)
+        << "  " << spectrum << "  ";
 
-    select_query("SELECT artist, title FROM Info "
-            "WHERE sid = '" + string(argv[2]) + "';");
+    Q q("SELECT artist, title FROM Info WHERE sid = ?;");
+    q << sid;
 
-    if (nrow && resultp[1])
+    if (q.next())
     {
-        cout << setw(25) << resultp[2];
-        cout << setw(25) << resultp[3];
+        string artist, title;
+        q >> artist >> title;
+        cout << setw(25) << artist;
+        cout << setw(25) << title;
     }
     else
-        cout << setw(50) << path_get_filename(argv[0]);
+        cout << setw(50) << path_get_filename(path);
     cout << endl;
 
     return 0;
@@ -215,18 +221,15 @@ int ImmsTool::distance_callback(int argc, char *argv[])
 
 void ImmsTool::do_missing()
 {
-    ImmsCallback<ImmsTool> callback(this, &ImmsTool::missing_callback);
-    select_query("SELECT path FROM 'Library';", &callback);
-}
+    Q q("SELECT path FROM 'Library';");
 
-int ImmsTool::missing_callback(int argc, char *argv[])
-{
-    assert(argc == 1);
-
-    if (access(argv[0], F_OK))
-        cout << argv[0] << endl;
-
-    return 0;
+    while (q.next())
+    {
+        string path;
+        q >> path;
+        if (access(path.c_str(), F_OK))
+            cout << path << endl;
+    }
 }
 
 void do_deviation()
