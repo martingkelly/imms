@@ -9,7 +9,7 @@
 using std::endl;
 using std::cerr; 
 
-#define SCHEMA_VERSION 3
+#define SCHEMA_VERSION 4
 
 #define CORRELATION_TIME    (15*30)   // n * 30 ==> n minutes
 #define MAX_CORR_STR        "15"
@@ -39,7 +39,12 @@ void ImmsDb::sql_create_tables()
                 "'sid' INTEGER DEFAULT '-1', "
                 "'path' VARCHAR(4096) UNIQUE NOT NULL, "
                 "'modtime' TIMESTAMP NOT NULL, "
-                "'checksum' VARCHAR(34) NOT NULL, "
+                "'checksum' VARCHAR(34) NOT NULL);");
+
+    run_query(
+            "CREATE TABLE 'Acoustic' ("
+                "'uid' INTEGER NOT NULL, "
+                "'bpm' INTEGER DEFAULT '0', "
                 "'spectrum' VARCHAR(16) DEFAULT NULL);");
 
     run_query(
@@ -84,14 +89,27 @@ void ImmsDb::add_recent(int weight)
 
 void ImmsDb::expire_recent(const string &where_clause)
 {
+    gettimeofday(&start, 0);
+
     select_query(
-            "SELECT sid, weight FROM 'Recent' " + where_clause + " LIMIT 7;",
+            "SELECT sid, weight FROM 'Recent' " + where_clause + ";",
             (SqlCallback)&ImmsDb::expire_recent_callback_1, 2);
+}
+
+static inline time_t usec_diff(struct timeval &tv1, struct timeval &tv2)
+{
+    return (tv2.tv_sec - tv1.tv_sec) * 1000000 + tv2.tv_usec - tv1.tv_usec;
 }
 
 int ImmsDb::expire_recent_callback_1(int argc, char **argv)
 {
     assert(argc == 2);
+
+    struct timeval now;
+    gettimeofday(&now, 0);
+
+    if (usec_diff(start, now) > 2 * 1000000)
+        return 4; // SQLITE_ABORT
 
     from = atoi(argv[0]);
     from_weight = atoi(argv[1]);
@@ -142,8 +160,7 @@ int ImmsDb::expire_recent_callback_2(int argc, char **argv)
                     "OR origin = '" + itos(from) + "' "
                     "OR destination = '" + itos(to) + "' "
                     "OR destination = '" + itos(from) + "'"
-                ") AND " + (weight > 0 ? "abs" : "") + " (weight) > 1 "
-            "LIMIT 15;",
+                ") AND " + (weight > 0 ? "abs" : "") + " (weight) > 1;",
             (SqlCallback)&ImmsDb::update_secondaty_correlations, 3);
     return 0;
 }
@@ -191,7 +208,7 @@ void ImmsDb::update_correlation(int from, int to, float weight)
                 + itos(weight) + "');");
 }
 
-int ImmsDb::correlate(int from)
+float ImmsDb::correlate(int from)
 {
     if (sid == -1)
         return 0;
@@ -201,7 +218,7 @@ int ImmsDb::correlate(int from)
             "WHERE origin = '" + itos(MIN(from, sid)) + "' "
                 "AND destination = '" + itos(MAX(from, sid)) + "';");
 
-    return nrow && resultp[1] ? atoi(resultp[1]) : 0;
+    return nrow && resultp[1] ? atof(resultp[1]) : 0;
 }
 
 int ImmsDb::identify(const string &path, time_t modtime)
@@ -364,10 +381,22 @@ string ImmsDb::get_spectrum()
         return "";
 
     select_query(
-            "SELECT spectrum FROM 'Library' "
+            "SELECT spectrum FROM 'Acoustic' "
             "WHERE uid = '" + itos(uid) + "';");
 
     return nrow && resultp[1] ? resultp[1] : "";
+}
+
+int ImmsDb::get_bpm()
+{
+    if (uid == -1)
+        return 0;
+
+    select_query(
+            "SELECT bpm FROM 'Acoustic' "
+            "WHERE uid = '" + itos(uid) + "';");
+
+    return nrow && resultp[1] ? atoi(resultp[1]) : 0;
 }
 
 time_t ImmsDb::get_last()
@@ -474,7 +503,17 @@ void ImmsDb::set_spectrum(const string &spectrum)
         return;
 
     run_query(
-            "UPDATE 'Library' SET spectrum = '" + spectrum +  "' "
+            "UPDATE 'Acoustic' SET spectrum = '" + spectrum +  "' "
+            "WHERE uid = '" + itos(uid) + "';");
+}
+
+void ImmsDb::set_bpm(int bpm)
+{
+    if (uid == -1)
+        return;
+
+    run_query(
+            "UPDATE 'Acoustic' SET bpm = '" + itos(bpm) +  "' "
             "WHERE uid = '" + itos(uid) + "';");
 }
 
@@ -554,6 +593,27 @@ void ImmsDb::sql_schema_upgrade()
         run_query(
                 "INSERT INTO Library (uid, sid, path, modtime, checksum) "
                 "SELECT * FROM Library_backup;");
+        run_query("DROP TABLE Library_backup;");
+    }
+    if (schema < 4)
+    {
+        // Backup the existing tables
+        run_query("CREATE TEMP TABLE Library_backup "
+                   "AS SELECT * FROM Library;");
+        run_query("DROP TABLE Library;");
+
+        // Create new tables
+        sql_create_tables();
+
+        // Copy the data into new tables, and drop the backups
+        run_query(
+                "INSERT INTO Acoustic (uid, spectrum) "
+                "SELECT uid, spectrum FROM Library_backup "
+                "WHERE spectrum NOT NULL;");
+        run_query(
+                "INSERT INTO Library (uid, sid, path, modtime, checksum) "
+                "SELECT uid, sid, path, modtime, checksum "
+                "FROM Library_backup;");
         run_query("DROP TABLE Library_backup;");
     }
 

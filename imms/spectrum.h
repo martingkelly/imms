@@ -14,8 +14,8 @@
 using std::string;
 using std::vector;
 
-#define MINBPM          45
-#define MAXBPM          225
+#define MINBPM          50
+#define MAXBPM          200
 #define SAMPLES         100
 #define MINBEATLENGTH   (SAMPLES*60/MAXBPM)
 #define MAXBEATLENGTH   (SAMPLES*60/MINBPM)
@@ -27,18 +27,20 @@ using std::vector;
 class BeatKeeper
 {
 public:
-    BeatKeeper() { reset(); }
+    BeatKeeper(const string &_name) : name(_name) { reset(); }
     void reset();
     int getBPM();
     void integrate_beat(float power);
+    const BeatKeeper &operator +=(const BeatKeeper &other);
 
 protected:
     void process_window();
-    bool check_peak(int i, float minampl);
-    int maybe_double(int i, float min, float range);
+    float check_peak(int i);
+    int maybe_double(int bpm, float min, float range);
     int peak_finder_helper(vector<int> &peaks, int min, int max,
             float cutoff, float range);
 
+    string name;
     struct timeval prev;
     long unsigned int samples;
     time_t first, last;
@@ -57,13 +59,15 @@ public:
 protected:
     float evaluate_transition(const string &from, const string &to);
     const string& get_last_spectrum() { return last_spectrum; }
+    int get_last_bpm() { return last_bpm; }
     void reset();
 
 private:
-    BeatKeeper bpm;
+    BeatKeeper bpm_l3, bpm_h3;
     int have_spectrums;
     double spectrum[SHORTSPECTRUM];
     string last_spectrum;
+    int last_bpm;
 };
 
 #endif

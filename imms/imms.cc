@@ -243,6 +243,7 @@ int Imms::fetch_song_info(SongData &data)
     rel = rel < -1 ? -1 : rel;
 
     data.relation = ROUND(rel * CORRELATION_IMPACT);
+    cerr << "data.relation = " << data.relation << endl;
 
     string candidate_spectrum = immsdb.get_spectrum();
 
@@ -252,18 +253,20 @@ int Imms::fetch_song_info(SongData &data)
         if (last_hp_spectrum != "")
             primary = evaluate_transition(last_hp_spectrum,
                     candidate_spectrum) * SPECTRUM_PRIMARY;
-        if (!last_skipped && SpectrumAnalyzer::get_last_spectrum() != "")
-            secondary = evaluate_transition(get_last_spectrum(),
+        string last_spectrum = SpectrumAnalyzer::get_last_spectrum();
+        if (!last_skipped && last_spectrum != "")
+            secondary = evaluate_transition(last_spectrum,
                     candidate_spectrum) * (1 - SPECTRUM_PRIMARY);
     }
-#ifdef DEBUG
-#if 0
-    if (secondary)
-        cerr << "[last] > [" << path_get_filename(data.path)
-            << "] = " << secondary / (1 - SPECTRUM_PRIMARY) << endl;
-#endif
-#endif
     data.extra = ROUND((primary + secondary) * SPECTRUM_IMPACT);
+
+#ifdef DEBUG
+#if 1
+    if (data.extra)
+        cerr << "[" << path_get_filename(data.path)
+            << "] = " << data.extra << endl;
+#endif
+#endif
 
     return result;
 }

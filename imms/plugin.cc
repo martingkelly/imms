@@ -29,6 +29,7 @@ bool need_more = true, spectrum_ok = false;
 
 // Extern from interface.c
 extern VisPlugin imms_vp;
+extern int use_queue;
 int &session = imms_vp.xmms_session;
 
 static enum
@@ -127,7 +128,7 @@ void do_checks()
         if (ending || last_path != cur_path)
         {
             xmms_remote_stop(session);
-            if (last_path == cur_path)
+            if (use_queue && last_path == cur_path)
                 xmms_remote_playlist_next(session);
 
             state = FIND_NEXT;
@@ -158,7 +159,8 @@ void do_find_next()
         time_left = 0;
 
     cur_plpos = xmms_remote_get_playlist_pos(session);
-    bool forced = ((last_plpos + 1) % pl_length) != cur_plpos;
+    bool forced = (cur_plpos != last_plpos) && 
+        ((last_plpos + 1) % pl_length) != cur_plpos;
     bool back = ((last_plpos + pl_length - 1) % pl_length) == cur_plpos;
     bool bad = good_length < 3 || song_length <= 30*1000;
 

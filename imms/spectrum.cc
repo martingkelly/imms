@@ -4,12 +4,14 @@
 #include <iostream>
 #include <utility>
 #include <fstream>
+#include <map>
 
 #include "spectrum.h"
 
 using std::endl;
 using std::cerr;
 using std::pair;
+using std::map;
 
 void BeatKeeper::reset()
 {
@@ -22,17 +24,53 @@ void BeatKeeper::reset()
     last_window = &data[MAXBEATLENGTH];
 }
 
+const BeatKeeper &BeatKeeper::operator +=(const BeatKeeper &other)
+{
+    float my_max = 0, my_min = INT_MAX;
+    float other_max = 0, other_min = INT_MAX;
+
+    for (int i = 0; i < BEATSSIZE; ++i)
+    {
+        if (beats[i] > my_max)
+            my_max = beats[i];
+        if (beats[i] < my_min)
+            my_min = beats[i];
+
+        if (other.beats[i] > other_max)
+            other_max = other.beats[i];
+        if (other.beats[i] < other_min)
+            other_min = other.beats[i];
+    }
+
+    float my_range = my_max - my_min == 0 ? 1 : my_max - my_min;
+    float other_range = other_max - other_min == 0 ? 1 : other_max - other_min;
+
+    for (int i = 0; i < BEATSSIZE; ++i)
+        beats[i] =
+            100 * (beats[i] - my_min) / my_range +
+            100 * (other.beats[i] - other_min) / other_range;
+
+    return *this;
+}
+
 static inline int offset2bpm(int offset)
 {
-    return ROUND(60 * SAMPLES/ (float)(MINBEATLENGTH + offset));
+    return ROUND(60 * SAMPLES / (float)(MINBEATLENGTH + offset));
+}
+
+static inline int bpm2offset(int bpm)
+{
+    return ROUND(60 * SAMPLES / (float)bpm  - MINBEATLENGTH);
 }
 
 static inline bool roughly_double(int a, int b)
 {
+    bool res = abs(a - 2 * b) < 6;
+    cerr << a << " roughly double " << b << (res ? ": yes" : ": no") << endl;
     return abs(a - 2 * b) < 6;
 }
 
-bool BeatKeeper::check_peak(int index, float minampl)
+float BeatKeeper::check_peak(int index)
 {
     float max_pos_dist = 0, max_neg_dist = 0;
     int pos_had_ups = 0, neg_had_ups = 0;
@@ -49,11 +87,7 @@ bool BeatKeeper::check_peak(int index, float minampl)
         neg_had_ups += beats[index - i] > beats[index - i + 1];
     }
 
-    bool res = max_pos_dist > minampl && max_neg_dist > minampl;
-    if (!res)
-        cerr << "rejecting peak @ " << index << " ("
-            << max_pos_dist << "/" << max_neg_dist << ")" << endl;
-    return max_pos_dist > minampl && max_neg_dist > minampl;
+    return max_pos_dist > max_neg_dist ? max_neg_dist : max_pos_dist;
 }
 
 int BeatKeeper::peak_finder_helper(vector<int> &peaks, int min,
@@ -75,7 +109,7 @@ int BeatKeeper::peak_finder_helper(vector<int> &peaks, int min,
             ++i;
         }
 
-        if (local_max && check_peak(index, range * 0.2))
+        if (local_max && check_peak(index) > range * 0.2)
         {
             ++count;
             cerr << " >> found peak @ " << offset2bpm(index) << endl;
@@ -85,40 +119,32 @@ int BeatKeeper::peak_finder_helper(vector<int> &peaks, int min,
     return count;
 }
 
-int BeatKeeper::maybe_double(int i, float min, float range)
+int BeatKeeper::maybe_double(int bpm, float min, float range)
 {
     vector<int> dpeaks;
-    int found = peak_finder_helper(dpeaks, i / 2 - 5, i / 2 + 5,
-            min + range / 2, range * 0.4);
+    int i = bpm2offset(bpm * 2);
+    int found = peak_finder_helper(dpeaks, i - 5, i + 5,
+            min + range / 2, range * 0.35);
 
     if (found == 1)
-    {
-        cerr << "upgrading " << i << " to " << dpeaks.front() << endl;
         return dpeaks.front();
-    }
-    return i;
+    return bpm;
 }
 
 int BeatKeeper::getBPM()
 {
+#ifdef DEBUG
+#if 0
     cerr << samples << " samples in " << last - first << " seconds: "
-        << ROUND(samples / (float)(last - first)) << " samples/sec" << endl; 
+        << ROUND(samples / (float)(last - first)) << " samples/sec" << endl;
+#endif
 
-    // smooth ends so we don't confuse the peak finder
-    int i = 0, val = 0;
-    while (i < BEATSSIZE && beats[i] >= beats[i + 1]) ++i;
-    val = i;
-    while (i--) beats[i] = beats[val];
-
-    i = BEATSSIZE - 1;
-    while (i && beats[i] >= beats[i - 1]) --i;
-    val = i - 1;
-    while (++i < BEATSSIZE) beats[i] = beats[val];
-
-    std::ofstream bstats("/tmp/beats", std::ios::trunc);
+    string fullname = "/tmp/beats-" + name;
+    std::ofstream bstats(fullname.c_str(), std::ios::trunc);
 
     for (int i = 0; i < BEATSSIZE; ++i)
         bstats << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
+#endif
 
     float max = 0, min = INT_MAX;
     for (int i = 0; i < BEATSSIZE; ++i)
@@ -143,23 +169,21 @@ int BeatKeeper::getBPM()
     reset();
 
     if (!totalpeaks)
-        return -1;
+        return 0;
 
     if (totalpeaks == 1)
-        return fastpeaks.empty() ?
-            maybe_double(slowpeaks.front(), min, range) : fastpeaks.front();
+    {
+        if (!fastpeaks.empty())
+            return fastpeaks.front();
 
-    // look for peaks that are at double the bpm from each other
-    if (!fastpeaks.empty())
-        for (vector<int>::iterator i = slowpeaks.begin();
-                i != slowpeaks.end(); ++i)
-            if (roughly_double(fastpeaks.front(), *i))
-                return fastpeaks.front();
+        int slow = slowpeaks.front();
+        return maybe_double(slow, min, range);
+    }
 
-    // see if only one of the slow peaks doubles
+    int peak, count = 0;
+    // see if only one of the slow peaks doubles well
     if (fastpeaks.empty())
     {
-        int peak, count = 0;
         for (vector<int>::iterator i = slowpeaks.begin();
                 i != slowpeaks.end(); ++i)
         {
@@ -172,14 +196,42 @@ int BeatKeeper::getBPM()
         }
         if (count == 1)
             return peak;
-        return -1;
+    }
+    // look for peaks that are at double the bpm from each other
+    else
+    {
+        for (vector<int>::iterator i = fastpeaks.begin();
+                i != fastpeaks.end(); ++i)
+            for (vector<int>::iterator j = slowpeaks.begin();
+                    j != slowpeaks.end(); ++j)
+                if (roughly_double(*i, *j))
+                {
+                    peak = *i;
+                    ++count;
+                }
+        if (count == 1)
+            return peak;
     }
 
+    // see if one of the peaks is more pronounced than others
+    map<float, int> powers;
+    for (vector<int>::iterator i = slowpeaks.begin();
+            i != slowpeaks.end(); ++i)
+        powers[check_peak(bpm2offset(*i))] = *i;
+    for (vector<int>::iterator i = fastpeaks.begin();
+            i != fastpeaks.end(); ++i)
+        powers[check_peak(bpm2offset(*i))] = *i;
+
+    float first = powers.begin()->first;
+    if (first / 2 > (++powers.begin())->first)
+        return powers.begin()->second;
+
     // see if there is only one peak in fasts below ~145
-    if (fastpeaks.size() == 1 || (fastpeaks.size() > 1 && fastpeaks[1] > 145))
+    if (fastpeaks.size() == 1 || (fastpeaks.size() > 1
+                && fastpeaks[0] <= 145 && fastpeaks[1] > 145))
         return fastpeaks.front();
 
-    return -1;
+    return 0;
 }
 
 time_t usec_diff(struct timeval &tv1, struct timeval &tv2)
@@ -200,11 +252,13 @@ void BeatKeeper::integrate_beat(float power)
     struct timeval now;
     gettimeofday(&now, 0);
 
+#if defined(DEBUG) && 0
     last = now.tv_sec;
     if (!first)
     {
         first = last;
     }
+#endif
 
     // find out how many timeslices we should count this sample for
     time_t diff = usec_diff(prev, now);
@@ -252,9 +306,10 @@ static float scales[] =
     { 11000, 5000, 4200, 3500, 2600, 2100, 1650, 1200, 1000, 780, 550,
         400, 290, 200, 110, 40 };
 
-SpectrumAnalyzer::SpectrumAnalyzer()
+SpectrumAnalyzer::SpectrumAnalyzer() : bpm_l3("l3"), bpm_h3("h3")
 {
     last_spectrum = "";
+    last_bpm = 0;
     reset();
 }
 
@@ -262,6 +317,9 @@ void SpectrumAnalyzer::reset()
 {
     have_spectrums = 0;
     memset(spectrum, 0, sizeof(spectrum));
+
+    bpm_l3.reset();
+    bpm_h3.reset();
 }
 
 pair<float, float> spectrum_analyze(const string &spectstr)
@@ -331,7 +389,10 @@ float SpectrumAnalyzer::evaluate_transition(const string &from,
             spectrum_normalize(to)) / 1000.0;
     distance = distance < -1 ? -1 : distance;
 
-    return distance;
+    int power_diff = abs(spectrum_power(from) - spectrum_power(to));
+    power_diff = 5 - (power_diff > 10 ? 10 : power_diff);
+
+    return (distance + power_diff / 5.0) / 2;
 }
 
 void SpectrumAnalyzer::integrate_spectrum(
@@ -341,7 +402,13 @@ void SpectrumAnalyzer::integrate_spectrum(
     for (int i = 0; i < 3; ++i)
         power += long_spectrum[i] / (float)scales[i];
 
-    bpm.integrate_beat(power);
+    bpm_l3.integrate_beat(power);
+
+    power = 0;
+    for (int i = 255; i > 150; --i)
+        power += long_spectrum[i];
+
+    bpm_h3.integrate_beat(power / 2000.0);
 
     static char delay = 0;
     if (++delay % 32 != 0)
@@ -362,7 +429,17 @@ void SpectrumAnalyzer::integrate_spectrum(
 
 void SpectrumAnalyzer::finalize()
 {
-    cerr << "BPM = " << bpm.getBPM() << endl;
+    BeatKeeper bpm_com("com");
+
+    bpm_com += bpm_l3; 
+    bpm_com += bpm_h3; 
+
+    bpm_l3.getBPM();
+    bpm_h3.getBPM();
+
+    last_bpm = bpm_com.getBPM();
+
+    cerr << "BPM [com] = " << last_bpm << endl;
 
     if (!have_spectrums)
         return;
@@ -384,5 +461,9 @@ void SpectrumAnalyzer::finalize()
 #endif
 
     if (have_spectrums > 100)
+    {
         immsdb.set_spectrum(last_spectrum);
+        if (last_bpm > 0)
+            immsdb.set_bpm(last_bpm);
+    }
 }
