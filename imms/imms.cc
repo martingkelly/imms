@@ -177,8 +177,6 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
             mod += NO_XIDLE_BONUS;
         else if (XIdle::is_active())
             mod += INTERACTIVE_BONUS;
-
-        last_skipped = jumped = false;
     }
     else
     {
@@ -198,9 +196,9 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
             else if (XIdle::is_active())
                 mod -= INTERACTIVE_BONUS;
         }
-
-        last_skipped = true;
     }
+
+    last_skipped = !at_the_end;
 
     if (bad)
         mod = 0;
