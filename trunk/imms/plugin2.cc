@@ -22,8 +22,8 @@ using std::string;
 // Local vars
 static Imms *imms = NULL;
 int last_plpos = -1, cur_plpos, next_plpos = -1, pl_length = -1;
-int good_length = 0, song_length = 0, busy = 0, just_enqueued = 0;
-bool need_more = true, spectrum_ok = false, shuffle = false, finished = false;
+int good_length = 0, song_length = 0, busy = 0, just_enqueued = 0, ending = 0;
+bool need_more = true, spectrum_ok = false, shuffle = false;
 
 string cur_path = "", last_path = "";
 
@@ -84,7 +84,6 @@ int random_index()
 void reset_selection()
 {
     xmms_remote_playqueue_remove(session, next_plpos);
-    imms->select_next();
     next_plpos = -1;
     need_more = true;
 }
@@ -102,8 +101,8 @@ void do_more_checks()
     if (new_pl_length != pl_length)
     {
         pl_length = new_pl_length;
-        imms->playlist_changed(pl_length);
         reset_selection();
+        imms->playlist_changed();
     }
 
     // check if xmms is reporting the song length correctly
@@ -127,15 +126,14 @@ void do_song_change()
 
     // notify imms that the previous song has ended
     if (last_path != "")
-        imms->end_song(finished, forced, bad);
+        imms->end_song(ending, forced, bad);
 
     // notify imms of the next song
     imms->start_song(cur_plpos, cur_path);
 
     last_plpos = cur_plpos;
     last_path = cur_path;
-    good_length = 0;
-    finished = false;
+    ending = good_length = 0;
 }
 
 void enqueue_next()
@@ -186,8 +184,8 @@ void do_checks()
     spectrum_ok = (cur_time > song_length * SPECTRUM_SKIP
             && cur_time < song_length * (1 - SPECTRUM_SKIP));
 
-    if (song_length - cur_time < 20 * 1000)
-        finished = true;
+    ending += song_length - cur_time < 20 * 1000
+                            ? ending < 10 : -(ending > 0);
 
     do_more_checks();
 

@@ -8,6 +8,7 @@
 
 #include "imms.h"
 #include "strmanip.h"
+#include "player.h"
 
 using std::string;
 using std::endl;
@@ -89,15 +90,32 @@ void Imms::pump()
     XIdle::query();
 }
 
-void Imms::playlist_changed(int playlist_size)
+void Imms::reload_playlist()
 {
-    local_max = playlist_size * 8 * 60;
+#ifdef DEBUG
+    cerr << "reloading playlist... ";
+#endif
+    immsdb.clear_playlist();
+
+    for (int i = 0; i < Player::get_playlist_length(); ++i)
+        immsdb.insert_playlist_item(i, Player::get_playlist_item(i));
+#ifdef DEBUG
+    cerr << "done" << endl;
+#endif
+}
+
+void Imms::playlist_changed()
+{
+    local_max = Player::get_playlist_length() * 8 * 60;
 
     if (local_max > MAX_TIME)
         local_max = MAX_TIME;
 
     history.clear();
     immsdb.clear_recent();
+    SongPicker::reset();
+
+    reload_playlist();
 } 
 
 int Imms::get_previous()

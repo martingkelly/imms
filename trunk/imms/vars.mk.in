@@ -5,7 +5,7 @@ INSTALL_PROGRAM = @INSTALL@
 DESTDIR = @prefix@
 
 SHELL = bash
-XMMS_OBJ = @PLUGIN_OBJ@ interface.o libimmscore.a 
+XMMS_OBJ = @PLUGIN_OBJ@ interface.o player.o libimmscore.a 
 CORE_OBJ = imms.o immsdb.o fetcher.o picker.o spectrum.o sqldb.o \
 	   songinfo.o regexx.o strmanip.o levenshtein.o xidle.o md5.o
 

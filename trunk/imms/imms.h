@@ -31,7 +31,7 @@ public:
     // get the last song played
     int  get_previous();
 
-    void playlist_changed(int playlist_size);
+    void playlist_changed();
 
     // process internal events - call this periodically
     void pump();
@@ -44,6 +44,7 @@ protected:
     // Helper functions
     int fetch_song_info(SongData &data);
     void print_song_info();
+    void reload_playlist();
 
     // State variables
     bool last_skipped, last_jumped;
