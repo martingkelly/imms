@@ -137,6 +137,7 @@ bool SqlDb::handle_error(const string &query)
             && !strstr(errmsg, "no such table"))
     {
         result = true;
+        nrow = ncol = 0;
         cerr << errmsg << endl;
         cerr << "while executing: " << query << endl;
     }

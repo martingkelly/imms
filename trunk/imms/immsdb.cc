@@ -207,12 +207,11 @@ int ImmsDb::correlate(int from)
 int ImmsDb::identify(const string &path, time_t modtime)
 {
     title = artist = "";
+    sid = uid = -1;
 
     select_query(
             "SELECT uid, sid, modtime FROM 'Library' "
             "WHERE path = '" + escape_string(path) + "';");
-
-    sid = uid = -1;
 
     if (nrow)
     {

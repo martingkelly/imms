@@ -205,13 +205,7 @@ void about(void)
 
 void render_freq(gint16 freq_data[2][256])
 {
-    static uint16_t spectrum[256];
-    int i;
-
-    for (i = 0; i < 256; ++i)
-        spectrum[i] = (freq_data[0][i] + freq_data[1][i]) / 2;
-
-    imms_spectrum(spectrum);
+    imms_spectrum(freq_data[0]);
 }
 
 VisPlugin imms_vp =
@@ -221,7 +215,7 @@ VisPlugin imms_vp =
     -1,             /* session */
     PACKAGE_STRING, /* description */
     0,              /* pcm channels */
-    2,              /* freq channels */
+    1,              /* freq channels */
     init,
     cleanup,
     about,
