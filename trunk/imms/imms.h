@@ -41,10 +41,18 @@ public:
     void setup(const char* _email, bool use_xidle);
 
 protected:
+    struct LastInfo {
+        time_t set_on;
+        std::string spectrum;
+        int bpm, sid;
+    };
+
     // Helper functions
     int fetch_song_info(SongData &data);
     void print_song_info();
     void reload_playlist();
+    void set_lastinfo(LastInfo &last);
+    void evaluate_transition(SongData &data, LastInfo &last, float weight);
 
     // State variables
     bool last_skipped, last_jumped;
@@ -53,11 +61,7 @@ protected:
     std::vector<int> history;
     std::ofstream fout;
 
-    struct {
-        time_t set_on;
-        std::string spectrum;
-        int bpm, sid;
-    } last_hp;
+    LastInfo handpicked, last;
 };
 
 #endif
