@@ -175,8 +175,8 @@ int BasicDb::avg_rating()
     {
         select_query(
                 "SELECT avg(rating) FROM Library "
-                    "NATURAL INNER JOIN Info"
-                    "INNER JOIN Rating ON Rating.uid = Library.uid"
+                    "NATURAL INNER JOIN Info "
+                    "INNER JOIN Rating ON Rating.uid = Library.uid "
                     "WHERE Info.artist = '" + artist + "';");
 
         if (nrow && resultp[1] && (int)atof(resultp[1]))

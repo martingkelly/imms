@@ -15,19 +15,32 @@ void PlaylistDb::sql_create_tables()
             "'path' VARCHAR(4096) NOT NULL, "
             "'uid' INTEGER DEFAULT NULL, "
             "'ided' INTEGER DEFAULT '0');");
+
+    run_query(
+        "CREATE TEMPORARY TABLE 'Matches' ("
+            "'uid' INTEGER UNIQUE NOT NULL);");
+
+    run_query(
+        "CREATE TEMPORARY VIEW 'Filter' AS "
+            "SELECT pos FROM 'Playlist' WHERE Playlist.uid IN "
+            "(SELECT uid FROM Matches)");
 }
 
 int PlaylistDb::install_filter(const string &filter)
 {
-    string where_clause = "WHERE uid > '-1'";
-    if (filter != "")
-        where_clause += " AND (" + filter + ")";
-    run_query("DROP VIEW 'Filter';");
-    run_query("CREATE TEMPORARY VIEW 'Filter' AS "
-            "SELECT * FROM 'Playlist' " + where_clause + ";");
+    if (filter == "")
+        return filtercount = -1;
 
-    select_query("SELECT count() FROM 'Filter';");
+    run_query("DELETE FROM 'Matches';");
+    run_query("INSERT INTO 'Matches' "
+            "SELECT Library.uid FROM 'Library' "
+                "INNER JOIN 'Rating' ON Rating.uid = Library.uid "
+                "INNER JOIN 'Acoustic' ON Acoustic.uid = Library.uid "
+                "INNER JOIN 'Last' ON Last.sid = Library.sid "
+                "INNER JOIN 'Info' ON Info.sid = Library.sid "
+                    "WHERE " + filter + ";");
 
+    select_query("SELECT count(uid) FROM 'Matches';");
     filtercount = nrow && resultp[1] ? atoi(resultp[1]) : 0;
     return filtercount;
 }
@@ -76,15 +89,17 @@ void PlaylistDb::playlist_insert_item(int pos, const string &path)
                 "(SELECT uid FROM Library WHERE path = '" + epath + "'));");
 }
 
-int PlaylistDb::get_uid_from_filter()
+int PlaylistDb::random_playlist_position()
 {
-    select_query("SELECT count() FROM 'Filter';");
-    filtercount = nrow && resultp[1] ? atoi(resultp[1]) : 0;
-    if (filtercount < 2)
-        install_filter("");
+    string table = filtercount > 0 ? "Filter" : "Playlist";
+    select_query("SELECT count(pos) FROM " + table + ";");
+    int total = nrow && resultp[1] ? atoi(resultp[1]) : 0;
 
-    int num = imms_random(filtercount);
-    select_query("SELECT uid FROM 'Filter' LIMIT 1 OFFSET " + itos(num) + ";");
+    int num = imms_random(total);
+    select_query(
+            "SELECT pos FROM " + table
+            + " LIMIT 1 OFFSET " + itos(num) + ";");
+
     return nrow && resultp[1] ? atoi(resultp[1]) : -1;
 }
 

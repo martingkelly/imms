@@ -3,7 +3,6 @@
 #include <sqlite.h>
 
 #include "strmanip.h"
-#include "utils.h"
 #include "sqldb.h"
 
 using std::endl;
@@ -24,15 +23,6 @@ static void fuzzy_like(sqlite_func *context, int arg, const char **argv)
     sqlite_set_result_int(context, string_like(argv[0], argv[1], 4));
 }
 
-static void sample(sqlite_func *context, int arg, const char **argv)
-{
-    if (!argv[0] || !argv[1])
-        return;
-    int want = atoi(argv[0]);
-    int total = atoi(argv[1]);
-    sqlite_set_result_int(context, imms_random(total) <= want);
-}
-
 SqlDb::SqlDb(const string &dbname) : nrow(0), ncol(0), resultp(0), errmsg(0)
 {
     tmptables = 0;
@@ -44,7 +34,6 @@ SqlDb::SqlDb(const string &dbname) : nrow(0), ncol(0), resultp(0), errmsg(0)
     }
     sqlite_busy_timeout(db, 1000);
     sqlite_create_function(db, "similar", 2, fuzzy_like, 0);
-    sqlite_create_function(db, "sample", 2, sample, 0);
 }
 
 SqlDb::~SqlDb()

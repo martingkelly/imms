@@ -70,11 +70,13 @@ void Imms::setup(bool use_xidle)
 void Imms::do_idle_events()
 {
     SongPicker::identify_more();
+    ImmsServer::do_events();
 }
 
 void Imms::do_events()
 {
     SongPicker::do_events();
+    ImmsServer::do_events();
     XIdle::query();
 }
 

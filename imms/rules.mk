@@ -7,6 +7,9 @@ libimms.so: $(XMMS_OBJ) immsconf.h
 
 immstool: libimmscore.a
 
+immsremote: comm.o immsremote.o
+	$(CXX) -lreadline -lcurses $+ -o $@
+
 libimmscore.a: $(CORE_OBJ) immsconf.h
 	$(AR) $(ARFLAGS) $@ $(CORE_OBJ)
 

@@ -8,12 +8,14 @@
 #include "picker.h"
 #include "spectrum.h"
 #include "xidle.h"
+#include "server.h"
 
 // IMMS, UMMS, we all MMS for XMMS?
 
 class Imms : public SongPicker,
              public SpectrumAnalyzer,
-             protected XIdle
+             protected XIdle,
+             protected ImmsServer
 {
 public:
     Imms();

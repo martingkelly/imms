@@ -38,7 +38,7 @@ bool SongPicker::add_candidate(bool urgent)
     if (acquired >= std::min(want, Player::get_playlist_length()))
         return false;
 
-    int position = immsdb.get_uid_from_filter();
+    int position = immsdb.random_playlist_position();
     if (position < 0)
         position = imms_random(Player::get_playlist_length());
     string path = immsdb.get_playlist_item(position);

@@ -24,6 +24,10 @@ AC_ARG_WITH(screensaver,
             AC_HELP_STRING([--with-screensaver],
                            [Use MIT ScreenSaver extension]))
 
+AC_ARG_WITH(queuecontrol,
+            AC_HELP_STRING([--with-queuecontrol],
+                           [Use XMMS queue control functions (default)]))
+
 AC_ARG_ENABLE(debug,
             AC_HELP_STRING([--enable-debug],
                            [Extra debug output]),
@@ -52,9 +56,12 @@ if test "$with_xmms" = "no"; then
     AC_MSG_ERROR([xmms required and missing.])
 fi
 
-AC_CHECK_LIB(xmms, xmms_remote_playqueue_add,, [with_queue_control=no])
 PLUGIN_OBJ=plugin.o
-if test "$with_queue_control" != "no"; then
+if test "$with_queuecontrol" != "no"; then
+    AC_CHECK_LIB(xmms, xmms_remote_playqueue_add,,
+                 [with_queuecontrol=no])
+fi
+if test "$with_queuecontrol" != "no"; then
     AC_DEFINE(HAVE_QUEUE_CONTROL,,
               [XMMS provides functions to control the play queue])
     PLUGIN_OBJ=plugin2.o
