@@ -61,32 +61,31 @@ void SqlDb::close_database()
     nrow = ncol = 0;
 }
 
-void SqlDb::run_query(const string &query)
+bool SqlDb::run_query(const string &query)
 {
     if (db)
     {
         sqlite_exec(db, query.c_str(), 0, 0, &errmsg);
+        bool res = !errmsg;
         handle_error(query);
+        return res;
     }
-    else
-    {
-        cerr << "Database not open!" << endl;
-    }
+    cerr << "Database not open!" << endl;
+    return false;
 }
 
 void SqlDb::select_query(const string &query)
 {
-    if (db)
-    {
-        sqlite_free_table(resultp);
-
-        sqlite_get_table(db, query.c_str(), &resultp, &nrow, &ncol, &errmsg);
-        handle_error(query);
-    }
-    else
+    if (!db)
     {
         cerr << "Database not open!" << endl;
+        return;
     }
+
+    sqlite_free_table(resultp);
+
+    sqlite_get_table(db, query.c_str(), &resultp, &nrow, &ncol, &errmsg);
+    handle_error(query);
 }
 
 void SqlDb::select_query(const string &query, SqlCallback callback,
@@ -127,9 +126,8 @@ void SqlDb::select_query(const string &query, SqlCallback callback,
     }
 }
 
-bool SqlDb::handle_error(const string &query)
+void SqlDb::handle_error(const string &query)
 {
-    int result = false;
     if (errmsg
             && !strstr(errmsg, "already exists")
             && !strstr(errmsg, "uniqueness constraint failed")
@@ -137,12 +135,10 @@ bool SqlDb::handle_error(const string &query)
             && !strstr(errmsg, "requested query abort")
             && !strstr(errmsg, "no such table"))
     {
-        result = true;
         nrow = ncol = 0;
         cerr << errmsg << endl;
         cerr << "while executing: " << query << endl;
     }
     free(errmsg);
     errmsg = 0;
-    return result;
 }

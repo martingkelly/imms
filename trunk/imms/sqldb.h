@@ -16,7 +16,7 @@ public:
     ~SqlDb();
 
 protected:
-    void run_query(const string &query);
+    bool run_query(const string &query);
     void select_query(const string &query);
     void select_query(const string &query, SqlCallback callback,
             int tmpcolumns = 0);
@@ -27,7 +27,7 @@ protected:
     char **resultp;
 
 private:
-    bool handle_error(const string &query);
+    void handle_error(const string &query);
     char *errmsg;
     struct sqlite *db;
     int tmptables;

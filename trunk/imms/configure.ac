@@ -61,6 +61,10 @@ if test "$with_xmms" = "no"; then
     AC_MSG_ERROR([xmms required and missing.])
 fi
 
+AC_CHECK_LIB(xmms, xmms_remote_playqueue_add,
+              [AC_DEFINE(HAVE_QUEUE_CONTROL,,
+               [XMMS provides functions to control the play queue])])
+
 AC_CHECK_LIB(z, compress,, [with_zlib=no])
 AC_CHECK_HEADERS(zlib.h,, [with_zlib=no])
 if test "$with_zlib" = "no"; then

@@ -303,8 +303,11 @@ static int bounds[] =
     { -1, 1, 2, 3, 5, 7, 10, 14, 20, 28, 40, 54, 74, 101, 137, 187, 255 };
 
 static float scales[] =
-    { 11000, 5000, 4200, 3500, 2600, 2100, 1650, 1200, 1000, 780, 550,
-        400, 290, 200, 110, 40 };
+    { 186, 160, 128, 80, 64, 50, 36, 31, 28, 24, 15, 11, 10, 9, 8, 2.5 };
+
+static const float scale_scale = 1.7;
+
+double max_vals[SHORTSPECTRUM] = { 0 };
 
 SpectrumAnalyzer::SpectrumAnalyzer() : bpm_low("low"), bpm_hi("hi")
 {
@@ -426,7 +429,7 @@ void SpectrumAnalyzer::integrate_spectrum(
 {
     float power = 0;
     for (int i = 0; i < 3; ++i)
-        power += long_spectrum[i] / (float)scales[i];
+        power += long_spectrum[i] / scales[i];
 
     bpm_low.integrate_beat(power);
 
@@ -436,21 +439,18 @@ void SpectrumAnalyzer::integrate_spectrum(
 
     bpm_hi.integrate_beat(power / 2000.0);
 
-    static char delay = 0;
-    if (++delay % 32 != 0)
-        return;
-
     for (int i = 0; i < SHORTSPECTRUM; ++i)
     {
         float average = 0;
         for (int j = bounds[i] + 1; j <= bounds[i + 1]; ++j)
             average += long_spectrum[j];
 
-        average /= (bounds[i + 1] - bounds[i]);
+        average /= ((bounds[i + 1] - bounds[i]) * scales[i] * scale_scale);
 
         spectrum[i] = (spectrum[i] * have_spectrums + average)
-            / (float)++have_spectrums;
+            / (float)(have_spectrums + 1);
     }
+    ++have_spectrums;
 }
 
 void SpectrumAnalyzer::finalize()
@@ -472,7 +472,10 @@ void SpectrumAnalyzer::finalize()
 
     for (int i = 0; i < SHORTSPECTRUM; ++i)
     {
-        int c = 'a' + ROUND(('z' - 'a') * spectrum[i] / scales[i]);
+        if (max_vals[i] < spectrum[i])
+            max_vals[i] = spectrum[i];
+        cerr << max_vals[i] << endl;
+        int c = 'a' + ROUND(spectrum[i]);
         c = c > 'z' ? 'z' : (c < 'a' ? 'a' : c);
 
         last_spectrum += (char)c;
@@ -484,7 +487,7 @@ void SpectrumAnalyzer::finalize()
     cerr << "power rating = " << spectrum_power(last_spectrum) << endl;
 #endif
 
-    if (have_spectrums > 100)
+    if (have_spectrums > 20000)
     {
         immsdb.set_spectrum(last_spectrum);
         if (last_bpm > 0)

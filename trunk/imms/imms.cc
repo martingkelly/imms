@@ -96,6 +96,7 @@ void Imms::playlist_changed(int playlist_size)
         local_max = MAX_TIME;
 
     history.clear();
+    immsdb.clear_recent();
 } 
 
 int Imms::get_previous()
