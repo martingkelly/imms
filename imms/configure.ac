@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[1.99-pre2],[mag@luminal.org])
+AC_INIT([IMMS],[1.99-rc1],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -7,6 +7,14 @@ AC_REVISION($Id: configure.ac,v 1.30 2003/10/23 23:53:20 mag Exp $)
 AC_CONFIG_SRCDIR(immscore/imms.cc)
 
 AC_PREFIX_DEFAULT("/usr")
+
+AC_DEFUN(AC_APPEND,
+    if test -z "$$1"; then
+        $1="$2"
+    else
+        $1="$$1 $2"
+    fi
+)
 
 AC_ARG_WITH(taglib,
             AC_HELP_STRING([--with-taglib],
@@ -77,7 +85,7 @@ if test "$with_pcre" = "no"; then
     AC_MSG_ERROR([PCRE required and missing.])
 fi
 
-AC_PATH_PROG([have_pkgconfig], [pkg-config], [no])
+AC_CHECK_PROG(have_pkgconfig, pkg-config, "yes", "no")
 if test "$have_packageconfig" = "no"; then
     AC_MSG_ERROR([pkg-config required and missing])
 fi
@@ -162,30 +170,6 @@ else
     fi
 fi
 
-PLUGINS=""
-AC_CHECK_PROG(with_xmms, xmms-config, "yes", "no")
-if test "$xmms_config" != "no"; then
-    CPPFLAGS=`xmms-config --cflags`
-    AC_CHECK_HEADERS(xmms/plugin.h,, [with_xmms=no])
-    AC_CHECK_HEADERS(xmms/xmmsctrl.h,, [with_xmms=no])
-fi
-
-if test "$with_xmms" = "no"; then
-    AC_MSG_WARN([Not building XMMS plugin])
-else 
-    if test "$enable_queuecontrol" != "no"; then
-        AC_CHECK_LIB(xmms, xmms_remote_playqueue_add,,
-                     [enable_queuecontrol=no])
-    fi
-    if test "$enable_queuecontrol" = "no"; then
-        PLUGINS="$PLUGINS libxmmsimms.so"
-    else
-        AC_DEFINE(HAVE_QUEUE_CONTROL,,
-                  [XMMS provides functions to control the play queue])
-        PLUGINS="$PLUGINS libxmmsimms2.so"
-    fi
-fi
-
 AC_CHECK_PROG(have_sox, sox, "yes", "no")
 if test "$have_sox" = "no"; then
     AC_MSG_WARN([******************************************************]);
@@ -205,8 +189,35 @@ if test "$with_screensaver" = "no"; then
     AC_MSG_WARN([XScreenSaver is missing.])
 else
     AC_DEFINE(WITH_XSCREENSAVER,, [XScreenSaver extension])
-    LIBS="$LIBS -L/usr/X11R6/lib"
+    AC_APPEND(LIBS, -L/usr/X11R6/lib)
 fi
+
+PLUGINS=""
+AC_CHECK_PROG(with_xmms, xmms-config, "yes", "no")
+if test "$xmms_config" != "no"; then
+    CPPFLAGS=`xmms-config --cflags`
+    AC_CHECK_HEADERS(xmms/plugin.h,, [with_xmms=no])
+    AC_CHECK_HEADERS(xmms/xmmsctrl.h,, [with_xmms=no])
+fi
+
+if test "$with_xmms" = "no"; then
+    AC_MSG_WARN([Not building XMMS plugin])
+else 
+    if test "$enable_queuecontrol" != "no"; then
+        AC_CHECK_LIB(xmms, xmms_remote_playqueue_add,,
+                     [enable_queuecontrol=no])
+    fi
+    if test "$enable_queuecontrol" = "no"; then
+        AC_APPEND(PLUGINS, libxmmsimms.so)
+    else
+        AC_DEFINE(HAVE_QUEUE_CONTROL,,
+                  [XMMS provides functions to control the play queue])
+        AC_APPEND(PLUGINS, libxmmsimms2.so)
+    fi
+fi
+
+AC_MSG_CHECKING([which plugins to build])
+AC_MSG_RESULT($PLUGINS)
 
 AC_SUBST(CXX)
 AC_SUBST(CC)
