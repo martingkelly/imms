@@ -53,6 +53,7 @@ protected:
     std::ofstream fout;
 
     struct {
+        time_t set_on;
         std::string spectrum;
         int bpm, sid;
     } last_hp;

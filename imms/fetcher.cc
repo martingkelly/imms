@@ -62,13 +62,7 @@ int InfoFetcher::fetch_song_info(SongData &data)
     if (data.rating < 1)
     {
         data.unrated = true;
-#ifdef LEGACY_RATINGS
-        link(path);
-        ++result;
-        data.rating = SongInfo::get_rating(email);
-#endif
-        if (data.rating < 1)
-            data.rating = immsdb.avg_rating();
+        data.rating = immsdb.avg_rating();
         if (data.rating < 1)
             data.rating = 100;
 

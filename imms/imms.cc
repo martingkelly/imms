@@ -33,10 +33,11 @@ using std::ofstream;
 #define     DAY                     (24*HOUR)
 
 #define     MAX_CORRELATION         15.0
-#define     SPECTRUM_IMPACT         15
+#define     SPECTRUM_IMPACT         10
 #define     BPM_IMPACT              15
 #define     PRIMARY                 0.80
 #define     CORRELATION_IMPACT      40
+#define     LAST_EXPIRE             2*HOUR
 
 #define     TERM_WIDTH              80
 
@@ -65,6 +66,7 @@ Imms::Imms()
     last_skipped = last_jumped = false;
     local_max = MAX_TIME;
 
+    last_hp.set_on = 0;
     last_hp.sid = -1;
     last_hp.bpm = 0;
 
@@ -207,6 +209,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     if (mod > CONS_NON_SKIP_RATE + INTERACTIVE_BONUS)
     {
+        last_hp.set_on = time(0);
         last_hp.sid = current.id.second;
         last_hp.bpm = SpectrumAnalyzer::get_last_bpm();
         last_hp.spectrum = SpectrumAnalyzer::get_last_spectrum();
@@ -247,6 +250,9 @@ int Imms::fetch_song_info(SongData &data)
 
     data.bpm_rating = data.color_rating = data.relation = 0;
 
+    if (last_hp.sid != -1 && last_hp.set_on + LAST_EXPIRE < time(0))
+        last_hp.sid = -1;
+
     if (last_hp.sid != -1)
     {
         float rel = immsdb.correlate(last_hp.sid) / MAX_CORRELATION;
@@ -257,42 +263,41 @@ int Imms::fetch_song_info(SongData &data)
     }
 
     // evaluate the transition based on spectrum / song color
-    float primary = 0, secondary = 0;
+    float score = 0;
     if (data.spectrum != "")
     {
         if (last_hp.sid != -1 && last_hp.spectrum != "")
-            primary = rescale(color_transition(
+            score = rescale(color_transition(
                         last_hp.spectrum, data.spectrum)) * PRIMARY;
 
         const string &last_spectrum = SpectrumAnalyzer::get_last_spectrum();
         if (!last_skipped && last_spectrum != "")
-            secondary = rescale(color_transition(
+            score += rescale(color_transition(
                         last_spectrum, data.spectrum)) * (1 - PRIMARY);
     }
-    if (primary + secondary < 0)
-        data.color_rating = ROUND((primary + secondary) * SPECTRUM_IMPACT);
+    data.color_rating = ROUND(score * SPECTRUM_IMPACT);
 
     // evaluate the transition based on bpm
-    primary = 0, secondary = 0;
+    score = 0;
     if (data.bpm_value)
     {
         if (last_hp.sid != -1 && last_hp.bpm)
-            primary = rescale(bpm_transition(
+            score = rescale(bpm_transition(
                         last_hp.bpm, data.bpm_value)) * PRIMARY;
 
         int last_bpm = SpectrumAnalyzer::get_last_bpm();
         if (!last_skipped && last_bpm)
-            secondary = rescale(bpm_transition(
+            score += rescale(bpm_transition(
                         last_bpm, data.bpm_value)) * (1 - PRIMARY);
     }
-    data.bpm_rating = ROUND((primary + secondary) * BPM_IMPACT);
+    data.bpm_rating = ROUND(score * BPM_IMPACT);
 
 #if defined(DEBUG) && 1
     cerr << "[" << std::setw(60) << path_get_filename(data.path) << "] ";
     if (data.color_rating)
         cerr << "[ color = " << data.color_rating << " ] ";
     if (data.bpm_rating)
-        cerr << "[ *bpm* = " << data.bpm_rating << " ] ";
+        cerr << "[ bpm = " << data.bpm_rating << " ] ";
     cerr << endl;
 #endif
 

@@ -81,6 +81,14 @@ int random_index()
     }
 }
 
+void reset_selection()
+{
+    xmms_remote_playqueue_remove(session, next_plpos);
+    imms->select_next();
+    next_plpos = -1;
+    need_more = true;
+}
+
 void do_more_checks()
 {
     // run these checks less frequently so as not to waste cpu time
@@ -95,9 +103,7 @@ void do_more_checks()
     {
         pl_length = new_pl_length;
         imms->playlist_changed(pl_length);
-        xmms_remote_playqueue_remove(session, next_plpos);
-        need_more = true;
-        next_plpos = 0;
+        reset_selection();
     }
 
     // check if xmms is reporting the song length correctly
@@ -107,7 +113,7 @@ void do_more_checks()
 
     bool newshuffle = xmms_remote_is_shuffle(session);
     if (!newshuffle && shuffle)
-        xmms_remote_playqueue_remove(session, next_plpos);
+        reset_selection();
     shuffle = newshuffle;
 
     // have imms do it's internal processing
@@ -169,6 +175,7 @@ void do_checks()
         if (last_path != cur_path)
         {
             do_song_change();
+            xmms_remote_playqueue_remove(session, next_plpos);
             return;
         }
     }
