@@ -210,6 +210,22 @@ else
     fi
 fi
 
+PKG_CHECK_MODULES(BMP, [bmp >= 0.9.7], [], [with_bmp=no])
+
+saved_cppflags="$CPPFLAGS"
+saved_libs="$LIBS"
+LIBS=$BMP_LIBS
+CPPFLAGS=$BMP_CFLAGS
+
+AC_CHECK_HEADERS(bmp/plugin.h,, [with_bmp=no])
+AC_CHECK_HEADERS(bmp/beepctrl.h,, [with_bmp=no])
+if test "$with_bmp" != "no"; then
+    AC_APPEND(PLUGINS, libbmpimms.so)
+fi
+
+LIBS=$saved_libs
+CPPFLAGS=$saved_cppflags
+
 AC_MSG_CHECKING([which plugins to build])
 AC_MSG_RESULT($PLUGINS)
 

@@ -3,13 +3,12 @@ CXX = @CXX@
 VERSION = @PACKAGE_VERSION@
 INSTALL_PROGRAM = @INSTALL@
 PREFIX = @prefix@
-VPATH = ../immscore:../clients/xmms:../analyzer:../utils:../clients:../immsd
+VPATH = ../immscore:../analyzer:../utils:../clients:../immsd:../clients/xmms:../clients/bmp
 ARFLAGS = rs
 
 SHELL = bash
 PLUGINS = @PLUGINS@
 
-XMMSCPPFLAGS= `xmms-config --cflags`
 DBUSCPPFLAGS=`pkg-config dbus-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE
 GLIB2CPPFLAGS=`pkg-config glib-2.0 --cflags`
 GLIB1CPPFLAGS=`pkg-config glib --cflags`
@@ -18,7 +17,6 @@ TAGCPPFLAGS=@TAGCPPFLAGS@
 CPPFLAGS=@XCPPFLAGS@ -Wall -fPIC -D_REENTRANT -I../ -I../immscore -I../clients
 CXXFLAGS=-fno-rtti
 
-XMMSLDFLAGS=`xmms-config --libs`
 GLIB2LDFLAGS=`pkg-config dbus-glib-1 --libs`
 GLIB1LDFLAGS=`pkg-config glib --libs`
 DBUSLDFLAGS=`pkg-config dbus-1 --libs`
