@@ -32,13 +32,10 @@ public:
         m << bad;
         client.send(m);
     }
-    int select_next()
+    void select_next()
     {
-        IDBusOMessage m(IMMSDBUSID, "SelectNext", true);
-        IDBusIMessage reply(client.send_with_reply(m, 5000));
-        int r;
-        reply >> r;
-        return r;
+        IDBusOMessage m(IMMSDBUSID, "SelectNext");
+        client.send(m);
     }
     void playlist_changed(int length)
     {

@@ -29,7 +29,7 @@ public:
         try {
             IDBusOMessage m(IMMSCLIENTDBUSID, "GetPlaylistItem", true);
             m << index;
-            IDBusIMessage reply(con.send_with_reply(m, 10000));
+            IDBusIMessage reply(con.send_with_reply(m, 5000));
             reply >> path;
         } catch (IDBusException &e) {
             cerr << "Error: " << e.what() << endl;

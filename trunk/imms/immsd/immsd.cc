@@ -98,20 +98,18 @@ class ImmsDFilter : public IDBusFilter
                 imms->playlist_changed(length);
                 return true;
             }
+            if (message.get_member() == "SelectNext")
+            {
+                IDBusOMessage m(IMMSCLIENTDBUSID, "EnqueueNext");
+                m << imms->select_next();
+                con.send(m);
+                return true;
+            }
 
             cerr << "Unhandled signal: " << message.get_member() << "!" << endl;
         }
         else if (message.get_type() == MTMethod)
         {
-            if (message.get_member() == "SelectNext")
-            {
-                IDBusOMessage reply(message.reply());
-                reply << imms->select_next();
-                con.send(reply);
-
-                return true;
-            }
-
             cerr << "Unhandled method: " << message.get_member() << "!" << endl;
         }
 
