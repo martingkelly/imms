@@ -124,6 +124,9 @@ void do_song_change()
 
     last_path = cur_path;
     ending = good_length = 0;
+
+    if (!shuffle)
+        next_plpos = (cur_plpos + 1) % pl_length;
 }
 
 void enqueue_next()
@@ -180,25 +183,14 @@ void do_checks()
     // have imms do it's internal processing
     imms->pump();
 
+    if (!shuffle)
+        return;
+
     int qlength = xmms_remote_get_playqueue_length(session);
-    if (shuffle)
-    {
-        if (qlength > 1)
-        {
-            xmms_remote_playqueue_remove(session, next_plpos);
-            next_plpos = -1;
-        }
-        else if (!qlength)
-        {
-            enqueue_next();
-            return;
-        }
-    }
-    else
-    {
-        cur_plpos = xmms_remote_get_playlist_pos(session);
-        next_plpos = (cur_plpos + 1) % pl_length;
-    }
+    if (qlength > 1)
+        reset_selection();
+    else if (!qlength)
+        enqueue_next();
 }
 
 void imms_poll()
