@@ -7,12 +7,10 @@
 #include "immsconf.h"
 #include "plugin.h"
 
-
 char *ch_email = NULL;
 int use_xidle = 1;
 int use_sloppy = 0;
 int poll_tag = 0;
-int spectrum_ok = 0;
 
 GtkWidget *configure_win = NULL, *about_win = NULL,
     *xidle_button = NULL, *sloppy_button = NULL;
@@ -204,38 +202,20 @@ void about(void)
             GTK_SIGNAL_FUNC(gtk_widget_destroyed), &about_win);
 }
 
-void render_freq(gint16 freq_data[2][256])
+GeneralPlugin imms_gp =
 {
-    static unsigned char delay;
-    static uint16_t spectrum[256];
-    int i;
-
-    if (!spectrum_ok || ++delay % 64)
-        return;
-
-    for (i = 0; i < 256; ++i)
-        spectrum[i] = (freq_data[0][i] + freq_data[1][i]) / 2;
-
-    imms_spectrum(spectrum);
-}
-
-VisPlugin imms_vp =
-{
-    NULL,           /* handle */
-    NULL,           /* plugin filename */
-    -1,             /* session */
-    PACKAGE_STRING, /* description */
-    0,              /* pcm channels */
-    2,              /* freq channels */
+    NULL,                   /* handle */
+    NULL,                   /* filename */
+    -1,                     /* xmms_session */
+    NULL,                   /* Description */
     init,
-    cleanup,
     about,
     configure,
-    NULL,           /* disable */
-    NULL,           /* playback start */
-    NULL,           /* playback stop */
-    NULL,           /* render pcm */
-    render_freq     /* render freq */
+    cleanup,
 };
 
-VisPlugin *get_vplugin_info(void) { return &imms_vp; }
+GeneralPlugin *get_gplugin_info(void)
+{
+    imms_gp.description = PACKAGE_STRING;
+    return &imms_gp;
+}
