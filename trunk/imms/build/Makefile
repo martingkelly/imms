@@ -10,12 +10,12 @@ include ../rules.mk
 
 all: libimms.so analyzer immstool immsremote
 
-libimms.so: $(XMMS_OBJ) immsconf.h
+libimms.so: $(XMMS_OBJ)
 	$(CXX) $(XMMS_OBJ) \
 		$(LDFLAGS) \
 		-shared -Wl,-z,defs,-soname,$@ -o $@
 
-libimmscore.a: $(call objects,..) immsconf.h
+libimmscore.a: $(call objects,..)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 
 immstool-CPPFLAGS = -I../analyzer
