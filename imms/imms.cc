@@ -70,16 +70,9 @@ void Imms::setup(const char* _email, bool use_xidle)
 
 void Imms::pump()
 {
+    SongPicker::identify_more();
     SongPicker::add_candidate();
     XIdle::query();
-}
-
-void Imms::reload_playlist()
-{
-    immsdb.clear_playlist();
-
-    for (int i = 0; i < Player::get_playlist_length(); ++i)
-        immsdb.insert_playlist_item(i, Player::get_playlist_item(i));
 }
 
 void Imms::playlist_changed()
@@ -93,7 +86,7 @@ void Imms::playlist_changed()
     immsdb.clear_recent();
     SongPicker::reset();
 
-    reload_playlist();
+    InfoFetcher::playlist_changed();
 } 
 
 int Imms::get_previous()
@@ -111,7 +104,7 @@ void Imms::start_song(int position, const string &path)
     XIdle::reset();
     SpectrumAnalyzer::reset();
 
-    revalidate_current(path);
+    revalidate_current(position, path);
 
     history.push_back(position);
     if (history.size() > 10)
@@ -262,9 +255,10 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
                     last.bpm, data.bpm_value)) * weight * BPM_IMPACT);
 }
 
-int Imms::fetch_song_info(SongData &data)
+bool Imms::fetch_song_info(SongData &data)
 {
-    int result = InfoFetcher::fetch_song_info(data);
+    if (!InfoFetcher::fetch_song_info(data))
+        return false;
 
     if (data.last_played > local_max)
         data.last_played = local_max;
@@ -282,6 +276,5 @@ int Imms::fetch_song_info(SongData &data)
         cerr << "[ bpm = " << data.bpm_rating << " ] ";
     cerr << endl;
 #endif
-
-    return result;
+    return true;
 }

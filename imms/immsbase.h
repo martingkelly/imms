@@ -1,11 +1,7 @@
 #ifndef __IMMSBASE_H
 #define __IMMSBASE_H
 
-#include "immsdb.h"
-
-#define ROUND(x) (int)((x) + 0.5)
-
-int imms_random(int max);
+#include "playlist.h"
 
 class ImmsBase
 {
@@ -16,7 +12,7 @@ class ImmsBase
     };
 protected:
     DirMaker dirmaker;
-    ImmsDb immsdb;
+    PlaylistDB immsdb;
 };
 
 #endif

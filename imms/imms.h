@@ -48,9 +48,8 @@ protected:
     };
 
     // Helper functions
-    int fetch_song_info(SongData &data);
+    bool fetch_song_info(SongData &data);
     void print_song_info();
-    void reload_playlist();
     void set_lastinfo(LastInfo &last);
     void evaluate_transition(SongData &data, LastInfo &last, float weight);
 

@@ -18,7 +18,7 @@ class ImmsDb : protected SqlDb
 {
 public:
     ImmsDb();
-    ~ImmsDb();
+    virtual ~ImmsDb();
     int identify(const string &path, time_t modtime);
     int identify(const string &path, time_t modtime,
             const string &checksum);
@@ -46,10 +46,6 @@ public:
 
     int avg_rating();
 
-    void insert_playlist_item(int pos, const string &path);
-    string get_playlist_item(int pos);
-    void clear_playlist();
-
     void clear_recent() { expire_recent(""); }
 
 protected:
@@ -62,7 +58,7 @@ protected:
     int update_secondaty_correlations(int argc, char **argv);
 
     void sql_set_pragma();
-    void sql_create_tables();
+    virtual void sql_create_tables();
     void sql_schema_upgrade();
 
     // shared within callbacks

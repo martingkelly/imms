@@ -15,11 +15,11 @@ class SongPicker : protected InfoFetcher
 public:
     SongPicker();
     int select_next();
-    virtual void playlist_changed() = 0;
 
 protected:
     bool add_candidate(bool urgent = false);
-    void revalidate_current(const std::string &path);
+    void revalidate_current(int pos, const std::string &path);
+    void identify_more();
     void reset();
 
     SongData current;

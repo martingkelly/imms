@@ -83,43 +83,17 @@ void ImmsDb::sql_create_tables()
                 "'weight' INTEGER DEFAULT '0');");
 
     run_query(
-            "CREATE TEMPORARY TABLE 'Playlist' ("
-                "'pos' INTEGER PRIMARY KEY, "
-                "'path' VARCHAR(4096) NOT NULL, "
-                "'uid' INTEGER DEFAULT '-1');");
-
-    run_query(
             "CREATE TEMPORARY TABLE 'Recent' ("
                 "'sid' INTEGER NOT NULL, "
                 "'weight' INTEGER NOT NULL, "
                 "'time' TIMESTAMP);");
 }
 
-void ImmsDb::insert_playlist_item(int pos, const string &path)
-{
-    run_query("INSERT INTO 'Playlist' ('pos', 'path') "
-            "VALUES ('" + itos(pos) + "', '"
-            + escape_string(path) + "');");
-}
-
-string ImmsDb::get_playlist_item(int pos)
-{
-    select_query("SELECT path FROM 'Playlist' "
-            "WHERE pos = '" + itos(pos) + "';");
-
-    return nrow && resultp[1] ? resultp[1] : "";
-}
-
-void ImmsDb::clear_playlist()
-{
-    run_query("DELETE FROM 'Playlist';");
-}
-
 void ImmsDb::add_recent(int weight)
 {
     expire_recent("WHERE time < '" + itos(time(0) - CORRELATION_TIME) + "'");
 
-    if (sid != -1)
+    if (sid > -1)
         run_query("INSERT INTO 'Recent' "
                 "VALUES ('" + itos(sid) + "', '"
                 + itos(weight) + "', '"
@@ -252,7 +226,7 @@ void ImmsDb::update_correlation(int from, int to, float weight)
 
 float ImmsDb::correlate(int from)
 {
-    if (sid == -1)
+    if (sid < 0)
         return 0;
     
     select_query(
@@ -425,7 +399,7 @@ IntPair ImmsDb::get_id()
 
 StringPair ImmsDb::get_info()
 {
-    if (sid == -1)
+    if (sid < 0)
         return StringPair("", "");
 
     select_query(
@@ -447,7 +421,7 @@ StringPair ImmsDb::get_info()
 
 string ImmsDb::get_spectrum()
 {
-    if (uid == -1)
+    if (uid < 0)
         return "";
 
     select_query(
@@ -461,7 +435,7 @@ string ImmsDb::get_spectrum()
 
 int ImmsDb::get_bpm()
 {
-    if (uid == -1)
+    if (uid < 0)
         return 0;
 
     return bpm;
@@ -469,7 +443,7 @@ int ImmsDb::get_bpm()
 
 time_t ImmsDb::get_last()
 {
-    if (sid == -1)
+    if (sid < 0)
         return 0;
 
     select_query(
@@ -481,7 +455,7 @@ time_t ImmsDb::get_last()
 
 int ImmsDb::get_rating()
 {
-    if (uid == -1)
+    if (uid < 0)
         return -1;
 
     select_query(
@@ -498,7 +472,7 @@ void ImmsDb::set_artist(const string &_artist)
 
 void ImmsDb::set_title(const string &_title)
 {
-    if (uid == -1)
+    if (uid < 0)
         return;
 
     title = _title;
@@ -522,7 +496,7 @@ void ImmsDb::set_title(const string &_title)
 
 void ImmsDb::register_new_sid(int new_sid)
 {
-    if (new_sid == -1)
+    if (new_sid < 0)
     {
         select_query("SELECT max(sid) FROM Library;");
         new_sid = resultp[1] ? atoi(resultp[1]) + 1 : 1;
@@ -551,10 +525,10 @@ void ImmsDb::register_new_sid(int new_sid)
 
 void ImmsDb::set_last(time_t last)
 {
-    if (uid == -1)
+    if (uid < 0)
         return;
 
-    if (sid == -1)
+    if (sid < 0)
         register_new_sid();
 
     run_query(
@@ -571,7 +545,7 @@ void ImmsDb::set_id(const IntPair &p)
 
 void ImmsDb::set_spectrum(const string &spectrum)
 {
-    if (uid == -1)
+    if (uid < 0)
         return;
 
     run_query("INSERT INTO 'Acoustic' ('uid') VALUES ('" + itos(uid) + "');");
@@ -583,7 +557,7 @@ void ImmsDb::set_spectrum(const string &spectrum)
 
 void ImmsDb::set_bpm(int bpm)
 {
-    if (uid == -1)
+    if (uid < 0)
         return;
 
     run_query(
@@ -593,7 +567,7 @@ void ImmsDb::set_bpm(int bpm)
 
 void ImmsDb::set_rating(int rating)
 {
-    if (uid == -1)
+    if (uid < 0)
         return;
 
     run_query(
