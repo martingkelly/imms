@@ -87,10 +87,6 @@ struct FilterOps
     {
         return (pl_length = xmms_remote_get_playlist_length(session));
     }
-    static void disconnected()
-    { 
-        imms->connection_lost();
-    }
 }; 
 
 void imms_setup(int use_xidle)

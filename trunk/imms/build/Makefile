@@ -24,6 +24,7 @@ songinfo-CPPFLAGS=$(TAGCPPFLAGS)
 dbuscore-CPPFLAGS=$(DBUSCPPFLAGS)
 dbusclient-CPPFLAGS=$(DBUSCPPFLAGS)
 dbusserver-CPPFLAGS=$(DBUSCPPFLAGS) $(GLIB2CPPFLAGS)
+socketserver-CPPFLAGS=$(GLIB2CPPFLAGS)
 glib1dbus-CPPFLAGS=$(DBUSCPPFLAGS) $(GLIB1CPPFLAGS)
 glib2dbus-CPPFLAGS=$(DBUSCPPFLAGS) $(GLIB2CPPFLAGS)
 
@@ -43,6 +44,8 @@ dbus-client: dbus-client.o
 glib-test-CPPFLAGS=$(GLIB1CPPFLAGS)
 glib-test-LIBS=-limmscore -L. $(GLIB1LDFLAGS)
 glib-test: glib-test.o
+
+socket-client: socket-client.o
 
 PLUGINS_INSTALL=$(patsubst %,%_install,$(PLUGINS))
 plugins_install: $(PLUGINS_INSTALL)

@@ -23,6 +23,8 @@ protected:
     void identify_more();
     void reset();
 
+    virtual void request_playlist_item(int index) = 0;
+
     bool playlist_ready;
     SongData current;
 

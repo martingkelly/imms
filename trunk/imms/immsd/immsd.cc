@@ -1,11 +1,18 @@
 #include <glib.h>
+#include <signal.h>
+#include <iostream>
+#include <sstream>
 
 #include "imms.h"
 #include "utils.h"
-#include "dbuscore.h"
-#include "dbusserver.h"
+#include "serverstub.h"
+#include "socketserver.h"
 
-IDBusConnection activecon;
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::stringstream;
+
 Imms *imms;
 
 gboolean do_events(void *unused)
@@ -15,99 +22,104 @@ gboolean do_events(void *unused)
     return TRUE;
 }
 
-class ImmsDFilter : public IDBusFilter 
+class ImmsDFilter : public SocketServer, public IMMSServer
 {
-    void new_connection(IDBusConnection &con)
+public:
+    ImmsDFilter(const string &sockname) : SocketServer(sockname) {}
+    void write_command(const string &command)
+    {
+        SocketServer::write(command + "\n");
+    }
+    void connection_established()
     {
         if (!imms)
-        {
-#ifdef DEBUG
-            cerr << "New client connected!" << endl;
-#endif
-            activecon = con;
-            imms = new Imms(con);
-        }
+            imms = new Imms(this);
     }
-    bool dispatch(IDBusConnection &con, IDBusIMessage &message)
+    void connection_lost()
     {
-        if (message.get_type() == MTError)
-        {
-            cerr << "Error: " << message.get_error() << endl;
-            return true;
-        }              
+        delete imms;
+        imms = 0;
 
-        if (!imms || activecon != con)
-            return false;
+        exit(0);
+    }
+    void process_line(const string &line)
+    {
+        stringstream sstr;
+        sstr << line;
 
-        if (message.get_type() == MTSignal)
-        {
-            if (message.get_interface() == "org.freedesktop.Local")
-            {
-                if (message.get_member() == "Disconnected")
-                {
+        string command = "";
+        sstr >> command;
 #ifdef DEBUG
-                    cerr << "Client diconnected!" << endl;
+        cerr << "Got line: " << line << endl;
+        cerr << "The command is: " << command << endl;
 #endif
-                    delete imms;
-                    imms = 0;
 
-                    exit(0);
-                }
-            }
-
-            if (message.get_interface() != "org.luminal.IMMS")
-            {
-                cerr << "Recieved message " << message.get_member()
-                    << " on unknown interface: "
-                    << message.get_interface() << endl;
-                return false;
-            }
-            if (message.get_member() == "Setup")
-            {
-                bool use_xidle;
-                message >> use_xidle;
-                imms->setup(use_xidle);
-                return true;
-            }
-            if (message.get_member() == "StartSong")
-            {
-                int pos;
-                string path;
-                message >> pos >> path;
-                imms->start_song(pos, path);
-                return true;
-            }
-            if (message.get_member() == "EndSong")
-            {
-                bool end, jumped, bad;
-                message >> end >> jumped >> bad;
-                imms->end_song(end, jumped, bad);
-                return true;
-            }
-            if (message.get_member() == "PlaylistChanged")
-            {
-                int length;
-                message >> length;
-#ifdef DEBUG
-                cerr << "got playlist length = " << length << endl;
-#endif
-                imms->playlist_changed(length);
-                return true;
-            }
-            if (message.get_member() == "SelectNext")
-            {
-                IDBusOMessage m(IMMSCLIENTDBUSID, "EnqueueNext");
-                m << imms->select_next();
-                con.send(m);
-                return true;
-            }
-
-            cerr << "Unhandled signal: " << message.get_member() << "!" << endl;
+        if (command == "Setup")
+        {
+            bool use_xidle;
+            sstr >> use_xidle;
+            imms->setup(use_xidle);
+            return;
         }
+        if (command == "StartSong")
+        {
+            int pos;
+            string path;
+            sstr >> pos >> path;
+            imms->start_song(pos, path);
+            return;
+        }
+        if (command == "EndSong")
+        {
+            bool end, jumped, bad;
+            sstr >> end >> jumped >> bad;
+            imms->end_song(end, jumped, bad);
+            return;
+        }
+        if (command == "PlaylistItem")
+        {
+            int pos;
+            string path;
+            sstr >> pos >> path;
+            string oldpath = imms->get_item_from_playlist(pos);
+            cerr << "item " << pos << ": " << path << endl;
+            if (oldpath != "")
+            {
+                if (oldpath != path)
+                    write_command("PlaylistChanged");
+            }
+            else
+                imms->playlist_insert_item(pos, path);
+            return;
+        }
+        if (command == "PlaylistChanged")
+        {
+            int length;
+            sstr >> length;
+#ifdef DEBUG
+            cerr << "got playlist length = " << length << endl;
+#endif
+            imms->playlist_changed(length);
 
-        return false;
+            return;
+        }
+        if (command == "SelectNext")
+        {
+            return;
+        }
+        cerr << "IMMSd: Unknown command: " << command << endl;
     }
 };
+
+GMainLoop *loop = 0;
+
+void quit(int signum)
+{
+    if (loop)
+        g_main_quit(loop);
+    loop = 0;
+    signal(signum, SIG_DFL);
+}
 
 int main(int argc, char **argv)
 {
@@ -118,14 +130,18 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    GMainLoop *loop = g_main_loop_new (NULL, FALSE);
+    loop = g_main_loop_new(NULL, FALSE);
 
-    ImmsDFilter filter;
-    IDBusServer server(get_imms_root("socket"), &filter);
+    signal(SIGINT,  quit);
+    signal(SIGTERM, quit);
 
     GSource* ts = g_timeout_source_new(500);
     g_source_attach(ts, NULL);
     g_source_set_callback(ts, (GSourceFunc)do_events, NULL, NULL);
+
+    ImmsDFilter filter(get_imms_root("socket"));
+
+    cout << "IMMSd version " << PACKAGE_VERSION << " ready..." << endl;
 
     g_main_loop_run(loop);
     return 0;

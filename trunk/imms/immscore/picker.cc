@@ -42,18 +42,8 @@ bool SongPicker::add_candidate(bool urgent)
     if (position < 0)
         position = imms_random(pl_length);
     string path = ImmsDb::get_item_from_playlist(position);
-    string realpath = path_normalize(get_playlist_item(position));
 
-    if (realpath == "")
-        return false;
-
-    if (path != realpath)
-    {
-        cerr << "IMMS: path triggered playlist refresh" << endl;
-        cerr << path << " != " << realpath << endl;
-        playlist_changed(-1);
-        return true;
-    }
+    request_playlist_item(position);
 
     SongData data(position, path);
 
