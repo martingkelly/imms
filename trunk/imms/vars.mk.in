@@ -9,7 +9,6 @@ ARFLAGS = rs
 SHELL = bash
 PLUGINS = @PLUGINS@
 
-DBUSCPPFLAGS=`pkg-config dbus-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE
 GLIB2CPPFLAGS=`pkg-config glib-2.0 --cflags`
 GLIB1CPPFLAGS=`pkg-config glib --cflags`
 TAGCPPFLAGS=@TAGCPPFLAGS@
@@ -17,9 +16,8 @@ TAGCPPFLAGS=@TAGCPPFLAGS@
 CPPFLAGS=@XCPPFLAGS@ -Wall -fPIC -D_REENTRANT -I../ -I../immscore -I../clients
 CXXFLAGS=-fno-rtti
 
-GLIB2LDFLAGS=`pkg-config dbus-glib-1 --libs`
+GLIB2LDFLAGS=`pkg-config glib-2.0 --libs`
 GLIB1LDFLAGS=`pkg-config glib --libs`
-DBUSLDFLAGS=`pkg-config dbus-1 --libs`
 LDFLAGS=-L. @LIBS@
 
 default: all
