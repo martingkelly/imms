@@ -12,6 +12,7 @@ ARFLAGS = rs
 
 SHELL = bash
 PLUGINS = @PLUGINS@
+OPTIONAL = @OPTIONAL@
 
 GLIB2CPPFLAGS=`pkg-config glib-2.0 --cflags`
 GLIB1CPPFLAGS=`pkg-config glib --cflags`

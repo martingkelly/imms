@@ -8,7 +8,7 @@ first: ../configure
 
 include ../rules.mk
 
-all: immsd analyzer immstool $(PLUGINS)
+all: immsd immstool $(OPTIONAL) $(PLUGINS)
 
 libimmscore.a: $(call objects,../immscore)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
