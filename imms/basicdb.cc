@@ -179,8 +179,14 @@ int BasicDb::avg_rating()
                     "INNER JOIN Rating ON Rating.uid = Library.uid "
                     "WHERE Info.artist = '" + artist + "';");
 
-        if (nrow && resultp[1] && (int)atof(resultp[1]))
-            return (int)atof(resultp[1]);
+        int rating;
+        if (!(nrow && resultp[1] && (rating = (int)atof(resultp[1]))))
+            return -1;
+
+        rating = std::min(rating, 115);
+        rating = std::max(rating, 90);
+
+        return rating;
     }
 
     return -1;

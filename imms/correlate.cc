@@ -8,9 +8,9 @@
 using std::endl;
 using std::cerr;
 
-#define CORRELATION_TIME    (10*30)   // n * 30 ==> n minutes
-#define MAX_CORR_STR        "15"
-#define MAX_CORRELATION     15
+#define CORRELATION_TIME    (12*30)   // n * 30 ==> n minutes
+#define MAX_CORR_STR        "10"
+#define MAX_CORRELATION     10
 #define SECOND_DEGREE       0.5
 
 static inline string mkkey(int i, int j)
