@@ -132,5 +132,7 @@ int SongPicker::select_next()
 
     reset();
 
+    next_sid = winner.id.second;
+
     return winner.position;
 }

@@ -71,15 +71,7 @@ void imms_spectrum(uint16_t spectrum[256])
         imms->integrate_spectrum(spectrum);
 }
 
-int random_index()
-{
-    while (1)
-    {
-        int pos = imms_random(pl_length);
-        if (pl_length < 3 || pos != next_plpos)
-            return pos;
-    }
-}
+int random_index() { return imms_random(pl_length); }
 
 void reset_selection()
 {

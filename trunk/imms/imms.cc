@@ -33,7 +33,7 @@ using std::ofstream;
 #define     HOUR                    (60*60)
 #define     DAY                     (24*HOUR)
 
-#define     MAX_CORRELATION         15.0
+#define     MAX_CORRELATION         12.0
 #define     SPECTRUM_IMPACT         10
 #define     BPM_IMPACT              15
 #define     PRIMARY                 0.80

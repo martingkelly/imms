@@ -25,6 +25,8 @@ protected:
 
     virtual int fetch_song_info(SongData &data);
     virtual bool parse_song_info(const string &path, string &title);
+
+    int next_sid;
     string email;
 };
 
