@@ -18,7 +18,7 @@ public:
     int get_unknown_playlist_item();
 
     int install_filter(const string &filter);
-    int get_uid_from_filter();
+    int random_playlist_position();
 
     void playlist_clear();
 protected:

@@ -24,7 +24,7 @@ unsigned int time_left = 1000, sloppy_skips = 0;
 int last_plpos = -2, cur_plpos, pl_length = -1;
 int good_length = 0, song_length = 0, delay = 0;
 string cur_path = "", last_path = "";
-bool need_more = true, spectrum_ok = false;
+bool spectrum_ok = false;
 
 // Extern from interface.c
 extern VisPlugin imms_vp;
@@ -98,7 +98,7 @@ void do_more_checks()
         good_length++;
 
     // have imms do it's internal processing
-    imms->pump();
+    imms->do_events();
 }
 
 void do_checks()
@@ -108,7 +108,10 @@ void do_checks()
 
     // if not playing make sure we stopped collecting spectrum statistics
     if (!xmms_remote_is_playing(session))
+    {
+        imms->do_idle_events();
         return;
+    }
 
     // run these checks less frequently so as not to waste cpu time
     if (++delay > POLL_DELAY || pl_length < 0 || good_length < 3)
@@ -140,13 +143,6 @@ void do_checks()
 
     spectrum_ok = (cur_time > song_length * SPECTRUM_SKIP
             && cur_time < song_length * (1 - SPECTRUM_SKIP));
-
-    // if we don't have enough, feed imms more candidates for the next song
-    if (need_more)
-    {
-        int pos = imms_random(xmms_remote_get_playlist_length(session));
-        need_more = imms->add_candidate(pos, imms_get_playlist_item(pos));
-    }
 }
 
 void do_find_next()
@@ -166,13 +162,6 @@ void do_find_next()
 
     if (!forced && pl_length > 2)
     {
-        if (need_more)
-        {
-            do { cur_plpos = imms_random(pl_length); }
-            while (imms->add_candidate(cur_plpos,
-                        imms_get_playlist_item(cur_plpos), true));
-        }
-
         // have imms select the next song for us
         cur_plpos = imms->select_next();
     }
@@ -191,7 +180,6 @@ void do_find_next()
 
     last_path = cur_path;
     good_length = 0;
-    need_more = true;
 
     xmms_remote_play(session);
 }
