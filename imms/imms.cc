@@ -85,6 +85,8 @@ void Imms::playlist_changed()
     immsdb.clear_recent();
     SongPicker::reset();
 
+    playlist_ready = false;
+
     InfoFetcher::playlist_changed();
 } 
 

@@ -62,9 +62,14 @@ bool SongPicker::add_candidate(bool urgent)
 
 void SongPicker::identify_more()
 {
+    if (playlist_ready)
+        return;
     int pos = immsdb.get_unknown_playlist_item();
     if (pos < 0)
+    {
+        playlist_ready = true;
         return;
+    }
     playlist_identify_item(pos);
 }
 

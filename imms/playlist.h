@@ -15,12 +15,12 @@ public:
     string get_playlist_item(int pos);
     int get_unknown_playlist_item();
 
-    void clear_playlist();
+    int playlist_install_filter(const string &filter);
+
+    void playlist_clear();
 protected:
     virtual void sql_create_tables();
     virtual void sql_schema_upgrade(int from = 0) {};
-private:
-    bool all_known;
 };
 
 #endif
