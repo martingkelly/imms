@@ -56,7 +56,7 @@ string imms_get_playlist_item(int at)
 }
 
 struct FilterOps;
-typedef IMMSClient< ClientFilter<FilterOps> > XMMSClient;
+typedef IMMSClient<FilterOps> XMMSClient;
 XMMSClient *imms = 0;
 
 struct FilterOps
@@ -78,7 +78,6 @@ struct FilterOps
         xmms_remote_play(session);
     }
     static void reset_selection() {}
-    static void disconnected() { imms->connection_lost(); }
     static string get_item(int index)
     {
         return imms_get_playlist_item(index);
@@ -92,13 +91,7 @@ struct FilterOps
 void imms_init()
 {
     if (!imms)
-    {
-        try {
-            imms = new XMMSClient();
-        } catch (IDBusException &e) {
-            cerr << "Error: " << e.what() << endl;
-        }
-    }
+        imms = new XMMSClient();
 
     state = IDLE;
 }
