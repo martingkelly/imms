@@ -138,9 +138,10 @@ void do_checks()
         imms->setup(xidle_val);
         imms->playlist_changed(pl_length
                 = xmms_remote_get_playlist_length(session));
+        last_plpos = xmms_remote_get_playlist_pos(session);
         if (xmms_remote_is_playing(session))
         {
-            last_plpos = cur_plpos = xmms_remote_get_playlist_pos(session);
+            cur_plpos = last_plpos;
             last_path = cur_path = imms_get_playlist_item(cur_plpos);
             imms->start_song(cur_plpos, cur_path);
         }
