@@ -194,6 +194,13 @@ void do_find_next()
 
     if (!forced && pl_length > 2)
         imms->select_next();
+    else
+    {
+        last_plpos = cur_plpos = xmms_remote_get_playlist_pos(session);
+        last_path = cur_path = imms_get_playlist_item(cur_plpos);
+        xmms_remote_play(session);
+        imms->start_song(cur_plpos, cur_path);
+    }
 }
 
 void imms_poll()
