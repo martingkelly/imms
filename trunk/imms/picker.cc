@@ -1,4 +1,7 @@
 #include <iostream>
+#include <algorithm>
+
+#include <math.h>
 
 #include "picker.h"
 #include "strmanip.h"
