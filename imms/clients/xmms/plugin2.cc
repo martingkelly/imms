@@ -93,7 +93,7 @@ struct FilterOps
     }
     static int get_length()
     {
-        return (pl_length = xmms_remote_get_playlist_length(session));
+        return xmms_remote_get_playlist_length(session);
     }
 }; 
 
