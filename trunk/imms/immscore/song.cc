@@ -256,16 +256,29 @@ void Song::set_info(const StringPair &info)
     try {
         AutoTransaction a;
 
+        int aid = -1;
+        {
+            Q q("SELECT sid FROM Artists WHERE artist = ?;");
+            if (q.next())
+                q >> aid;
+            else
+            {
+                Q("INSERT INTO Artists (artist) VALUES (?);")
+                    << artist << execute;
+                aid = SQLDatabaseConnection::last_rowid();
+            }
+        }
+
         sid = -1;
-        Q q("SELECT sid FROM 'Info' WHERE artist = ? AND title = ?;");
-        q << artist << title;
+        Q q("SELECT sid FROM Info WHERE aid = ? AND title = ?;");
+        q << aid << title;
         if (q.next())
         {
             q >> sid;
             q.execute();
 
             {
-                Q q("UPDATE 'Library' SET sid = ? WHERE uid = ?;");
+                Q q("UPDATE Library SET sid = ? WHERE uid = ?;");
                 q << sid << uid;
                 q.execute();
             }
@@ -274,9 +287,8 @@ void Song::set_info(const StringPair &info)
         {
             register_new_sid();
 
-            Q q("INSERT INTO 'Info' "
-                    "('sid', 'artist', 'title') VALUES (?, ?, ?);");
-            q << sid << artist << title;
+            Q q("INSERT INTO Info ('sid', 'aid', 'title') VALUES (?, ?, ?);");
+            q << sid << aid << title;
             q.execute();
         }
 
@@ -300,7 +312,7 @@ time_t Song::get_last()
 
     try
     {
-        Q q("SELECT last FROM 'Last' WHERE sid = ?;");
+        Q q("SELECT last FROM Last WHERE sid = ?;");
         q << sid;
         if (q.next())
             q >> result;
@@ -318,7 +330,7 @@ int Song::get_rating()
 
     try
     {
-        Q q("SELECT rating FROM 'Rating' WHERE uid = ?;");
+        Q q("SELECT rating FROM Rating WHERE uid = ?;");
         q << uid;
 
         if (q.next())
@@ -359,7 +371,8 @@ StringPair Song::get_info()
 
     try
     {
-        Q q("SELECT title, artist FROM 'Info' WHERE sid = ?;");
+        Q q("SELECT title, artist "
+                "FROM Info NATURAL INNER JOIN Artists WHERE sid = ?;");
         q << sid;
 
         if (q.next())

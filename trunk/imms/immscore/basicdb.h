@@ -4,7 +4,6 @@
 #include <string>
 
 #include "sqldb2.h"
-#include "song.h"
 
 using std::string;
 
@@ -22,8 +21,11 @@ public:
 protected:
     void sql_set_pragma();
     virtual void sql_create_tables();
-    void sql_create_v7_tables();
     virtual void sql_schema_upgrade(int from = 0);
+
+private:
+    void sql_create_v7_tables();
+    void sql_create_v8_tables();
 };
 
 #endif

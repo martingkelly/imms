@@ -3,6 +3,7 @@
 
 #include "immsconf.h"
 #include "basicdb.h"
+#include "song.h"
 
 #include <vector>
 

@@ -4,9 +4,9 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <stdint.h>
 
 using std::string;
-using std::map;
 using std::cerr;
 using std::endl;
 
@@ -19,6 +19,8 @@ public:
     SQLDatabaseConnection(const string &filename);
     SQLDatabaseConnection() {};
     ~SQLDatabaseConnection();
+
+    static uint64_t last_rowid();
 
     void open(const string &filename);
     void close();
