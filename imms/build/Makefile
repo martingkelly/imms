@@ -40,7 +40,8 @@ plugin-CPPFLAGS=$(XMMSCPPFLAGS)
 plugin2-CPPFLAGS=$(XMMSCPPFLAGS)
 songinfo-CPPFLAGS=$(TAGCPPFLAGS)
 dbuscore-CPPFLAGS=$(DBUSCPPFLAGS)
-dbusclient-CPPFLAGS=$(DBUSCPPFLAGS) `pkg-config glib --cflags`
+dbusclient-CPPFLAGS=$(DBUSCPPFLAGS)
+glib1dbus-CPPFLAGS=$(DBUSCPPFLAGS) `pkg-config glib --cflags`
 
 immsd: $(call objects,../immsd)
 immsd-CPPFLAGS=$(GLIBCPPFLAGS)

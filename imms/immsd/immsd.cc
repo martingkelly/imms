@@ -33,10 +33,6 @@ class ImmsDFilter : public IDBusFilter
     }
     bool dispatch(IDBusConnection &con, IDBusIMessage &message)
     {
-#ifdef DEBUG
-        cerr << "Got message on " << message.get_interface() << endl;
-#endif
-
         if (message.get_type() == MTError)
         {
             cerr << "Error: " << message.get_error() << endl;
@@ -131,7 +127,7 @@ int main(int argc, char **argv)
     ImmsDFilter filter;
     IDBusServer server(get_imms_root("socket"), &filter);
 
-    GSource* ts = g_timeout_source_new(1000);
+    GSource* ts = g_timeout_source_new(500);
     g_source_attach(ts, NULL);
     g_source_set_callback(ts, (GSourceFunc)do_events, NULL, NULL);
 
