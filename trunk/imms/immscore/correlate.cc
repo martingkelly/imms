@@ -77,7 +77,6 @@ void CorrelationDb::get_related(vector<int> &out, int pivot_sid, int limit)
         {
             int pos;
             q >> pos;
-            cerr << pivot_sid << " related to " << pos << endl;
             out.push_back(pos);
         }
     }

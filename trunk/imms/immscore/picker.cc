@@ -170,7 +170,7 @@ int SongPicker::select_next()
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
         i->composite_rating = i->rating + i->relation +
-            i->specrating + i->bpmrating + i->trend;
+            i->specrating + i->bpmrating + i->trend + i->newness;
 
         i->composite_rating = ROUND(i->composite_rating 
                 * i->last_played / (double)max_last_played);

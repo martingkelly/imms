@@ -34,13 +34,16 @@ using std::ofstream;
 #define     SECONDARY               0.3
 #define     CORRELATION_IMPACT      40
 #define     BPM_IMPACT              25
-#define     SPECTRUM_IMPACT         5
+#define     SPECTRUM_IMPACT         10
 #define     SPECTRUM_RADIUS         3.75
 #define     BPM_RADIUS              2.5
 #define     LAST_EXPIRE             HOUR
 #define     MAX_TREND               20
 
 #define     TERM_WIDTH              80
+
+#define     NEW_PLAYS               3
+#define     NEW_BONUS               30
 
 //////////////////////////////////////////////
 
@@ -162,6 +165,8 @@ void Imms::print_song_info()
         fout << current.bpmrating << "b";
     if (current.specrating)
         fout << current.specrating << "s";
+    if (current.newness)
+        fout << current.newness << "n";
     fout << resetiosflags(std::ios::showpos);
 
     fout << "] [Last: " << strtime(current.last_played) <<
@@ -313,11 +318,17 @@ bool Imms::fetch_song_info(SongData &data)
     if (data.last_played > local_max)
         data.last_played = local_max;
 
-    data.specrating = data.bpmrating = data.relation = 0;
+    data.specrating = data.bpmrating = data.relation = data.newness = 0;
 
     evaluate_transition(data, handpicked, 1);
     evaluate_transition(data, last,
             SECONDARY * (handpicked.sid == -1 ? 2 : 1));
+
+    if (BasicDb::avg_playcounter() >= NEW_PLAYS
+        && data.get_playcounter() < NEW_PLAYS)
+    {
+        data.newness = NEW_BONUS / (data.get_playcounter() + 1);
+    }
 
     return true;
 }

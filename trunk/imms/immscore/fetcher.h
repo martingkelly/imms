@@ -23,7 +23,7 @@ protected:
 
         int position, rating;
         int composite_rating;
-        int relation, bpmrating, specrating, trend;
+        int relation, bpmrating, specrating, trend, newness;
         time_t last_played;
         bool identified;
     };
