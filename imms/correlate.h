@@ -17,7 +17,6 @@ public:
     void clear_recent() { expire_recent(INT_MAX); }
 
     CorrelationDb() : correlate_from(time(0)) { }
-    ~CorrelationDb() { clear_recent(); }
 
 protected:
     void expire_recent(time_t cutoff);

@@ -56,6 +56,11 @@ Imms::Imms()
     fout << endl << endl << ctime(&t) << setprecision(3);
 }
 
+Imms::~Imms()
+{
+    clear_recent();
+}
+
 void Imms::setup(bool use_xidle)
 {
     xidle_enabled = use_xidle;

@@ -17,6 +17,7 @@ class Imms : public SongPicker,
 {
 public:
     Imms();
+    ~Imms();
 
     // Important inherited public methods
     //  SongPicker:

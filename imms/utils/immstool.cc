@@ -40,6 +40,7 @@ void do_purge(const string &path);
 time_t get_last(const string &path);
 void do_lint();
 void do_distance(const string &to);
+void do_distance2(const string &to);
 void do_identify(const string &path);
 
 int main(int argc, char *argv[])
@@ -49,6 +50,16 @@ int main(int argc, char *argv[])
 
     SqlDb sqldb;
 
+    if (!strcmp(argv[1], "distance2"))
+    {
+        if (argc < 3)
+        {
+            cout << "immstool distance <reference spectrum>" << endl;
+            return -1;
+        }
+
+        do_distance2(argv[2]);
+    }
     if (!strcmp(argv[1], "distance"))
     {
         if (argc < 3)
@@ -276,6 +287,39 @@ void do_lint()
     WARNIFFAILED();
 }
 
+void do_distance2(const string &to)
+{
+    string rescaled = rescale_bpmgraph(to);
+
+    Q q("SELECT Library.path, Acoustic.bpm, Library.sid "
+            "FROM 'Library' INNER JOIN 'Acoustic' ON "
+            "Library.uid = Acoustic.uid WHERE Acoustic.bpm NOT NULL;");
+
+    while(q.next())
+    {
+        string path, bpm;
+        int sid;
+        q >> path >> bpm >> sid;
+
+        cout << setw(4) << rms_string_distance(rescaled, rescale_bpmgraph(bpm))
+            << "  " << bpm << "  ";
+
+        Q q("SELECT artist, title FROM Info WHERE sid = ?;");
+        q << sid;
+
+        if (q.next())
+        {
+            string artist, title;
+            q >> artist >> title;
+            cout << setw(25) << artist;
+            cout << setw(25) << title;
+        }
+        else
+            cout << setw(50) << path_get_filename(path);
+        cout << endl;
+    }
+}
+
 void do_distance(const string &to)
 {
     Q q("SELECT Library.path, Acoustic.spectrum, Library.sid "
@@ -305,7 +349,6 @@ void do_distance(const string &to)
             cout << setw(50) << path_get_filename(path);
         cout << endl;
     }
-                
 }
 
 void do_missing()

@@ -29,7 +29,7 @@ float scales[] = { 0.6619, 1.384, 1.918, 1.493, 3.261, 2.417, 2.756,
 float bias[] = { 164.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0 };
 
-string encode_spectrum(float spectrum[BARKSIZE])
+static string encode_spectrum(float spectrum[BARKSIZE])
 {
     string spec;
     for (int i = 0; i < BARKSIZE; ++i)
@@ -42,7 +42,7 @@ string encode_spectrum(float spectrum[BARKSIZE])
     return spec;
 }
 
-void freq2bark(float freqs[NFREQS], float bark[BARKSIZE])
+static void freq2bark(float freqs[NFREQS], float bark[BARKSIZE])
 {
     for (int i = 0; i < NFREQS; )
     {
@@ -384,25 +384,23 @@ void SpectrumAnalyzer::finalize()
     bpm_com += bpm_hi; 
 
     string bpmgraph = bpm_com.get_bpm_graph();
-    int bpmval = bpm_com.guess_actual_bpm();
 
 #ifdef DEBUG
     bpm_low.dump("/tmp/beats-low");
     bpm_hi.dump("/tmp/beats-high");
     bpm_com.dump("/tmp/beats-com");
-
-    cerr << "BPM [com] = " << bpmval << endl;
 #endif
 
     if (!have_spectrums)
         return;
 
-    song.set_acoustic(encode_spectrum(spectrum), bpmgraph);
-
 #ifdef DEBUG
     cerr << "spectrum  [" << encode_spectrum(spectrum) << "] " << endl;
     cerr << "bpm graph [" << bpmgraph << "] " << endl;
+    cerr << "rescaled [" << rescale_bpmgraph(bpmgraph) << "] " << endl;
 #endif
+
+    song.set_acoustic(encode_spectrum(spectrum), bpmgraph);
 }
 
 bool SpectrumAnalyzer::is_known()

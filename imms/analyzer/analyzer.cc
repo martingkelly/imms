@@ -21,7 +21,6 @@ using std::cerr;
 using std::endl;
 using std::string;
 using std::ostringstream;
-using std::vector;
 
 typedef uint16_t sample_t;
 
@@ -39,25 +38,24 @@ int analyze(const string &path)
 {
     if (access(path.c_str(), R_OK))
     {
-        cerr << "could not open file " << path << endl;
+        cerr << "analyzer: Could not open file " << path << endl;
         return -4;
     }
 
     ostringstream command;
-    command << "sox \"" << path << "\" -t .raw -w -u -c 1 "
-        "-r " << SAMPLERATE << " -";
-    cout << "running " << command.str() << endl;
+    command << "sox \"" << path << "\" -t .raw -w -u -c 1 -r "
+        << SAMPLERATE << " -";
+    cout << "analyzer: Executing: " << command.str() << endl;
     FILE *p = popen(command.str().c_str(), "r");
 
     if (!p)
     {
-        cout << "could not open pipe!" << endl;
+        cerr << "analyzer: Could not open pipe!" << endl;
         return -2;
     }
 
     sample_t indata[WINDOWSIZE];
     float outdata[NFREQS];
-    int counter = 0;
 
     float maxes[NFREQS];
     memset(maxes, 0, sizeof(maxes));
@@ -74,7 +72,7 @@ int analyze(const string &path)
 
         if (analyzer.is_known())
         {
-            cout << "Already analyzed - skipping." << endl;
+            cout << "analyzer: Already analyzed - skipping." << endl;
             return 1;
         }
 
@@ -97,15 +95,12 @@ int analyze(const string &path)
             analyzer.integrate_spectrum(outdata);
 
             memmove(indata, indata + READSIZE, OVERLAP * sizeof(sample_t));
-            counter++;
         }
 
     }
     catch (std::string &s) { cerr << s << endl; }
 
     pclose(p);
-
-    cout << "processed " << counter << " windows" << endl;
 
     return 0;
 }
