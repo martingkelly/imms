@@ -17,6 +17,7 @@
 #include <utils.h>
 #include <spectrum.h>
 #include <strmanip.h>
+#include <picker.h>
 
 using std::string;
 using std::cout;
@@ -29,6 +30,7 @@ using std::pair;
 using std::ifstream;
 
 int usage();
+int rating_usage();
 void do_help();
 void do_deviation();
 void do_missing();
@@ -39,6 +41,7 @@ void do_dump_bpm();
 void do_spec_distance(const string &to);
 void do_bpm_distance(const string &to);
 void do_identify(const string &path);
+int do_rate(const string &path, char *rating);
 
 int main(int argc, char *argv[])
 {
@@ -70,6 +73,14 @@ int main(int argc, char *argv[])
         }
 
         do_spec_distance(argv[2]);
+    }
+    else if (!strcmp(argv[1], "rate"))
+    {
+        if (argc < 4 || strlen(argv[2]) < 2)
+            return rating_usage();
+
+        for (int i = 3; i < argc; ++i)
+            do_rate(argv[i], argv[2]);
     }
     else if (!strcmp(argv[1], "identify"))
     {
@@ -149,6 +160,12 @@ int usage()
     cout << " immstool missing|purge|lint|identify|help" << endl;
     cout << "Debug functionality: " << endl;
     cout << " immstool bpmdistance|specdistance|deviation|graph" << endl;
+    return -1;
+}
+
+int rating_usage()
+{
+    cout << "immstool rate [+|-]<rating> <filename> [<filename>]*" << endl;
     return -1;
 }
 
@@ -481,4 +498,37 @@ void do_dump_bpm()
             cout << point[i] - 'a' << " ";
         cout << uid << endl;
     }
+}
+
+int do_rate(const string &path, char *rating)
+{
+    Song s(path_normalize(path));
+
+    if (!s.isok())
+    {
+        cerr << "Could not identify file: " << path << endl;
+        return -1;
+    }
+
+    int r = s.get_rating();
+
+    if (rating[0] == '-' || rating[0] == '+')
+    {
+        int mod = atoi(rating + 1);
+        if (!mod)
+            return rating_usage();
+        r = r + (rating[0] == '-' ? - mod : mod);
+    }
+    else
+    {
+        r = atoi(rating);
+        if (!r)
+            return rating_usage();
+    }
+
+    r = std::min(MAX_RATING, std::max(MIN_RATING, r));
+
+    cout << "New rating: " << r << endl;
+    s.set_rating(r);
+    return 0;
 }
