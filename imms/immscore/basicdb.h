@@ -17,6 +17,7 @@ public:
     bool check_title(const string &artist, string &title);
 
     int avg_rating(const string &artist, const string &title);
+    int avg_playcounter();
 
 protected:
     void sql_set_pragma();

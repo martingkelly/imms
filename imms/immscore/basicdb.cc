@@ -214,6 +214,24 @@ int BasicDb::avg_rating(const string &artist, const string &title)
     return -1;
 }
 
+int BasicDb::avg_playcounter()
+{
+    static int playcounter = -1;
+    if (playcounter != -1)
+        return playcounter;
+
+    try
+    {
+        q q("SELECT avg(playcounter) from Library;");
+        if (q.next())
+        {
+            q >> playcounter;
+        }
+    }
+    WARNIFFAILED();
+    return playcounter;
+}
+
 bool BasicDb::check_artist(string &artist)
 {
     try

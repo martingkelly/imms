@@ -21,7 +21,7 @@ InfoFetcher::SongData::SongData(int _position, const string &_path)
 void InfoFetcher::SongData::reset()
 {
     bpmrating = specrating = rating = relation = 0;
-    trend = composite_rating = 0;
+    trend = composite_rating = newness = 0;
     identified = false;
     last_played = 0;
 }
