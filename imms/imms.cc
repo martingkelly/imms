@@ -257,9 +257,11 @@ int Imms::fetch_song_info(SongData &data)
                     candidate_spectrum) * (1 - SPECTRUM_PRIMARY);
     }
 #ifdef DEBUG
+#if 0
     if (secondary)
         cerr << "[last] > [" << path_get_filename(data.path)
             << "] = " << secondary / (1 - SPECTRUM_PRIMARY) << endl;
+#endif
 #endif
     data.extra = ROUND((primary + secondary) * SPECTRUM_IMPACT);
 

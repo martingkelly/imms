@@ -34,8 +34,10 @@ public:
 
 protected:
     void process_window();
-    int peak_finder_helper(vector<int> &peaks,
-            int min, int max, float cutoff);
+    bool check_peak(int i, float minampl);
+    int maybe_double(int i, float min, float range);
+    int peak_finder_helper(vector<int> &peaks, int min, int max,
+            float cutoff, float range);
 
     struct timeval prev;
     long unsigned int samples;

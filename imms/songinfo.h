@@ -19,12 +19,9 @@ using std::string;
 class InfoSlave
 {
 public:
-    virtual string get_artist()
-        { return ""; }
-    virtual string get_title()
-        { return ""; }
-    virtual string get_album()
-        { return ""; }
+    virtual string get_artist() { return ""; }
+    virtual string get_title()  { return ""; }
+    virtual string get_album()  { return ""; }
     virtual int get_rating(const string &email)
         { return INITIAL_RATING; }
     virtual ~InfoSlave() {};
@@ -41,8 +38,10 @@ public:
         { return myslave->get_title(); }
     virtual string get_album()
         { return myslave->get_album(); }
+#ifdef LEGACY_RATINGS
     virtual int get_rating(const string &email)
         { return myslave->get_rating(email); }
+#endif
 
     void link(string _filename);
 
