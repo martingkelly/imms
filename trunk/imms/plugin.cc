@@ -11,6 +11,7 @@
 
 #include "immsconf.h"
 #include "plugin.h"
+#include "player.h"
 #include "imms.h"
 
 using std::string;
@@ -36,6 +37,8 @@ static enum
     BUSY        = 1,
     FIND_NEXT   = 2
 } state;
+
+void Player::reset_selection() {}
 
 // Wrapper that frees memory
 string imms_get_playlist_item(int at)

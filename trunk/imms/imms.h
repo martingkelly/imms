@@ -49,6 +49,8 @@ protected:
         int bpm, sid;
     };
 
+    void reset_selection();
+
     // Helper functions
     bool fetch_song_info(SongData &data);
     void print_song_info();

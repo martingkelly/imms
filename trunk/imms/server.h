@@ -8,9 +8,11 @@ class ImmsServer : public SocketServer, virtual public ImmsBase
 {
 public:
     ImmsServer();
-    ~ImmsServer();
+    virtual ~ImmsServer();
     void do_events();
 protected:
+    virtual void reset_selection() = 0;
+
     Socket *conn;
     string filter;
 };     
