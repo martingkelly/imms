@@ -78,11 +78,12 @@ int InfoFetcher::fetch_song_info(SongData &data)
 #endif
 #endif
 
-    data.last_played = time(0) - immsdb.get_last();
+    data.id = immsdb.get_id();
+
+    data.last_played = (data.id.second != next_sid) ?
+                            time(0) - immsdb.get_last() : 0;
     data.spectrum = immsdb.get_spectrum();
     data.bpm_value = immsdb.get_bpm();
-
-    data.id = immsdb.get_id();
 
     return result;
 }
