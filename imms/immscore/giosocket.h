@@ -87,8 +87,6 @@ public:
                 }
                 inbuf += cur;
             }
-            else
-                cerr << "some error occured" << endl;
         }
 
         if (condition & G_IO_OUT)
@@ -111,8 +109,6 @@ public:
                     }
                     outp += n;
                 }
-                else
-                    cerr << "some error occured" << endl;
             }
         }
 
@@ -120,7 +116,9 @@ public:
         {
             connection_lost();
             close();
+#ifdef DEBUG
             cerr << "Connection terminated." << endl;
+#endif
             return false;
         }
 

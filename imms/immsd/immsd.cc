@@ -65,7 +65,7 @@ public:
 
         string command = "";
         sstr >> command;
-#ifdef DEBUG
+#if defined(DEBUG) && 0
         cerr << "> " << line << endl;
 #endif
 

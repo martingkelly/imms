@@ -1,12 +1,14 @@
 Requirments:
 
     * XMMS 1.2.7+
-    * id3lib 3.8.0+ [recommended]
-    * libvorbis 1.0+ [optional]
-    * sqlite 2.8.0+
+
+    * taglib 1.0+ [recommended]
+        or
+    * id3lib 3.8.0+
+    * libvorbis 1.0+
+
+    * sqlite 3.0.6+
     * pcre 4.3+
-    * dbus 0.22+
-    * dbus-glib 0.22+
 
 Installation:
 

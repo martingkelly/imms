@@ -125,14 +125,6 @@ void do_more_checks()
         imms->playlist_changed(pl_length);
     }
 
-    if (imms->check_connection())
-    {
-        imms->setup(xidle_val);
-        imms->playlist_changed(pl_length);
-        if (xmms_remote_is_playing(session))
-            imms->start_song(cur_plpos, cur_path);
-    }
-
     // check if xmms is reporting the song length correctly
     song_length = xmms_remote_get_playlist_time(session, cur_plpos);
     if (song_length > 1000)
@@ -143,6 +135,17 @@ void do_checks()
 {
     if (last_plpos == -2)
         last_plpos = xmms_remote_get_playlist_pos(session) - 1;
+
+    if (imms->check_connection())
+    {
+        imms->setup(xidle_val);
+        imms->playlist_changed(pl_length);
+        if (xmms_remote_is_playing(session))
+        {
+            int cur = xmms_remote_get_playlist_pos(session);
+            imms->start_song(cur, imms_get_playlist_item(cur));
+        }
+    }
 
     if (!xmms_remote_is_playing(session))
         return;
