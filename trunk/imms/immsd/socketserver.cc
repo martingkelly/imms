@@ -18,14 +18,7 @@ static gboolean incoming_connection(GIOChannel *source,
     return true;
 }
 
-static gboolean connection_event(GIOChannel *source,
-        GIOCondition condition, gpointer data)
-{
-    SocketServer *ss = (SocketServer*)data;
-    return ss->_connection_event(condition);
-}
-
-SocketServer::SocketServer(const string &sockpath) : con(0), outp(0)
+SocketServer::SocketServer(const string &sockpath)
 {
     int fd = socket(PF_UNIX, SOCK_STREAM, 0);
     if (fd < 0)
@@ -67,7 +60,7 @@ SocketServer::~SocketServer()
 
 void SocketServer::_connection_established()
 {
-    if (con)
+    if (isok())
     {
         cerr << "IMMS: Another session is already active" << endl;
         return;
@@ -78,90 +71,12 @@ void SocketServer::_connection_established()
     socklen_t size = 0;
     int fd = accept(g_io_channel_unix_get_fd(listener),
             (sockaddr*)&sun, &size);
-    con = g_io_channel_unix_new(fd);
-    g_io_add_watch(con,
-            (GIOCondition)(G_IO_IN | G_IO_PRI | G_IO_ERR | G_IO_HUP),
-            ::connection_event, this);
+
+    init(fd);
 
 #ifdef DEBUG
     cerr << "Incoming connection!" << endl;
 #endif
 
     connection_established();
-}
-
-void SocketServer::write(const string &line)
-{
-    if (outbuf.empty())
-        g_io_add_watch(con, G_IO_OUT, ::connection_event, this);
-
-    outbuf.push_back(line);
-}
-
-char buf[128];
-
-bool SocketServer::_connection_event(GIOCondition condition)
-{
-    if (!con)
-        return false;
-
-    if (condition & G_IO_IN)
-    {
-        unsigned n = 0;
-        GIOError e = g_io_channel_read(con, buf, sizeof(buf), &n);
-        if (e == G_IO_ERROR_NONE)
-        {
-            cerr << "read " << n << " bytes" << endl;
-            buf[n] = '\0';
-            char *lineend = strchr(buf, '\n');
-            if (lineend)
-            {
-                *lineend = '\0';
-                inbuf += buf;
-                process_line(inbuf);
-                inbuf = lineend + 1;
-            }
-            else
-                inbuf += buf;
-        }       
-        else 
-            cerr << "some error occured" << endl;
-    }
-
-    if (condition & G_IO_OUT)
-    {
-        if (!outp && !outbuf.empty())
-            outp = outbuf.front().c_str();
-
-        if (outp)
-        {
-            unsigned len = strlen(outp);
-            unsigned n = 0;
-            GIOError e = g_io_channel_write(con, outp, len, &n);
-            if (e == G_IO_ERROR_NONE)
-            {
-                if (n == len)
-                {
-                    outbuf.pop_front();
-                    outp = 0;
-                    return !outbuf.empty();
-                }
-                outp += n;
-            }
-            else
-                cerr << "some error occured" << endl;
-        }
-    }
-
-    if (condition & G_IO_HUP)
-    {
-        connection_lost();
-        g_io_channel_close(con);
-        g_io_channel_unref(con);
-        con = 0;
-        cerr << "Connection terminated." << endl;
-        return false;
-    }
-
-    return true;
 }

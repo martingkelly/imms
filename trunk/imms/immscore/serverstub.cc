@@ -15,7 +15,7 @@ void IMMSServer::request_playlist_change()
 void IMMSServer::request_playlist_item(int index)
 {
     ostringstream osstr;
-    osstr << "GetPlaylistItem" << index;
+    osstr << "GetPlaylistItem " << index;
     write_command(osstr.str());
 }
 

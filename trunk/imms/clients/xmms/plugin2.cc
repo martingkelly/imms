@@ -51,7 +51,7 @@ static void xmms_reset_selection()
 }
 
 struct FilterOps;
-typedef IMMSClient< ClientFilter<FilterOps> > XMMSClient;
+typedef IMMSClient<FilterOps> XMMSClient;
 XMMSClient *imms = 0;
 
 static void enqueue_next()
@@ -63,7 +63,8 @@ static void enqueue_next()
     }
 
     // have imms select the next song for us
-    select_pending = imms->select_next();
+    select_pending = true;
+    imms->select_next();
 }
 
 struct FilterOps
@@ -100,11 +101,7 @@ void imms_init()
 {
     if (!imms)
     {
-        try {
-            imms = new XMMSClient();
-        } catch (IDBusException &e) {
-            cerr << "Error: " << e.what() << endl;
-        }
+        imms = new XMMSClient();
         busy = 0;
     }
 }

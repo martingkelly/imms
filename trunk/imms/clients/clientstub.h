@@ -1,170 +1,97 @@
 #ifndef __CLIENTSTUB_H_
 #define __CLIENTSTUB_H_
 
-#include "dbuscore.h"
+#include "giosocket.h"
 #include "utils.h"
-#include "dbusclient.h"
+#include "clientstubbase.h"
 
-template <typename Filter>
-class IMMSClient
+#include <stdlib.h>
+
+#include <sstream>
+
+using std::stringstream;
+using std::ostringstream;
+
+template <typename Ops>
+class IMMSClient : public IMMSClientStub, protected GIOSocket 
 {
 public:
-    IMMSClient() : filter(this), client(get_imms_root("socket"), &filter) {}
-
-    void setup(bool use_xidle)
+    IMMSClient() : connected(false) { connect(); }
+    bool connect()
     {
-        if (!client.isok())
+        int fd = socket_connect(get_imms_root("socket"));
+        if (fd < 1)
+        {
+            init(fd);
+            return connected = true;
+        }
+        return false;
+    }
+    virtual void write_command(const string &line)
+        { if (isok()) GIOSocket::write(line + "\n"); }
+    virtual void process_line(const string &line)
+    {
+        stringstream sstr;
+        sstr << line;
+
+        string command = "";
+        sstr >> command;
+
+        if (command == "ResetSelection")
+        {
+            Ops::reset_selection();
             return;
-
-        IDBusOMessage m(IMMSDBUSID, "Setup");
-        m << use_xidle;
-        client.send(m);
-    }
-    void start_song(int position, std::string path)
-    {
-        if (!client.isok())
+        }
+        if (command == "EnqueueNext")
+        {
+            int next;
+            sstr >> next;
+            Ops::set_next(next);
             return;
-
-        IDBusOMessage m(IMMSDBUSID, "StartSong");
-        m << position;
-        m << path;
-        client.send(m);
-    }
-    void end_song(bool at_the_end, bool jumped, bool bad)
-    {
-        if (!client.isok())
+        }
+        if (command == "RequestPlaylistChange")
+        {
+            IMMSClientStub::playlist_changed(Ops::get_length());
             return;
-
-        IDBusOMessage m(IMMSDBUSID, "EndSong");
-        m << at_the_end;
-        m << jumped;
-        m << bad;
-        client.send(m);
-    }
-    bool select_next()
-    {
-        if (!client.isok())
-            return false;
-
-        IDBusOMessage m(IMMSDBUSID, "SelectNext");
-        client.send(m);
-        return true;
-    }
-    void playlist_changed(int length)
-    {
-        if (!client.isok())
+        }
+        if (command == "GetPlaylistItem")
+        {
+            int i;
+            sstr >> i;
+            send_item(i);
             return;
+        }
+        if (command == "GetEntirePlaylist")
+        {
+            for (int i = 0; i < Ops::get_length(); ++i)
+                send_item(i);
+            return;
+        }
 
-        IDBusOMessage m(IMMSDBUSID, "PlaylistChanged");
-        m << length;
-#ifdef DEBUG
-        cerr << "sending out pl len = " << length << endl;
-#endif
-        client.send(m);
+        cerr << "IMMS: Unknown command: " << command << endl;
     }
+    virtual void connection_lost() { connected = false; }
 
     bool check_connection()
     {
-        if (!client.isok())
-        {
-            client.connect();
-            return client.isok();
-        }
-        return false;
+        if (isok())
+            return false;
+
+        system("immsd &");
+
+        return connect();
     }
-
-    void connection_lost() { client.connection_lost(); }
-
+    
+    bool isok() { return connected; }
 private:
-    Filter filter;
-    IDBusClient client;
-};
+    bool connected;
 
-template <typename Ops>
-class ClientFilter : public IDBusFilter
-{
-    typedef IMMSClient< ClientFilter<Ops> > MyClient;
-public:
-    ClientFilter(MyClient *client) : client(client) {}
-    virtual bool dispatch(IDBusConnection &con, IDBusIMessage &message)
+    void send_item(int i)
     {
-        if (message.get_type() == MTError)
-        {
-            cerr << "Error: " << message.get_error() << endl;
-            return true;
-        }
-        if (message.get_type() == MTSignal)
-        {
-            if (message.get_interface() == "org.freedesktop.Local")
-            {
-                if (message.get_member() == "Disconnected")
-                {
-                    client->connection_lost();
-                    return true;
-                }
-            }
-            if (message.get_interface() != "org.luminal.IMMSClient")
-            {
-                cerr << "Received message on unknown interface: "
-                    << message.get_interface() << endl;
-                return false;
-            }
-            if (message.get_member() == "ResetSelection")
-            {
-                Ops::reset_selection();
-                return true;
-            }
-            if (message.get_member() == "EnqueueNext")
-            {
-                int next;
-                message >> next;
-                Ops::set_next(next);
-                return true;
-            }
-            if (message.get_member() == "RequestPlaylistChange")
-            {
-                client->playlist_changed(Ops::get_length());
-                return true;
-            }
-            if (message.get_member() == "GetPlaylistItem")
-            {
-                int i;
-                message >> i;
-                send_item(con, i);
-                return true;
-            }
-            if (message.get_member() == "GetEntirePlaylist")
-            {
-                for (int i = 0; i < Ops::get_length(); ++i)
-                    send_item(con, i);
-                return true;
-            }
-
-            g_print("Received signal %s %s\n",
-                    message.get_interface().c_str(),
-                    message.get_member().c_str());
-        }
-        else if (message.get_type() == MTMethod)
-        {
-            g_print("Received method call %s %s\n",
-                    message.get_interface().c_str(),
-                    message.get_member().c_str());
-
-        }
-
-        cerr << "Unhandled message!" << endl;
-
-        return false;
+        ostringstream osstr;
+        osstr << "PlaylistItem " << i << " " << Ops::get_item(i);
+        write_command(osstr.str());
     }
-private:
-    void send_item(IDBusConnection &con, int i)
-    {
-        IDBusOMessage m(IMMSDBUSID, "PlaylistItem");
-        m << i << Ops::get_item(i);
-        con.send(m);
-    }
-
-    MyClient *client;
 };
 
 #endif

@@ -1,6 +1,6 @@
 XMMSCPPFLAGS= `xmms-config --cflags`
 XMMSLDFLAGS=`xmms-config --libs`
-XMMSCOMMON=interface.o dbusclient.o glib1dbus.o libimmscore.a
+XMMSCOMMON=interface.o clientstubbase.o libimmscore.a
 
 libxmmsimms.so: plugin.o $(XMMSCOMMON)
 libxmmsimms-LIBS = $(DBUSLDFLAGS) $(XMMSLDFLAGS)

@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[1.99-rc4],[mag@luminal.org])
+AC_INIT([IMMS],[1.99.1-rc1],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -85,29 +85,11 @@ if test "$with_pcre" = "no"; then
     AC_MSG_ERROR([PCRE required and missing.])
 fi
 
-PKG_CHECK_MODULES([REQUIRED],
-              [fftw3f >= 3.0 dbus-1 >= 0.22 dbus-glib-1 >= 0.22],
+PKG_CHECK_MODULES([REQUIRED], [fftw3f >= 3.0],
               [], [AC_MSG_ERROR([Required packages missing.])])
 
 saved_cppflags="$CPPFLAGS"
 saved_libs="$LIBS"
-
-CPPFLAGS="`pkg-config dbus-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE"
-LIBS="`pkg-config dbus-1 --libs`"
-AC_CHECK_HEADERS(dbus/dbus.h,, [have_dbus=no])
-AC_CHECK_LIB(dbus-1, dbus_connection_send,, [have_dbus=no])
-if test "$have_dbus" = "no"; then
-    AC_MSG_ERROR([D-BUS 0.22 required and missing.])
-fi
-
-CPPFLAGS="`pkg-config dbus-glib-1 --cflags`"
-LIBS="`pkg-config dbus-glib-1 --libs`"
-AC_CHECK_HEADERS(dbus/dbus-glib.h,, [have_dbus_glib=no])
-AC_CHECK_LIB(dbus-glib-1, dbus_connection_setup_with_g_main,,
-             [have_dbus_glib=no])
-if test "$have_dbus_glib" = "no"; then
-    AC_MSG_ERROR([D-BUS GLib bindings required and missing.])
-fi
 
 CPPFLAGS="`pkg-config fftw3f --cflags`"
 LIBS="`pkg-config fftw3f --libs`"
