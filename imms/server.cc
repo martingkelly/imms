@@ -135,8 +135,10 @@ void ImmsServer::do_events()
 
             if (predicate == "")
                 filter = "";
-            if (filter != "")
-                filter += predicate + " ";
+            if (filter != "" && predicate == "and")
+                filter = "(" + filter + ") AND ";
+            else if (filter != "" && predicate == "or")
+                filter += "OR ";
 
             if (str == "sql")
                 filter = params;

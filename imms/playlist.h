@@ -19,8 +19,10 @@ public:
 
     int install_filter(const string &filter);
     int random_playlist_position();
+    int get_effective_playlist_length();
 
     void playlist_clear();
+
 protected:
     virtual void sql_create_tables();
     virtual void sql_schema_upgrade(int from = 0) {};

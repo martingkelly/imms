@@ -41,8 +41,7 @@ int PlaylistDb::install_filter(const string &filter)
                     "WHERE " + filter + ";");
 
     select_query("SELECT count(uid) FROM 'Matches';");
-    filtercount = nrow && resultp[1] ? atoi(resultp[1]) : -1;
-    return filtercount;
+    return filtercount = nrow && resultp[1] ? atoi(resultp[1]) : -1;
 }
 
 int PlaylistDb::get_unknown_playlist_item()
@@ -89,11 +88,17 @@ void PlaylistDb::playlist_insert_item(int pos, const string &path)
                 "(SELECT uid FROM Library WHERE path = '" + epath + "'));");
 }
 
-int PlaylistDb::random_playlist_position()
+int PlaylistDb::get_effective_playlist_length()
 {
     string table = filtercount > 0 ? "Filter" : "Playlist";
     select_query("SELECT count(pos) FROM " + table + ";");
-    int total = nrow && resultp[1] ? atoi(resultp[1]) : 0;
+    return nrow && resultp[1] ? atoi(resultp[1]) : 0;
+}
+
+int PlaylistDb::random_playlist_position()
+{
+    string table = filtercount > 0 ? "Filter" : "Playlist";
+    int total = get_effective_playlist_length();
 
     int num = imms_random(total);
     select_query(

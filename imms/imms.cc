@@ -83,7 +83,6 @@ void Imms::do_events()
 void Imms::playlist_changed()
 {
     local_max = Player::get_playlist_length() * 8 * 60;
-
     if (local_max > MAX_TIME)
         local_max = MAX_TIME;
 
@@ -100,6 +99,10 @@ void Imms::reset_selection()
 {
     SongPicker::reset();
     Player::reset_selection();
+
+    local_max = immsdb.get_effective_playlist_length() * 8 * 60;
+    if (local_max > MAX_TIME)
+        local_max = MAX_TIME;
 }
 
 int Imms::get_previous()
