@@ -77,41 +77,46 @@ if test "$with_pcre" = "no"; then
     AC_MSG_ERROR([PCRE required and missing.])
 fi
 
-AC_CHECK_PROG(with_xmms, xmms-config, "yes", "no")
-if test "$xmms_config" != "no"; then
-    CPPFLAGS=`xmms-config --cflags`
-    AC_CHECK_HEADERS(xmms/plugin.h,, [with_xmms=no])
-    AC_CHECK_HEADERS(xmms/xmmsctrl.h,, [with_xmms=no])
+AC_PATH_PROG([have_pkgconfig], [pkg-config], [no])
+if test "$have_packageconfig" = "no"; then
+    AC_MSG_ERROR([pkg-config required and missing])
 fi
 
-TARGETS=""
-if test "$with_xmms" = "no"; then
-    AC_MSG_WARN([Not building XMMS plugin])
-else 
-    if test "$enable_queuecontrol" != "no"; then
-        AC_CHECK_LIB(xmms, xmms_remote_playqueue_add,,
-                     [enable_queuecontrol=no])
-    fi
-    if test "$enable_queuecontrol" = "no"; then
-        TARGETS="$TARGETS libxmmsimms.so"
-    else
-        AC_DEFINE(HAVE_QUEUE_CONTROL,,
-                  [XMMS provides functions to control the play queue])
-        TARGETS="$TARGETS libxmmsimms2.so"
-    fi
+saved_cppflags="$CPPFLAGS"
+saved_libs="$LIBS"
+
+CPPFLAGS="`pkg-config dbus-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE"
+AC_CHECK_HEADERS(dbus/dbus.h,, [have_dbus=no])
+if test "$have_dbus" != "no"; then
+    LIBS="`pkg-config dbus-1 --libs`"
+    AC_CHECK_LIB(dbus-1, dbus_connection_send,, [have_dbus=no])
+fi
+if test "$have_dbus" = "no"; then
+    AC_MSG_ERROR([D-BUS 0.22 required and missing.])
+fi
+
+CPPFLAGS="`pkg-config dbus-glib-1 --cflags`"
+AC_CHECK_HEADERS(dbus/dbus-glib.h,, [have_dbus_glib=no])
+if test "$have_dbus_glib" != "no"; then
+    LIBS="`pkg-config dbus-glib-1 --libs`"
+    AC_CHECK_LIB(dbus-glib-1, dbus_connection_setup_with_g_main,,
+                 [have_dbus_glib=no])
+fi
+if test "$have_dbus_glib" = "no"; then
+    AC_MSG_ERROR([D-BUS GLib bindings required and missing.])
 fi
 
 AC_CHECK_HEADERS(fftw3.h,, [with_fftw=no])
 if test "$with_fftw" != "no"; then
-    saved_libs="$LIBS"
     LIBS="`pkg-config fftw3f --libs`"
     AC_CHECK_LIB(fftw3f, fftwf_plan_dft_r2c_1d,, [with_fftw=no])
-    if test "$with_fftw" = "no"; then
-        AC_MSG_ERROR([FFTW 3.0 required and missing.])
-    fi
+fi
+if test "$with_fftw" = "no"; then
+    AC_MSG_ERROR([FFTW 3.0 required and missing.])
 fi
 
 LIBS=$saved_libs
+CPPFLAGS=$saved_cppflags
 
 if test "$with_taglib" != "no"; then
     AC_CHECK_PROG(with_taglib, taglib-config, "yes", "no")
@@ -157,6 +162,30 @@ else
     fi
 fi
 
+PLUGINS=""
+AC_CHECK_PROG(with_xmms, xmms-config, "yes", "no")
+if test "$xmms_config" != "no"; then
+    CPPFLAGS=`xmms-config --cflags`
+    AC_CHECK_HEADERS(xmms/plugin.h,, [with_xmms=no])
+    AC_CHECK_HEADERS(xmms/xmmsctrl.h,, [with_xmms=no])
+fi
+
+if test "$with_xmms" = "no"; then
+    AC_MSG_WARN([Not building XMMS plugin])
+else 
+    if test "$enable_queuecontrol" != "no"; then
+        AC_CHECK_LIB(xmms, xmms_remote_playqueue_add,,
+                     [enable_queuecontrol=no])
+    fi
+    if test "$enable_queuecontrol" = "no"; then
+        PLUGINS="$PLUGINS libxmmsimms.so"
+    else
+        AC_DEFINE(HAVE_QUEUE_CONTROL,,
+                  [XMMS provides functions to control the play queue])
+        PLUGINS="$PLUGINS libxmmsimms2.so"
+    fi
+fi
+
 AC_CHECK_PROG(have_sox, sox, "yes", "no")
 if test "$have_sox" = "no"; then
     AC_MSG_WARN([******************************************************]);
@@ -185,7 +214,7 @@ AC_SUBST(INSTALL)
 AC_SUBST(XCPPFLAGS)
 AC_SUBST(TAGCPPFLAGS)
 AC_SUBST(LIBS)
-AC_SUBST(TARGETS)
+AC_SUBST(PLUGINS)
 
 AC_CONFIG_FILES(vars.mk)
 AC_CONFIG_HEADERS(immsconf.h)

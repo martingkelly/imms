@@ -1,3 +1,5 @@
+-include ../clients/*/rules.mk
+
 # usage compile(compiler, source, output, flags) 
 DEPFILE = $(if $(filter %.o,$3),$(dir $3).$(notdir $(3:.o=.d)),/dev/null)
 define compile
@@ -24,28 +26,22 @@ objects_cc=$(patsubst %.cc,%.o,$(wildcard $(addsuffix /*.cc,$1)))
 .PHONY: install install-user install-system user-message system-message
 
 ifeq ($(shell id -u), 0)
-    install: system-message install-system
+    install: system-message do_install
 else
-    install: user-message install-user
+    install: user-message do_install
 endif
-
-define installprogs
-    ${INSTALL_PROGRAM} immsd analyzer immstool ${PREFIX}/bin
-endef
 
 system-message:
 	$(warning Defaulting to installing for all users.)
 	$(warning Use 'make install-user' to install for the current user only.)
 
-install-system: all
-	${INSTALL_PROGRAM} libxmmsimms.so `xmms-config --general-plugin-dir`
-	$(call installprogs)
 
 user-message:
 	$(warning Defaulting to installing for current user only.)
 	$(warning Use 'make install-system' to install for all users.)
 
-install-user: all
-	mkdir -p ${HOME}/.xmms/Plugins/General/
-	${INSTALL_PROGRAM} libxmmsimms.so ${HOME}/.xmms/Plugins/General/
-	$(call installprogs)
+do_install: all plugins_install programs_install
+
+programs_install:
+	${INSTALL_PROGRAM} immsd analyzer immstool ${PREFIX}/bin
+
