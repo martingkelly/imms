@@ -14,7 +14,7 @@ using std::cerr;
 
 
 InfoFetcher::SongData::SongData(int _position, const string &_path)
-    : position(_position), path(path_simplifyer(_path))
+    : position(_position), Song(Song::identify(_path))
 {
     rating = relation = 0;
     identified = unrated = false;
@@ -51,7 +51,7 @@ bool InfoFetcher::fetch_song_info(SongData &data)
 
     const string &path = data.path;
 
-    if (!access(path.c_str(), R_OK))
+    if (access(path.c_str(), R_OK))
         return false;
 
     StringPair info = ImmsDb::get_info();

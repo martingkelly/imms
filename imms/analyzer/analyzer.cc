@@ -102,10 +102,7 @@ int main(int argc, char *argv[])
         }
 
     }
-    catch (std::string &s)
-    {
-        cerr << s << endl;
-    }
+    catch (std::string &s) { cerr << s << endl; }
 
     fftwf_destroy_plan(plan);
 

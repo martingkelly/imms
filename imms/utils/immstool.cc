@@ -12,6 +12,7 @@
 #include <math.h>
 
 #include <imms.h>
+#include <song.h>
 #include <sqldb2.h>
 #include <utils.h>
 #include <player.h>
@@ -20,6 +21,7 @@
 
 using std::string;
 using std::cout;
+using std::cerr;
 using std::endl;
 using std::list;
 using std::cin;
@@ -30,35 +32,22 @@ using std::ifstream;
 int Player::get_playlist_length() { return 0; }
 string Player::get_playlist_item(int i) { return ""; }
 
-int g_argc;
-char **g_argv;
-
-class ImmsTool : public SqlDb
-{
-public:
-    void do_distance();
-    int distance_callback(const string &path,
-            const string &spectrum, int sid);
-    void do_missing();
-    time_t get_last(const string &path);
-    void do_purge(const string &path);
-    void do_lint();
-};
-
 int usage();
 void do_help();
 void do_deviation();
-void do_deviation_2(const string &filename);
+void do_missing();
+void do_purge(const string &path);
+time_t get_last(const string &path);
+void do_lint();
+void do_distance(const string &to);
+void do_identify(const string &path);
 
 int main(int argc, char *argv[])
 {
     if (argc < 2)
         return usage();
 
-    g_argv = argv;
-    g_argc = argc;
-
-    ImmsTool immstool;
+    SqlDb sqldb;
 
     if (!strcmp(argv[1], "distance"))
     {
@@ -68,21 +57,25 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        immstool.do_distance();
+        do_distance(argv[2]);
+    }
+    if (!strcmp(argv[1], "identify"))
+    {
+        if (argc < 3)
+        {
+            cout << "immstool identify <filename>" << endl;
+            return -1;
+        }
+
+        do_identify(argv[2]);
     }
     else if (!strcmp(argv[1], "deviation"))
     {
         do_deviation();
     }
-    else if (!strcmp(argv[1], "deviation2"))
-    {
-        if (argc < 3)
-            return usage();
-        do_deviation_2(argv[2]);
-    }
     else if (!strcmp(argv[1], "missing"))
     {
-        immstool.do_missing();
+        do_missing();
     }
     else if (!strcmp(argv[1], "purge"))
     {
@@ -101,9 +94,9 @@ int main(int argc, char *argv[])
         string path;
         while (getline(cin, path))
         {
-            if (immstool.get_last(path) < cutoff)
+            if (get_last(path) < cutoff)
             {   
-                immstool.do_purge(path);
+                do_purge(path);
                 cout << " [X]";
             }
             else
@@ -111,11 +104,11 @@ int main(int argc, char *argv[])
             cout << " >> " << path_get_filename(path) << endl;
         }
         
-        immstool.do_lint();
+        do_lint();
     }
     else if (!strcmp(argv[1], "lint"))
     {
-        immstool.do_lint();
+        do_lint();
     }
     else if (!strcmp(argv[1], "help"))
     {
@@ -127,7 +120,7 @@ int main(int argc, char *argv[])
 
 int usage()
 {
-    cout << "immstool distance|deviation|missing|purge|lint|help" << endl;
+    cout << "immstool distance|deviation|missing|purge|lint|identify|help" << endl;
     return -1;
 }
 
@@ -140,10 +133,60 @@ void do_help()
     cout << "       missing     - list missing files" << endl;
     cout << "       purge       - remove from database if last played more than n days ago" << endl;
     cout << "       lint        - remove unneeded entries" << endl;
+    cout << "       identify    - get information about a given file" << endl;
     cout << "       help        - show this help" << endl;
 }
 
-time_t ImmsTool::get_last(const string &path)
+string sid2info(int sid)
+{
+    Q q("SELECT artist, title FROM Info WHERE sid = ?");
+    q << sid;
+
+    if (!q.next())
+        return "??";
+
+    string artist, title;
+    q >> artist >> title;
+
+    return artist + " / " + title;
+}
+
+void do_identify(const string &path)
+{
+    Song s = Song::identify(path_simplifyer(path));
+
+    if (!s.isok())
+    {
+        cerr << "identify failed!" << endl;
+        cout << "path       : " << s.get_path() << endl;
+        exit(-1);
+    }
+
+    cout << "[" << s.get_path() << "]" << endl;
+    cout << "[" << setw(5) << s.get_uid() << " /" << setw(5)
+        << s.get_sid() << "] ";
+    cout << "(" << s.get_rating() << ") ("
+        << strtime(time(0) - s.get_last()) << ") ";
+    cout << setw(20) << s.get_info().first << " " << s.get_info().second << endl;
+
+    cout << endl << "positively correlated with: " << endl;
+
+    Q q("SELECT x, y, weight FROM Correlations "
+            "WHERE (x = ? OR y = ?) AND weight > 1 ORDER BY (weight) DESC");
+    q << s.get_sid() << s.get_sid();
+
+    while (q.next())
+    {
+        int x, y, weight, other;
+        q >> x >> y >> weight;
+        other = (x == s.get_sid()) ? y : x;
+
+        cout << setw(8) << other << " (" << weight << ") - "
+            << sid2info(other) << endl;
+    }
+}
+
+time_t get_last(const string &path)
 {
     Q q("SELECT last FROM 'Last' "
                 "INNER JOIN Library ON Last.sid = Library.sid "
@@ -157,74 +200,114 @@ time_t ImmsTool::get_last(const string &path)
     return last;
 } 
 
-void ImmsTool::do_purge(const string &path)
+void do_purge(const string &path)
 {
     Q q("DELETE FROM 'Library' WHERE path = ?;");
     q << path;
     q.execute();
 }
 
-void ImmsTool::do_lint()
+void do_lint()
 {
-    Q( "DELETE FROM Info "
-            "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
 
-    Q("DELETE FROM Last "
-            "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
+    try
+    {
+        vector<string> deleteme;
+        vector<string> cleanme;
 
-    Q("DELETE FROM Rating "
-            "WHERE uid NOT IN (SELECT uid FROM Library);").execute();
+        Q q("SELECT path FROM Library;");
+        while (q.next())
+        {
+            string path;
+            q >> path;
+            string simple = path_simplifyer(path);
 
-    Q("DELETE FROM Acoustic "
-            "WHERE uid NOT IN (SELECT uid FROM Library);").execute();
+            if (path == simple)
+                continue;
 
-    Q("DELETE FROM Correlations "
-            "WHERE origin NOT IN (SELECT sid FROM Library) "
-            "OR destination NOT IN (SELECT sid FROM Library);").execute();
+            cout << path << endl;
 
-    Q("VACUUM Library;").execute();
+            Q q("SELECT * FROM Library WHERE path = ?");
+            q << simple;
+            
+            if (q.next())
+                deleteme.push_back(path);
+            else
+                cleanme.push_back(path);
+        }
+
+        for (vector<string>::iterator i = deleteme.begin(); 
+                i != deleteme.end(); ++i)
+        {
+            Q q("DELETE FROM Library WHERE path = ?");
+            q << *i;
+            q.execute();
+        }
+
+        for (vector<string>::iterator i = cleanme.begin(); 
+                i != cleanme.end(); ++i)
+        {
+            Q q("UPDATE Library SET path = ? WHERE path = ?");
+            q << path_simplifyer(*i) << *i;
+            q.execute();
+        }
+
+        Q("DELETE FROM Info "
+                "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
+
+        Q("DELETE FROM Last "
+                "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
+
+        Q("DELETE FROM Rating "
+                "WHERE uid NOT IN (SELECT uid FROM Library);").execute();
+
+        Q("DELETE FROM Acoustic "
+                "WHERE uid NOT IN (SELECT uid FROM Library);").execute();
+
+        Q("DELETE FROM Correlations "
+                "WHERE x NOT IN (SELECT sid FROM Library) "
+                "OR y NOT IN (SELECT sid FROM Library);").execute();
+
+        Q("VACUUM Library;").execute();
+        Q("VACUUM Correlations;").execute();
+
+    }
+    WARNIFFAILED();
 }
 
-void ImmsTool::do_distance()
+void do_distance(const string &to)
 {
     Q q("SELECT Library.path, Acoustic.spectrum, Library.sid "
             "FROM 'Library' INNER JOIN 'Acoustic' ON "
             "Library.uid = Acoustic.uid WHERE Acoustic.spectrum NOT NULL;");
+
     while(q.next())
     {
         string path, spectrum;
         int sid;
         q >> path >> spectrum >> sid;
 
-        distance_callback(path, spectrum, sid);
+        cout << setw(4) << rms_string_distance(to, spectrum, 15)
+            << "  " << spectrum << "  ";
+
+        Q q("SELECT artist, title FROM Info WHERE sid = ?;");
+        q << sid;
+
+        if (q.next())
+        {
+            string artist, title;
+            q >> artist >> title;
+            cout << setw(25) << artist;
+            cout << setw(25) << title;
+        }
+        else
+            cout << setw(50) << path_get_filename(path);
+        cout << endl;
     }
                 
 }
 
-int ImmsTool::distance_callback(const string &path,
-        const string &spectrum, int sid)
-{
-    cout << setw(4) << rms_string_distance(g_argv[2], spectrum)
-        << "  " << spectrum << "  ";
-
-    Q q("SELECT artist, title FROM Info WHERE sid = ?;");
-    q << sid;
-
-    if (q.next())
-    {
-        string artist, title;
-        q >> artist >> title;
-        cout << setw(25) << artist;
-        cout << setw(25) << title;
-    }
-    else
-        cout << setw(50) << path_get_filename(path);
-    cout << endl;
-
-    return 0;
-}
-
-void ImmsTool::do_missing()
+void do_missing()
 {
     Q q("SELECT path FROM 'Library';");
 
@@ -234,70 +317,6 @@ void ImmsTool::do_missing()
         q >> path;
         if (access(path.c_str(), F_OK))
             cout << path << endl;
-    }
-}
-
-void do_deviation_2(const string &filename)
-{
-    ifstream in(filename.c_str());
-
-    int count = 0;
-    double mean[SHORTSPECTRUM];
-    memset(&mean, 0, sizeof(mean));
-    double cur[SHORTSPECTRUM];
-    while (1)
-    {
-        for (int i = 0; i < SHORTSPECTRUM; ++i)
-            in >> cur[i];
-
-        if (in.eof())
-            break;
-
-        ++count;
-        for (int i = 0; i < SHORTSPECTRUM; ++i)
-            mean[i] += cur[i];
-    }
-
-    // total to mean
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-        mean[i] /= count;
-
-    cout << "Mean     : ";
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-    cout << endl;
-
-    double deviations[SHORTSPECTRUM];
-    memset(&deviations, 0, sizeof(deviations));
-
-    in.close();
-    ifstream in2(filename.c_str());
-
-    while (1)
-    {
-        for (int i = 0; i < SHORTSPECTRUM; ++i)
-            in2 >> cur[i];
-
-        if (in2.eof())
-            break;
-
-        for (int i = 0; i < SHORTSPECTRUM; ++i)
-            deviations[i] += pow(mean[i] - cur[i], 2);
-    }
-
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-        deviations[i] = sqrt(deviations[i] / count);
-
-    cout.precision(4);
-    cout << "Results : " << endl;
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-    {
-        double div = deviations[i] * 2.5;
-        double min = std::max(mean[i] - div, 0.0);
-        double max = mean[i] + div;
-        double scale = 26 / (max - min);
-        cout << setw(7) << min << " .. " << setw(5) << max;
-        cout << "    [" << setw(5) << scale << " / " << setw(6)
-            << (min < 1 ? 0 : min) << "]" << endl;
     }
 }
 

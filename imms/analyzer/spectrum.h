@@ -31,8 +31,6 @@ using std::vector;
 #define SHORTSPECTRUM   BARKSIZE
 #define LONGSPECTRUM    NFREQS
 
-float rms_string_distance(const string &s1, const string &s2);
-
 class BeatKeeper
 {
 public:

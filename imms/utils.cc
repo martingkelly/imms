@@ -1,6 +1,7 @@
 #include <stdlib.h>     // for (s)random
 #include <time.h>
 #include <iostream>
+#include <math.h>
 
 #include "utils.h"
 
@@ -34,4 +35,21 @@ StackTimer::~StackTimer()
     struct timeval end;
     gettimeofday(&end, 0);
     std::cout << usec_diff(start, end) / 1000 << " msecs elapsed" << std::endl;
+}
+
+
+float rms_string_distance(const string &s1, const string &s2, int max)
+{
+    if (s1 == "" || s2 == "")
+        return 0;
+
+    int len = s1.length();
+    assert(len == (int)s2.length());
+    len = std::min(len, max);
+    float distance = 0;
+
+    for (int i = 0; i < len; ++i)
+        distance += pow(s1[i] - s2[i], 2);
+
+    return sqrt(distance / len);
 }
