@@ -133,10 +133,7 @@ void do_more_checks()
 
 void do_checks()
 {
-    if (last_plpos == -2)
-        last_plpos = xmms_remote_get_playlist_pos(session) - 1;
-
-    if (imms->check_connection())
+    if (imms->check_connection() || last_plpos == -2)
     {
         imms->setup(xidle_val);
         imms->playlist_changed(pl_length
