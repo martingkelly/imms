@@ -80,16 +80,14 @@ void CorrelationDb::expire_recent(time_t cutoff)
             if (next > cutoff)
                 return;
 
+            correlate_from = next + 1;
+
             if (from_weight == -1)
                 continue;
-
-            correlate_from = next + 1;
 
             while (q.next())
             {
                 q >> to >> to_weight;
-                if (to_weight == -1)
-                    continue;
                 expire_recent_helper();
             }
         }
@@ -101,7 +99,7 @@ void CorrelationDb::expire_recent(time_t cutoff)
 
 void CorrelationDb::expire_recent_helper()
 {
-    if (to == from)
+    if (to == from || to_weight == -1)
         return;
 
     if (from_weight < 0 && to_weight < 0)
