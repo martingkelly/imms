@@ -6,17 +6,20 @@
 #include <sys/time.h>
 
 #include <string>
+#include <vector>
 
 #include "immsconf.h"
 #include "immsbase.h"
 
 using std::string;
+using std::vector;
 
 #define MINBPM          45
 #define MAXBPM          225
 #define SAMPLES         100
 #define MINBEATLENGTH   (SAMPLES*60/MAXBPM)
 #define MAXBEATLENGTH   (SAMPLES*60/MINBPM)
+#define BEATSSIZE       (MAXBEATLENGTH-MINBEATLENGTH)
 #define SHORTSPECTRUM   16
 #define LONGSPECTRUM    256
 #define MICRO           1000000
@@ -31,13 +34,15 @@ public:
 
 protected:
     void process_window();
+    int peak_finder_helper(vector<int> &peaks,
+            int min, int max, float cutoff);
 
     struct timeval prev;
     long unsigned int samples;
     time_t first, last;
     float average_with, *last_window, *current_window, *current_position;
     float data[2*MAXBEATLENGTH];
-    float beats[MAXBEATLENGTH-MINBEATLENGTH];
+    float beats[BEATSSIZE];
 };
 
 class SpectrumAnalyzer : virtual protected ImmsBase
