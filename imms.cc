@@ -45,7 +45,7 @@ using std::list;
 #define     CORRELATION_FACTOR      3
 
 #define     TERM_WIDTH              80
-#define     HOUR                    60
+#define     HOUR                    60*60
 #define     DAY                     (24*HOUR)
 
 
@@ -110,7 +110,7 @@ void Imms::pump()
 void Imms::playlist_changed(int _playlist_size)
 {
     playlist_size = _playlist_size;
-    local_max = playlist_size * 8;
+    local_max = playlist_size * 8 * 60;
 #ifdef DEBUG
     cerr << " *** playlist changed!" << endl;
     cerr << "local_max is now " << strtime(local_max) << endl;
@@ -120,8 +120,7 @@ void Imms::playlist_changed(int _playlist_size)
 bool Imms::add_candidate(int playlist_num, string path, bool urgent)
 {
     ++attempts;
-    if (attempts > (playlist_size > MAX_ATTEMPTS / 2 ?
-                MAX_ATTEMPTS : playlist_size * 2))
+    if (attempts > MAX_ATTEMPTS)
         return false;
 
     SongData data(playlist_num, path);
@@ -389,7 +388,7 @@ bool Imms::fetch_song_info(SongData &data)
 #endif
 #endif
 
-    data.last_played = (time(0) - immsdb->get_last()) / 60;
+    data.last_played = time(0) - immsdb->get_last();
 
     if (data.last_played > local_max)
         data.last_played = local_max;
