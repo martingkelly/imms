@@ -134,11 +134,20 @@ int BeatKeeper::maybe_double(int bpm, float min, float range)
 
 string BeatKeeper::get_bpm_graph()
 {
+    {
+        string fullname = "/tmp/beats-" + name;
+        std::ofstream bstats(fullname.c_str(), std::ios::trunc);
+
+        for (int i = 0; i < BEATSSIZE; ++i)
+            bstats << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
+    }
+    
     bool empty = true;
     string graph;
-    for (int i = 0; i < BEATSSIZE; ++i)
+    for (int i = 3; i < BEATSSIZE; i += 4)
     {
-        int c = 'a' + ROUND(beats[i] / 10);
+        int c = 'a' + ROUND((beats[i] + beats[i-1]
+                    + beats[i-2] + beats[i-3]) / 40);
         if (c != 'a')
             empty = false;
         graph += (char)(c > 'z' ? 'z' : c);
@@ -366,7 +375,7 @@ float SpectrumAnalyzer::rms_string_distance(const string &s1,
     for (int i = 0; i < SHORTSPECTRUM; ++i)
         distance += pow(s1[i] - s2[i], 2);
 
-    return ROUND(sqrt(distance / len));
+    return sqrt(distance / len);
 }
 
 float SpectrumAnalyzer::color_transition(const string &from,
@@ -437,7 +446,7 @@ void SpectrumAnalyzer::finalize()
 
     for (int i = 0; i < SHORTSPECTRUM; ++i)
     {
-#ifdef DEBUG
+#if 0 && defined(DEBUG)
         if (max_vals[i] < spectrum[i])
             max_vals[i] = spectrum[i];
         cerr << max_vals[i] << endl;
@@ -452,9 +461,10 @@ void SpectrumAnalyzer::finalize()
     cerr << "spectrum [" << last_spectrum << "] " << endl;
 #endif
 
-    if (have_spectrums > 20000)
+    if (have_spectrums > 2000)
     {
         immsdb.set_spectrum(last_spectrum);
+        cerr << "about to set bpm" << endl;
         if (last_bpm != "")
             immsdb.set_bpm(last_bpm);
     }

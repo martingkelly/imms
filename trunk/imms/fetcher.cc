@@ -1,8 +1,10 @@
 #include <sys/stat.h>   // for mkdir
 #include <sys/types.h>
+#include <stdlib.h>
 
 #include <iostream>
 #include <algorithm>
+#include <sstream>
 
 #include "fetcher.h"
 #include "player.h"
@@ -12,11 +14,34 @@
 
 using std::endl;
 using std::cerr;
+using std::ostringstream;
 
 ImmsBase::DirMaker::DirMaker()
 {
     string dotimms = getenv("HOME");
-    mkdir(dotimms.append("/.imms").c_str(), 0700);
+    dotimms.append("/.imms");
+    mkdir(dotimms.c_str(), 0700);
+    if (!access((dotimms + "/imms.db").c_str(), R_OK)
+            && access((dotimms + "/imms2.db").c_str(), F_OK))
+    {
+        cerr << "Old database format detected, "
+            "will attempt an upgrade..." << endl;
+        ostringstream command;
+        command << "sqlite " << dotimms << "/imms.db .dump | sqlite3 "
+            << dotimms << "/imms2.db" << endl;
+        cerr << "Running: " << command.str() << endl;
+        if (system(command.str().c_str()))
+        {
+            cerr << "Upgrade failed!! " << endl;
+            cerr << "Verify that you have *both* sqlite 2.8.x "
+                "and 3.0.x installed" << endl;
+            cerr << "And rerun the command by hand." << endl;
+        }
+        else
+        {
+            cerr << "Upgrade successful!! " << endl;
+        }
+    }
 }
 
 InfoFetcher::SongData::SongData(int _position, const string &_path)
@@ -154,7 +179,7 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
     imms_magic_parse_path(path_parts, path_get_dirname(path));
 
 #ifdef DEBUG
-#if 1
+#if 0
     cerr << "path parts: " << endl;
     for (list<string>::iterator i = path_parts.begin();
             i != path_parts.end(); ++i)
