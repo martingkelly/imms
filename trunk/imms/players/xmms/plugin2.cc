@@ -13,7 +13,7 @@
 #include "immsconf.h"
 #include "plugin.h"
 #include "utils.h"
-#include "client.h"
+#include "players/serverstub.h"
 
 using std::string;
 using std::cerr;
