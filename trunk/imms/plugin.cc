@@ -17,13 +17,13 @@ using std::string;
 using std::cerr;
 
 #define DEFAULT_EMAIL       "default@imms.org"
-#define CANDIDATE_DELAY     5
+#define POLL_DELAY          5
 
 // Local vars
 static Imms *imms = NULL;
 unsigned int time_left = 1000, sloppy_skips = 0;
 int last_plpos = -2, cur_plpos, last_pl_length = -1;
-int good_length = 0, song_length = 0, slow = CANDIDATE_DELAY;
+int good_length = 0, song_length = 0, delay = POLL_DELAY;
 string cur_path = "", last_path = "";
 bool need_more = false;
 
@@ -80,7 +80,8 @@ void imms_cleanup(void)
 
 void imms_poll()
 {
-    int pl_length = imms_get_playlist_length();
+    if (--delay < 0)
+        delay = POLL_DELAY;
 
     switch (state)
     {
@@ -96,13 +97,17 @@ void imms_poll()
 
             state = BUSY;
 
-            if (xmms_remote_is_shuffle(session))
-                xmms_remote_toggle_shuffle(session);
-
-            if (pl_length != last_pl_length)
+            if (!delay)
             {
-                last_pl_length = pl_length;
-                imms->playlist_changed(pl_length);
+                if (xmms_remote_is_shuffle(session))
+                    xmms_remote_toggle_shuffle(session);
+
+                int pl_length = imms_get_playlist_length();
+                if (pl_length != last_pl_length)
+                {
+                    last_pl_length = pl_length;
+                    imms->playlist_changed(pl_length);
+                }
             }
 
             cur_plpos = xmms_remote_get_playlist_pos(session);
@@ -118,24 +123,28 @@ void imms_poll()
                 return;
             }
 
-            song_length = xmms_remote_get_playlist_time(session, cur_plpos);
+            if (!delay)
+            {
+                song_length = xmms_remote_get_playlist_time(session,
+                        cur_plpos);
+                if (song_length > 1000)
+                    good_length++;
+            }
+
             time_left =
                 (song_length - xmms_remote_get_output_time(session)) / 500;
 
-            if (song_length > 1000)
-                good_length++;
-
             last_plpos = cur_plpos;
 
-            if (need_more && !--slow)
+            if (need_more && delay % 2)
             {
-                int pos = imms_random(pl_length);
+                int pos = imms_random(imms_get_playlist_length());
                 need_more = imms->add_candidate(pos,
                         imms_get_playlist_item(pos));
-                slow = CANDIDATE_DELAY;
             }
 
-            imms->pump();
+            if (!delay)
+                imms->pump();
 
             state = IDLE;
             return;
@@ -146,6 +155,7 @@ void imms_poll()
             if (time_left < 8 * (sloppy_skips + 1) * 2)
                 time_left = 0;
 
+            int pl_length = imms_get_playlist_length();
             cur_plpos = xmms_remote_get_playlist_pos(session);
             bool forced = (last_plpos + 1 != cur_plpos) &&
                 (cur_plpos != 0 || last_plpos != pl_length - 1);

@@ -42,7 +42,7 @@ void init(void)
     imms_init();
     read_config();
     imms_setup(ch_email, use_xidle, use_sloppy);
-    poll_tag = gtk_timeout_add(30, poll_func, NULL);
+    poll_tag = gtk_timeout_add(100, poll_func, NULL);
 }
 
 void cleanup(void)
