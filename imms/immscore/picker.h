@@ -22,7 +22,7 @@ public:
 protected:
     bool add_candidate(bool urgent = false);
     void revalidate_current(int pos, const std::string &path);
-    void do_events();
+    bool do_events();
     void reset();
 
     virtual void request_playlist_item(int index) = 0;

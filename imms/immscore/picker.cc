@@ -111,23 +111,24 @@ bool SongPicker::add_candidate(bool urgent)
     return true;
 }
 
-void SongPicker::do_events()
+bool SongPicker::do_events()
 {
     if (!playlist_known)
-        return;
+        return true;
 
     for (int i = 0; i < 5 && add_candidate(); ++i);
 
     if (playlist_known == 2)
-        return;
+        return false;
 
     int pos = ImmsDb::get_unknown_playlist_item();
     if (pos < 0)
     {
         playlist_known = 2;
-        return;
+        return false;
     }
     identify_playlist_item(pos);
+    return true;
 }
 
 void SongPicker::revalidate_current(int pos, const string &path)

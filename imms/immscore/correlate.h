@@ -13,14 +13,14 @@ using std::string;
 class CorrelationDb : virtual public BasicDb
 {
 public:
+    CorrelationDb();
+
     float correlate(int sid1, int sid2);
     void add_recent(int uid, int delta);
     void clear_recent() { expire_recent(INT_MAX); }
-
-    CorrelationDb() : correlate_from(time(0)) { }
+    void expire_recent(time_t cutoff = 0);
 
 protected:
-    void expire_recent(time_t cutoff);
     void update_correlation(int from, int to, float weight);
     void expire_recent_helper();
     void update_secondary_correlations(int from, int to, float outer);

@@ -72,7 +72,6 @@ void Imms::setup(bool use_xidle)
 
 void Imms::get_metacandidates()
 {
-    cerr << "doing correlations" << endl;
     StackTimer t;
     AutoTransaction a;
     if (last.sid != -1)
@@ -83,7 +82,8 @@ void Imms::get_metacandidates()
 
 void Imms::do_events()
 {
-    SongPicker::do_events();
+    if (!SongPicker::do_events())
+        CorrelationDb::expire_recent();
     XIdle::query();
 }
 

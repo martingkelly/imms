@@ -16,6 +16,11 @@ using std::cerr;
 #define SECOND_DEGREE       0.5
 #define PROCESSING_TIME     5000000
 
+CorrelationDb::CorrelationDb() : correlate_from(time(0))
+{
+    gettimeofday(&start, 0);
+}
+
 void CorrelationDb::sql_create_tables()
 {
     RuntimeErrorBlocker reb;
@@ -42,8 +47,6 @@ void CorrelationDb::sql_create_tables()
 
 void CorrelationDb::add_recent(int uid, int delta)
 {
-    expire_recent(time(0) - CORRELATION_TIME);
-
     if (uid > -1)
     {
         try {
@@ -83,11 +86,21 @@ void CorrelationDb::get_related(vector<int> &out, int pivot_sid, int limit)
 
 void CorrelationDb::expire_recent(time_t cutoff)
 {
-#ifdef DEBUG
+    if (!cutoff)
+        cutoff = time(0) - CORRELATION_TIME;
+
+    struct timeval now;
+    gettimeofday(&now, 0);
+
+    if (usec_diff(start, now) < 10000000)
+        return;
+
+    start = now;
+
+#if 0 && defined(DEBUG)
     cerr << "Running expire recent..." << endl;
     StackTimer t;
 #endif
-    gettimeofday(&start, 0);
 
     try {
         AutoTransaction a;
@@ -147,19 +160,15 @@ void CorrelationDb::expire_recent_helper()
     // Update the primary link
     update_correlation(from, to, weight);
 
-    //if (fabs(weight) < 3)
-    //    return 0;
-    
     struct timeval now;
     gettimeofday(&now, 0);
 
-    if (usec_diff(start, now) > PROCESSING_TIME)
+    if (usec_diff(start, now) > PROCESSING_TIME || fabs(weight) < 2)
         return;
     
     try {
         Q("DELETE FROM TmpCorr;").execute();
-    }
-    catch (SQLException &e) {}
+    } catch (SQLException &e) {}
 
     {
         string query("INSERT INTO TmpCorr SELECT x, y, weight "
