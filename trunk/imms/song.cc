@@ -45,7 +45,7 @@ Song::Song(const string &path_) : path(path_)
         if (uid != -1)
         {
             Q q("UPDATE 'Library' SET modtime = ?, "
-                    "checksum = ? WHERE path = ?';");
+                    "checksum = ? WHERE path = ?;");
             q << modtime << checksum << path;
             q.execute();
             a.commit();
