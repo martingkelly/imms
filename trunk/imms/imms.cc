@@ -10,6 +10,7 @@
 #include "imms.h"
 #include "strmanip.h"
 
+using std::string;
 using std::endl;
 using std::cerr;
 using std::setprecision;
@@ -66,15 +67,15 @@ Imms::Imms() : last_handpicked(-1)
     fout << endl << endl << ctime(&t) << setprecision(3);
 }
 
-void Imms::setup(const char* _email, bool _use_xidle)
+void Imms::setup(const char* _email, bool use_xidle)
 {
     email = _email;
-    use_xidle = _use_xidle;
+    xidle_enabled = use_xidle;
 }
 
 void Imms::pump()
 {
-    xidle.query();
+    XIdle::query();
 }
 
 void Imms::playlist_changed(int playlist_size)
@@ -83,19 +84,29 @@ void Imms::playlist_changed(int playlist_size)
 
     if (local_max > MAX_TIME)
         local_max = MAX_TIME;
-#ifdef DEBUG
-    cerr << " *** playlist changed!" << endl;
-    cerr << "local_max is now " << strtime(local_max) << endl;
-#endif
+
+    history.clear();
+} 
+
+int Imms::get_previous()
+{
+    if (history.size() < 2)
+        return -1;
+    history.pop_back();
+    int result = history.back();
+    history.pop_back();
+    return result;
 }
 
-void Imms::start_song(const string &path)
+void Imms::start_song(int position, const string &path)
 {
-    xidle.reset();
+    XIdle::reset();
     SongPicker::reset();
     SpectrumAnalyzer::reset();
 
     revalidate_winner(path);
+
+    history.push_back(position);
 
     immsdb.set_id(winner.id);
     immsdb.set_last(time(0));
@@ -140,9 +151,9 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
         else
             mod = CONS_NON_SKIP_RATE;
 
-        if (!use_xidle)
+        if (!xidle_enabled)
             mod += NO_XIDLE_BONUS;
-        else if (xidle.is_active())
+        else if (XIdle::is_active())
             mod += INTERACTIVE_BONUS;
 
         last_skipped = jumped = false;
@@ -160,9 +171,9 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
         if (mod < JUMPED_FROM)
         {
-            if (!use_xidle)
+            if (!xidle_enabled)
                 mod -= NO_XIDLE_BONUS;
-            else if (xidle.is_active())
+            else if (XIdle::is_active())
                 mod -= INTERACTIVE_BONUS;
         }
 
@@ -174,7 +185,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     immsdb.set_id(winner.id);
 
-    finalize_spectrum();
+    SpectrumAnalyzer::finalize();
 
     if (mod > CONS_NON_SKIP_RATE + INTERACTIVE_BONUS)
         last_handpicked = winner.id.second;
@@ -183,7 +194,6 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     fout << (!jumped && last_skipped ? "[Skipped] " : "");
     fout << "[Delta " << setiosflags(std::ios::showpos) << mod <<
         resetiosflags (std::ios::showpos) << "] ";
-    fout << "[BPM: " << bpm << "] ";
     fout << endl;
 
     last_jumped = jumped;

@@ -16,7 +16,7 @@ ImmsBase::DirMaker::DirMaker()
     mkdir(dotimms.append("/.imms").c_str(), 0700);
 }
 
-SongData::SongData(int _position, const string &_path)
+InfoFetcher::SongData::SongData(int _position, const string &_path)
     : position(_position), path(path_simplifyer(_path))
 {
     rating = relation = 0;
@@ -40,12 +40,12 @@ bool InfoFetcher::fetch_song_info(SongData &data)
             return false;
     }
 
-    link(path);
     data.rating = immsdb.get_rating();
 
     data.unrated = false;
     if (data.rating < 0)
     {
+        link(path);
         data.unrated = true;
         data.rating = get_rating(email);
         immsdb.set_rating(data.rating);
@@ -88,6 +88,8 @@ bool InfoFetcher::parse_song_info(const string &path, string &title)
 
     bool identified = false;
     bool parser_confident, artist_confirmed = false;
+
+    link(path);
 
     string artist = string_normalize(get_artist());
     string tag_artist = artist;

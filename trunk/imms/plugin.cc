@@ -16,6 +16,7 @@
 using std::string;
 
 #define DEFAULT_EMAIL       "default@imms.org"
+#define SPECTRUM_SKIP       0.15
 #define POLL_DELAY          5
 
 // Local vars
@@ -103,32 +104,14 @@ void do_more_checks()
     imms->pump();
 }
 
-void do_spectrum_checks(int cur_time)
-{
-    const static float skip = 0.15;
-
-    bool _spectrum_ok = (cur_time > song_length * skip
-            && cur_time < song_length * (1 - skip));
-
-    if (spectrum_ok && !_spectrum_ok)
-        imms->stop_spectrum_analysis();
-
-    if (!spectrum_ok && _spectrum_ok)
-        imms->start_spectrum_analysis();
-
-    spectrum_ok = _spectrum_ok;
-}
-
 void do_checks()
 {
+    if (last_plpos == -2)
+        last_plpos = xmms_remote_get_playlist_pos(session) - 1;
+
     // if not playing make sure we stopped collecting spectrum statistics
     if (!xmms_remote_is_playing(session))
-    {
-        if (spectrum_ok)
-            imms->stop_spectrum_analysis();
-        spectrum_ok = false;
         return;
-    }
 
     // run these checks less frequently so as not to waste cpu time
     if (++delay > POLL_DELAY || pl_length < 0 || good_length < 3)
@@ -158,10 +141,11 @@ void do_checks()
     int cur_time = xmms_remote_get_output_time(session);
     time_left = (song_length - cur_time) / 500;
 
-    do_spectrum_checks(cur_time);
+    spectrum_ok = (cur_time > song_length * SPECTRUM_SKIP
+            && cur_time < song_length * (1 - SPECTRUM_SKIP));
 
     // if we don't have enough, feed imms more candidates for the next song
-    if (need_more && delay % 2)
+    if (need_more)
     {
         int pos = imms_random(xmms_remote_get_playlist_length(session));
         need_more = imms->add_candidate(pos, imms_get_playlist_item(pos));
@@ -173,33 +157,39 @@ void do_find_next()
     if (time_left < 8 * (sloppy_skips + 1) * 2)
         time_left = 0;
 
-    if (last_plpos == -2)
-        last_plpos = cur_plpos - 1;
-
     cur_plpos = xmms_remote_get_playlist_pos(session);
-    bool forced = ((last_plpos + 1) % pl_length ) != cur_plpos;
+    bool forced = ((last_plpos + 1) % pl_length) != cur_plpos;
+    bool back = ((last_plpos + pl_length - 1) % pl_length) == cur_plpos;
     bool bad = good_length < 3 || song_length <= 30*1000;
 
     // notify imms that the previous song has ended
     if (last_path != "")
         imms->end_song(!time_left, forced, bad);
 
-    // if the song was not directly picked by the user...
     if (!forced && pl_length > 2)
     {
         if (need_more)
+        {
             do { cur_plpos = imms_random(pl_length); }
             while (imms->add_candidate(cur_plpos,
                         imms_get_playlist_item(cur_plpos), true));
+        }
 
         // have imms select the next song for us
         cur_plpos = imms->select_next();
-        cur_path = imms_get_playlist_item(cur_plpos);
-        xmms_remote_set_playlist_pos(session, cur_plpos);
+    }
+    else if (back)
+    {
+        int previous = imms->get_previous();
+        if (previous != -1)
+            cur_plpos = previous;
     }
 
+    cur_path = imms_get_playlist_item(cur_plpos);
+    xmms_remote_set_playlist_pos(session, cur_plpos);
+
     // notify imms of the next song
-    imms->start_song(cur_path);
+    imms->start_song(cur_plpos, cur_path);
 
     last_path = cur_path;
     good_length = 0;

@@ -3,8 +3,8 @@
 #include "picker.h"
 #include "strmanip.h"
 
-#define     SAMPLE_SIZE             40
-#define     MIN_SAMPLE_SIZE         15
+#define     SAMPLE_SIZE             80
+#define     MIN_SAMPLE_SIZE         30
 #define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
 #define     BASE_BIAS               10
 #define     DISPERSION_FACTOR       4.0
