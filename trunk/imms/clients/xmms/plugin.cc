@@ -22,7 +22,7 @@ using std::endl;
 // Local vars
 unsigned int time_left = 1000, sloppy_skips = 0;
 int last_plpos = -2, cur_plpos, pl_length = -1;
-int good_length = 0, song_length = 0, delay = 0;
+int good_length = 0, song_length = 0, delay = 0, xidle_val = 0;
 string cur_path = "", last_path = "";
 
 // Extern from interface.c
@@ -98,6 +98,7 @@ void imms_init()
 
 void imms_setup(int use_xidle)
 {
+    xidle_val = use_xidle;
     if (imms)
         imms->setup(use_xidle);
 }
@@ -124,7 +125,13 @@ void do_more_checks()
         imms->playlist_changed(pl_length);
     }
 
-    imms->check_connection();
+    if (imms->check_connection())
+    {
+        imms->setup(xidle_val);
+        imms->playlist_changed(pl_length);
+        if (xmms_remote_is_playing(session))
+            imms->start_song(cur_plpos, cur_path);
+    }
 
     // check if xmms is reporting the song length correctly
     song_length = xmms_remote_get_playlist_time(session, cur_plpos);
