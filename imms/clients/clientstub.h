@@ -3,8 +3,7 @@
 
 #include "dbuscore.h"
 #include "utils.h"
-
-#include "players/dbusclient.h"
+#include "dbusclient.h"
 
 template <typename Filter>
 class IMMSClient

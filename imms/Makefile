@@ -16,7 +16,7 @@ immsconf.h: configure
 
 clean:
 	rm -f $(wildcard build/*.o)
-	rm -f $(wildcard build/libimms.so build/libimmscore.a build/analyzer build/immstool build/immsremote build/imms-*.tar.* build/imms*.o core* build/.*.d)
+	rm -f $(wildcard build/libxmmsimms.so build/libimmscore.a build/analyzer build/immstool build/immsd build/imms-*.tar.* build/imms*.o core* build/.*.d)
 
 distclean: clean
 	rm -f $(wildcard .\#* config.* configure immsconf.h* vars.mk)
