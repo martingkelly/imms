@@ -259,6 +259,8 @@ void Song::set_info(const StringPair &info)
         int aid = -1;
         {
             Q q("SELECT aid FROM Artists WHERE artist = ?;");
+            q << artist;
+
             if (q.next())
                 q >> aid;
             else
