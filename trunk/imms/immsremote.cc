@@ -17,6 +17,8 @@ SocketClient *s;
 
 void linehandler(char *line)
 {
+    if (!*line)
+        return;
     if (!strcmp(line, "quit"))
         exit(0);
     s->write(line);

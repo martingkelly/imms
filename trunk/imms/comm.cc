@@ -23,7 +23,6 @@ Socket::Socket(int _fd) : fd(_fd)
 Socket::~Socket()
 {
     close();
-    cerr << "deleting socket" << endl;
 }
 
 void Socket::close()
@@ -78,8 +77,6 @@ SocketClient::SocketClient(const string &path)
 
     un.sun_family = AF_UNIX;
     strncpy(un.sun_path, path.c_str(), sizeof(un.sun_path));
-
-    cerr << un.sun_path << endl;
 
     int r = connect(fd, (struct sockaddr *) &un,
             sizeof(struct sockaddr_un));

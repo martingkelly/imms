@@ -59,7 +59,7 @@ void ImmsServer::do_events()
         *conn << "Welcome to " << PACKAGE_STRING << "\n";
         *conn << "This feature is highly experimental, "
             "so quit complaining" << "\n";
-        *conn << "say 'help' if you are lost and hungry" << "\n";
+        *conn << "Say 'help' if you are lost and hungry" << "\n";
     }
 
     if (conn && !conn->isok())
@@ -75,6 +75,7 @@ void ImmsServer::do_events()
         if (command == "")
             return;
 
+        string predicate = "";
         list<string> parsed;
         string_split(parsed, command, " ");
 
@@ -82,6 +83,12 @@ void ImmsServer::do_events()
         {
             string str = parsed.front();
             parsed.pop_front();
+
+            if (str == "or" || str == "and")
+            {
+                predicate = str;
+                continue;
+            }
 
             if (str == "help")
             {
@@ -95,18 +102,18 @@ void ImmsServer::do_events()
 
                 break;
             }
-            else if (str == "show" || str == "ls" || str == "filter")
+            if (str == "show" || str == "ls" || str == "filter")
             {
                 *conn << "filter: " << filter << "\n";
                 break;
             }
-            else if (str == "clear" || str == "reset")
+            if (str == "clear" || str == "reset")
             {
                 filter = "";
                 immsdb.install_filter(filter);
                 break;
             }
-            else if (str ==  "sql")
+            if (str == "sql")
             {
                 if (parsed.front() == "=")
                     parsed.pop_front();
@@ -115,7 +122,7 @@ void ImmsServer::do_events()
                 *conn << itos(n) << " hits" << "\n";
                 break;
             }
-            else if (str == "artist")
+            if (str == "artist")
             {
                 if (parsed.empty())
                 {
@@ -125,13 +132,15 @@ void ImmsServer::do_events()
                 if (parsed.front() == "=")
                     parsed.pop_front();
                 str = consume(parsed);
-                filter = "similar(Info.artist, '"
-                    + string_normalize(str) + "')";
+                if (filter != "")
+                    filter += predicate + " ";
+                filter += "similar(Info.artist, '"
+                    + string_normalize(str) + "') ";
                 int n = immsdb.install_filter(filter);
                 *conn << itos(n) << " hits" << "\n";
                 break;
             }
-            else if (str == "rating")
+            if (str == "rating")
             {
                 str = getnum(parsed);
                 if (str == "")
@@ -140,12 +149,14 @@ void ImmsServer::do_events()
                     return;
                 }
 
-                filter = "Rating.rating " + str;
+                if (filter != "")
+                    filter += predicate + " ";
+                filter += "Rating.rating " + str + " ";
                 int n = immsdb.install_filter(filter);
                 *conn << itos(n) << " hits" << "\n";
                 break;
             }
-            else if (str == "bpm")
+            if (str == "bpm")
             {
                 str = getnum(parsed);
                 if (str == "")
@@ -154,21 +165,20 @@ void ImmsServer::do_events()
                     return;
                 }
 
-                filter = "Acoustic.bpm " + str;
+                if (filter != "")
+                    filter += predicate + " ";
+                filter += "Acoustic.bpm " + str + " ";
                 int n = immsdb.install_filter(filter);
                 *conn << itos(n) << " hits" << "\n";
                 break;
             }
-            else
-            {
-                *conn << "parse error at " << str << "\n";
-                return;
-            }
+
+            *conn << "parse error at " << str << "\n";
+            return;
         }
     
         if (parsed.size())
             *conn << "warning: ignored after " << parsed.front() << "\n";
-
     }
 }
 

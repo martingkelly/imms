@@ -25,7 +25,8 @@ libimmscore.a: $(CORE_OBJ) immsconf.h
 
 clean:
 	rm -f $(wildcard $(XMMS_OBJ) $(CORE_OBJ) \
-		libimms.so libimmscore.a immstool imms-*.tar.* core* .*.d)
+		libimms.so libimmscore.a immstool immsremote \
+	       	imms-*.tar.* imms*.o core* .*.d)
 
 distclean: clean
 	rm -f $(wildcard .\#* config.* configure immsconf.h* vars.mk)
