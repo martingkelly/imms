@@ -2,6 +2,7 @@
 #define __CLIENTSTUBBASE_H_
 
 #include <string>
+#include <cerrno>
 
 using std::string;
 

@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <math.h>
+#include <time.h>
 #include <iostream>
 
 #include "correlate.h"
@@ -59,15 +60,15 @@ void CorrelationDb::get_related(vector<int> &out, int pivot_sid, int limit)
     string query =
         "SELECT pos FROM Playlist NATURAL INNER JOIN Library "
             "WHERE sid IN ("
-            "SELECT CASE WHEN C.x = ? THEN C.y ELSE C.x END "
-            "FROM Correlations AS C "
-            "WHERE C.weight > 0 AND (C.x = ? OR C.y = ?) "
+            "SELECT L.sid FROM Correlations AS C INNER JOIN Last AS L "
+                "ON CASE WHEN C.x = ? THEN C.y ELSE C.x END = L.sid "
+            "WHERE C.weight > 0 AND (C.x = ? OR C.y = ?) AND L.last > ? "
             "ORDER BY C.weight DESC LIMIT " + itos(limit) + ");";
 
     try {
         Q q(query);
 
-        q << pivot_sid << pivot_sid << pivot_sid;
+        q << pivot_sid << pivot_sid << pivot_sid << (time(0) - HOUR);
 
         while (q.next())
         {

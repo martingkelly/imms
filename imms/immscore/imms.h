@@ -49,6 +49,7 @@ protected:
     };
 
     void reset_selection();
+    void get_metacandidates();
 
     // Helper functions
     bool fetch_song_info(SongData &data);
@@ -64,9 +65,6 @@ protected:
 
     LastInfo handpicked, last;
     IMMSServer *server;
-
-private:
-    bool need_related;
 };
 
 #endif

@@ -26,6 +26,7 @@ protected:
     void reset();
 
     virtual void request_playlist_item(int index) = 0;
+    virtual void get_metacandidates() = 0;
 
     SongData current;
     std::vector<int> metacandidates;

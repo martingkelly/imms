@@ -47,7 +47,7 @@ using std::ofstream;
 // Imms
 Imms::Imms(IMMSServer *server) : server(server)
 {
-    need_related = last_skipped = last_jumped = false;
+    last_skipped = last_jumped = false;
     local_max = MAX_TIME;
 
     handpicked.set_on = 0;
@@ -70,21 +70,19 @@ void Imms::setup(bool use_xidle)
     xidle_enabled = use_xidle;
 }
 
+void Imms::get_metacandidates()
+{
+    cerr << "doing correlations" << endl;
+    StackTimer t;
+    AutoTransaction a;
+    if (last.sid != -1)
+        CorrelationDb::get_related(metacandidates, last.sid, 20);
+    if (handpicked.sid != -1)
+        CorrelationDb::get_related(metacandidates, handpicked.sid, 30);
+}
+
 void Imms::do_events()
 {
-    if (need_related)
-    {
-        need_related = false;
-#if 1
-        cerr << "doing correlations" << endl;
-        StackTimer t;
-        AutoTransaction a;
-        if (last.sid != -1)
-            CorrelationDb::get_related(metacandidates, last.sid, 20);
-        if (handpicked.sid != -1)
-            CorrelationDb::get_related(metacandidates, handpicked.sid, 30);
-#endif
-    }
     SongPicker::do_events();
     XIdle::query();
 }
@@ -108,7 +106,6 @@ void Imms::playlist_changed(int length)
 
 int Imms::select_next()
 {
-    need_related = true;
     return SongPicker::select_next();
 }
 
