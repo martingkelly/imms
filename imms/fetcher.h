@@ -16,8 +16,8 @@ protected:
             { return position == other.position; }
 
             IntPair id;
-            int position, rating, relation;
-            int composite_rating, color, bpm;
+            int position, rating, relation, bpm_value;
+            int composite_rating, color_rating, bpm_rating;
             bool identified, unrated;
             time_t last_played;
             string path, spectrum;

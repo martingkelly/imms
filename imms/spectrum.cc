@@ -400,15 +400,19 @@ float SpectrumAnalyzer::bpm_transition(int from, int to)
         return 0;
 
     int avg = (from + to) / 2;
-    int distance = offset2bpm(bpm2offset(avg) + 1) - avg;
-    if (avg < 100 || avg > 160)
+    int distance = avg - offset2bpm(bpm2offset(avg) + 1);
+    if (!distance)
+        distance = 1;
+    if (avg < 75)
+        distance *= 3;
+    else if (avg > 160)
         distance *= 2;
 
     int diff = 2 - abs(from - to) / distance;
     if (diff < -2)
         diff = -2;
 
-#ifdef DEBUG
+#if defined(DEBUG) && 0
     cerr << "from = " << from << " to = " << to << endl;
     cerr << "target distance = " << distance
         << " diff = " << diff / 2.0 << endl;
