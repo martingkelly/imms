@@ -76,16 +76,16 @@ public:
             if (e == G_IO_ERROR_NONE)
             {
                 buf[n] = '\0';
-                char *lineend = strchr(buf, '\n');
-                if (lineend)
+                char *lineend, *cur = buf;
+                while ((lineend = strchr(cur, '\n')))
                 {
                     *lineend = '\0';
-                    inbuf += buf;
+                    inbuf += cur;
+                    cur = lineend + 1;
                     process_line(inbuf);
-                    inbuf = lineend + 1;
+                    inbuf = "";
                 }
-                else
-                    inbuf += buf;
+                inbuf += cur;
             }
             else
                 cerr << "some error occured" << endl;
