@@ -3,6 +3,9 @@
 
 #include <string>
 
+#define IMMSDBUSID "/org/luminal/IMMS", "org.luminal.IMMS"
+#define IMMSCLIENTDBUSID "/org/luminal/IMMSClient", "org.luminal.IMMSClient"
+
 using std::string;
 
 class IDBusException : public std::exception
@@ -83,6 +86,13 @@ public:
     IDBusConnection(DBusConnection *con_ = 0) : con(con_) {}
     void send(IDBusOMessage &message);
     DBusMessage *send_with_reply(IDBusOMessage &message, int timeout);
+
+    void store(int index, void *p);
+    void *retrieve(int index);
+
+    bool operator!=(const IDBusConnection &other)
+        { return other.con != con; }
+
 protected:
     DBusConnection *con;
 };
@@ -90,6 +100,7 @@ protected:
 class IDBusFilter
 {
 public:
+    virtual void new_connection(IDBusConnection &con) {};
     virtual bool dispatch(IDBusConnection &con, IDBusIMessage &message) = 0;
 };
 

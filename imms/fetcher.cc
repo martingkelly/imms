@@ -5,7 +5,6 @@
 #include <algorithm>
 
 #include "fetcher.h"
-#include "player.h"
 #include "strmanip.h"
 #include "md5digest.h"
 #include "utils.h"
@@ -44,14 +43,14 @@ bool InfoFetcher::identify_playlist_item(int pos)
     return true;
 }
 
-void InfoFetcher::playlist_changed()
+void InfoFetcher::playlist_changed(int length)
 {
     StackTimer t;
     ImmsDb::playlist_clear();
 
-    for (int i = 0; i < Player::get_playlist_length(); ++i)
+    for (int i = 0; i < pl_length; ++i)
     {
-        string path = path_normalize(Player::get_playlist_item(i));
+        string path = path_normalize(get_playlist_item(i));
         ImmsDb::playlist_insert_item(i, path);
     }
 }

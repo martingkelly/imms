@@ -3,12 +3,38 @@
 
 #include <string>
 
-struct Player
+#include "dbuscore.h"
+
+using std::string;
+
+class IDBusPlayerControl
 {
-    static int get_playlist_length();
-    static int get_playlist_position();
-    static std::string get_playlist_item(int index);
-    static void reset_selection();
+public:
+    IDBusPlayerControl(IDBusConnection con_) : con(con_) {};
+    int get_playlist_length()
+    {
+        IDBusOMessage m(IMMSCLIENTDBUSID, "GetPlaylistLength", true);
+        IDBusIMessage reply(con.send_with_reply(m, 5000));
+        int r;
+        reply >> r;
+        return r;
+    } 
+    string get_playlist_item(int index)
+    {
+        IDBusOMessage m(IMMSCLIENTDBUSID, "GetPlaylistItem", true);
+        m << index;
+        IDBusIMessage reply(con.send_with_reply(m, 5000));
+        string r;
+        reply >> r;
+        return r;
+    } 
+    void reset_selection()
+    {
+        IDBusOMessage m(IMMSCLIENTDBUSID, "ResetSelection");
+        con.send(m);
+    } 
+private:
+    IDBusConnection con;
 };
 
 #endif

@@ -36,20 +36,20 @@ bool SongPicker::add_candidate(bool urgent)
     ++attempts;
 
     int want = urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE;
-    if (acquired >= std::min(want, Player::get_playlist_length()))
+    if (acquired >= std::min(want, pl_length))
         return false;
 
     int position = ImmsDb::random_playlist_position();
     if (position < 0)
-        position = imms_random(Player::get_playlist_length());
+        position = imms_random(pl_length);
     string path = ImmsDb::get_playlist_item(position);
-    string realpath = path_normalize(Player::get_playlist_item(position));
+    string realpath = path_normalize(get_playlist_item(position));
 
     if (path != realpath)
     {
         cerr << "IMMS: path triggered playlist refresh" << endl;
         cerr << path << " != " << realpath << endl;
-        playlist_changed();
+        playlist_changed(-1);
         return true;
     }
 

@@ -19,6 +19,7 @@ CXXFLAGS=-fno-rtti
 
 XMMSLDFLAGS=`xmms-config --libs`
 GLIBLDFLAGS=`pkg-config glib-2.0 --libs`
+DBUSLDFLAGS=`pkg-config dbus-1 dbus-glib-1 --libs`
 LDFLAGS=-L. @LIBS@
 
 default: all
