@@ -20,7 +20,7 @@ ImmsBase::DirMaker::DirMaker()
 InfoFetcher::SongData::SongData(int _position, const string &_path)
     : position(_position), path(path_simplifyer(_path))
 {
-    bpm = color = rating = relation = 0;
+    bpm_value = color_rating = rating = relation = 0;
     identified = unrated = false;
     last_played = 0;
     spectrum = "";
@@ -82,7 +82,7 @@ int InfoFetcher::fetch_song_info(SongData &data)
 
     data.last_played = time(0) - immsdb.get_last();
     data.spectrum = immsdb.get_spectrum();
-    data.bpm = immsdb.get_bpm();
+    data.bpm_value = immsdb.get_bpm();
 
     data.id = immsdb.get_id();
 

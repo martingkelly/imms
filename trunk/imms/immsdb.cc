@@ -43,7 +43,7 @@ void ImmsDb::sql_create_tables()
 
     run_query(
             "CREATE TABLE 'Acoustic' ("
-                "'uid' INTEGER NOT NULL, "
+                "'uid' INTEGER UNIQUE NOT NULL, "
                 "'bpm' INTEGER DEFAULT '0', "
                 "'spectrum' VARCHAR(16) DEFAULT NULL);");
 

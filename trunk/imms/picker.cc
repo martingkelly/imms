@@ -78,9 +78,9 @@ int SongPicker::select_next()
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
-        i->composite_rating =
-            ROUND((i->rating + i->relation + i->color)
-                    * i->last_played / (double)max_last_played);
+        i->composite_rating = ROUND((i->rating + i->relation
+                    + i->color_rating + i->bpm_rating)
+                * i->last_played / (double)max_last_played);
         
         if (i->composite_rating > max_composite)
             max_composite = i->composite_rating;
