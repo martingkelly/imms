@@ -9,7 +9,7 @@ template <typename Filter>
 class IMMSClient
 {
 public:
-    IMMSClient() : filter(this), client(get_imms_root("socket"), &filter) {}
+    IMMSClient() : client(get_imms_root("socket"), &filter) {}
 
     void setup(bool use_xidle)
     {
@@ -77,12 +77,10 @@ private:
     IDBusClient client;
 };
 
-
 template <typename Ops>
 class ClientFilter : public IDBusFilter
 {
 public:
-    ClientFilter(IMMSClient< ClientFilter<Ops> > *_client) : client(_client) {}
     virtual bool dispatch(IDBusConnection &con, IDBusIMessage &message)
     {
         if (message.get_type() == MTError)
@@ -96,21 +94,24 @@ public:
             {
                 if (message.get_member() == "Disconnected")
                 {
-                    client->connection_lost();
+                    Ops::disconnected();
                     return true;
                 }
             }
-
             if (message.get_interface() != "org.luminal.IMMSClient")
             {
                 cerr << "Received message on unknown interface: "
                     << message.get_interface() << endl;
                 return false;
             }
-
             if (message.get_member() == "ResetSelection")
             {
                 Ops::reset_selection();
+                return true;
+            }
+            if (message.get_member() == "Ready")
+            {
+                Ops::connected();
                 return true;
             }
             if (message.get_member() == "EnqueueNext")
@@ -154,8 +155,6 @@ public:
 
         return false;
     }
-private:
-    IMMSClient< ClientFilter<Ops> > *client;
 };
 
 #endif

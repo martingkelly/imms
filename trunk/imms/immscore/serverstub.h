@@ -10,10 +10,13 @@ using std::string;
 class IMMSServer
 {
 public:
-    IMMSServer(IDBusConnection con_) : con(con_) {};
+    IMMSServer(IDBusConnection con_) : conready(false), con(con_) {};
     int get_playlist_length();
     string get_playlist_item(int index);
     void reset_selection();
+    void ready();
+protected:
+    bool conready;
 private:
     IDBusConnection con;
 };

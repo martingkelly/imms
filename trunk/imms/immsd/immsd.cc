@@ -5,8 +5,6 @@
 #include "dbuscore.h"
 #include "dbusserver.h"
 
-int pl_length, cur_plpos;
-
 IDBusConnection activecon;
 Imms *imms;
 
