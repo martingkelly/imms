@@ -6,6 +6,7 @@
 #include "clientstubbase.h"
 
 #include <stdlib.h>
+#include <errno.h>
 
 #include <sstream>
 #include <iostream>
