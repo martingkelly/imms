@@ -187,18 +187,23 @@ void do_help()
         "- show this help" << endl;
 }
 
-string sid2info(int sid)
+StringPair sid2info(int sid)
 {
-    Q q("SELECT artist, title FROM Info WHERE sid = ?");
+    Q q("SELECT artist, title FROM Info "
+           "NATURAL INNER JOIN Artists WHERE sid = ?");
     q << sid;
 
-    if (!q.next())
-        return "??";
+    StringPair info;
+    if (q.next())
+        q >> info.first >> info.second;
 
-    string artist, title;
-    q >> artist >> title;
+    return info;
+}
 
-    return artist + " / " + title;
+string sid2string(int sid)
+{
+    StringPair p = sid2info(sid);
+    return p.first + " / " + p.second;
 }
 
 void do_identify(const string &path)
@@ -233,7 +238,7 @@ void do_identify(const string &path)
         other = (x == s.get_sid()) ? y : x;
 
         cout << setw(8) << other << " (" << weight << ") - "
-            << sid2info(other) << endl;
+            << sid2string(other) << endl;
     }
 }
 
@@ -363,15 +368,12 @@ void do_bpm_distance(const string &to)
         cout << setw(4) << rms_string_distance(rescaled, rescale_bpmgraph(bpm))
             << "  " << bpm << "  ";
 
-        Q q("SELECT artist, title FROM Info WHERE sid = ?;");
-        q << sid;
+        StringPair info = sid2info(sid);
 
-        if (q.next())
+        if (info.first != "")
         {
-            string artist, title;
-            q >> artist >> title;
-            cout << setw(25) << artist;
-            cout << setw(25) << title;
+            cout << setw(25) << info.first;
+            cout << setw(25) << info.second;
         }
         else
             cout << setw(50) << path_get_filename(path);
@@ -395,15 +397,12 @@ void do_spec_distance(const string &to)
         cout << setw(4) << rms_string_distance(to, spectrum, 15)
             << "  " << spectrum << "  ";
 
-        Q q("SELECT artist, title FROM Info WHERE sid = ?;");
-        q << sid;
+        StringPair info = sid2info(sid);
 
-        if (q.next())
+        if (info.first != "")
         {
-            string artist, title;
-            q >> artist >> title;
-            cout << setw(25) << artist;
-            cout << setw(25) << title;
+            cout << setw(25) << info.first;
+            cout << setw(25) << info.second;
         }
         else
             cout << setw(50) << path_get_filename(path);

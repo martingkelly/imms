@@ -67,6 +67,11 @@ SQLException::SQLException(const string &file, int line, const string &error)
 
 // SQLDatabaseConnection
 
+uint64_t SQLDatabaseConnection::last_rowid()
+{
+    return sqlite3_last_insert_rowid(SQLDatabase::db_ptr);
+}
+
 SQLDatabaseConnection::SQLDatabaseConnection(const string &filename)
 {
     open(filename);

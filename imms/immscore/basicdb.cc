@@ -74,7 +74,7 @@ void BasicDb::sql_create_v7_tables()
     WARNIFFAILED();
 }
 
-void BasicDb::sql_create_tables()
+void BasicDb::sql_create_v8_tables()
 {
     QueryCacheDisabler qcd;
     RuntimeErrorBlocker reb;
@@ -119,16 +119,66 @@ void BasicDb::sql_create_tables()
     WARNIFFAILED();
 }
 
+void BasicDb::sql_create_tables()
+{
+    QueryCacheDisabler qcd;
+    RuntimeErrorBlocker reb;
+    try
+    {
+        Q("CREATE TABLE 'Identify' ("
+                "'path' VARCHAR(4096) UNIQUE NOT NULL, "
+                "'uid' INTEGER NOT NULL, "
+                "'modtime' TIMESTAMP NOT NULL, "
+                "'checksum' TEXT NOT NULL);").execute();
+                
+        Q("CREATE TABLE 'Library' ("
+                "'uid' INTEGER UNIQUE NOT NULL, "
+                "'sid' INTEGER DEFAULT -1, "
+                "'playcounter' INTEGER DEFAULT 0, "
+                "'lastseen' TIMESTAMP DEFAULT 0, "
+                "'firstseen' TIMESTAMP DEFAULT 0);").execute();
+
+        Q("CREATE TABLE 'Rating' ("
+                "'uid' INTEGER UNIQUE NOT NULL, "
+                "'rating' INTEGER NOT NULL, "
+                "'trend' INTEGER DEFAULT 0);").execute();
+
+        Q("CREATE TABLE 'Acoustic' ("
+                "'uid' INTEGER UNIQUE NOT NULL, "
+                "'spectrum' TEXT, 'bpm' TEXT);").execute();
+
+        Q("CREATE TABLE 'Info' ("
+                "'sid' INTEGER UNIQUE NOT NULL," 
+                "'aid' INTEGER NOT NULL, "
+                "'title' TEXT NOT NULL);").execute();
+
+        Q("CREATE TABLE 'Artists' ("
+                "'aid' INTEGER PRIMARY KEY," 
+                "'artist' TEXT UNIQUE NOT NULL);").execute();
+
+        Q("CREATE TABLE 'Last' ("
+                "'sid' INTEGER UNIQUE NOT NULL, " 
+                "'last' TIMESTAMP);").execute();
+
+        Q("CREATE TABLE 'Journal' ("
+                "'uid' INTEGER NOT NULL, " 
+                "'delta' INTEGER NOT NULL, " 
+                "'time' TIMESTAMP NOT NULL);").execute();
+    }
+    WARNIFFAILED();
+}
+
 int BasicDb::avg_rating(const string &artist, const string &title)
 {
     try
     {
         if (title != "")
         {
-            Q q("SELECT avg(rating) FROM Library "
-                    "NATURAL INNER JOIN Info "
-                    "INNER JOIN Rating ON Library.uid = Rating.uid "
-                    "WHERE Info.artist = ? AND Info.title = ?;");
+            Q q("SELECT avg(rating) FROM Library AS L "
+                    "INNER JOIN Info AS I ON L.sid = I.sid "
+                    "INNER JOIN Rating AS R ON L.uid = R.uid "
+                    "INNER JOIN Artists AS A ON I.aid = A.aid "
+                    "WHERE A.artist = ? AND Info.title = ?;");
 
             q << artist << title;
 
@@ -142,10 +192,11 @@ int BasicDb::avg_rating(const string &artist, const string &title)
 
         if (artist != "")
         {
-            Q q("SELECT avg(rating) FROM Library "
-                    "NATURAL INNER JOIN Info "
-                    "INNER JOIN Rating ON Rating.uid = Library.uid "
-                    "WHERE Info.artist = ?;");
+            Q q("SELECT avg(rating) FROM Library AS L"
+                    "INNER JOIN Info AS I on L.sid = I.sid "
+                    "INNER JOIN Rating AS R ON R.uid = L.uid "
+                    "INNER JOIN Artists AS A ON I.aid = A.aid "
+                    "WHERE A.artist = ?;");
             q << artist;
 
             if (q.next())
@@ -165,7 +216,7 @@ bool BasicDb::check_artist(string &artist)
 {
     try
     {
-        Q q("SELECT artist FROM 'Info' WHERE similar(artist, ?);");
+        Q q("SELECT artist FROM Artists WHERE similar(artist, ?);");
         q << artist;
 
         if (q.next())
@@ -182,7 +233,8 @@ bool BasicDb::check_title(const string &artist, string &title)
 {
     try
     {
-        Q q("SELECT title FROM 'Info' WHERE artist = ? AND similar(title, ?)");
+        Q q("SELECT title FROM Info NATURAL INNER JOIN Artists "
+               "WHERE artist = ? AND similar(title, ?)");
         q << artist << title;
 
         if (q.next())
@@ -234,7 +286,7 @@ void BasicDb::sql_schema_upgrade(int from)
             Q("DROP TABLE Rating;").execute();
 
             // Create new tables
-            sql_create_tables();
+            sql_create_v8_tables();
 
             Q("INSERT INTO Rating (uid, rating) "
                     "SELECT uid, rating FROM Rating_backup;").execute();
@@ -250,6 +302,23 @@ void BasicDb::sql_schema_upgrade(int from)
                  << time(0) << time(0) << execute;
 
             Q("DROP TABLE Library_backup;").execute();
+        }
+        if (from < 9)
+        {
+            // Backup the existing tables
+            Q("CREATE TEMP TABLE Info_backup "
+                    "AS SELECT * FROM Info;").execute();
+            Q("DROP TABLE Info;").execute();
+
+            // Create new tables
+            sql_create_tables();
+
+            Q("INSERT INTO Artists (artist) "
+                    "SELECT DISTINCT(artist) FROM Info_backup;").execute();
+
+            Q("INSERT INTO Info SELECT sid, aid, title "
+                    "FROM Info_backup INNER JOIN Artists "
+                        "ON Info_backup.artist = Artists.artist").execute();
         }
 
         a.commit();
