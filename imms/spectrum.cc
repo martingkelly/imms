@@ -4,12 +4,14 @@
 #include <iostream>
 #include <utility>
 #include <fstream>
+#include <map>
 
 #include "spectrum.h"
 
 using std::endl;
 using std::cerr;
 using std::pair;
+using std::map;
 
 void BeatKeeper::reset()
 {
@@ -22,36 +24,110 @@ void BeatKeeper::reset()
     last_window = &data[MAXBEATLENGTH];
 }
 
-void BeatKeeper::getBPM()
+inline int offset2bpm(int offset)
 {
-    float max = 0;
-    int max_index = 0;
-    std::ofstream bstats("/tmp/beats", std::ios::trunc);
-    for (int i = 0; i < MAXBEATLENGTH - MINBEATLENGTH; ++i)
-    {
-        bstats << (60 * SAMPLES) / (MINBEATLENGTH + i)
-            << " " << ROUND(beats[i]) << endl;
-
-        if (max > beats[i])
-            continue;
-
-        max = beats[i];
-        max_index = i;
-    }
-
-    cerr << samples << " samples in " << last - first << " seconds: "
-        << ROUND(samples / (float)(last - first)) << " samples/sec" << endl; 
-    cerr << "peak " << max << "@"
-        << MINBEATLENGTH + max_index << endl;
-    int bpm = ROUND(60 * SAMPLES / (float)(MINBEATLENGTH + max_index));
-    cerr << " >> bpm is " << bpm << endl;
-
-    reset();
+    return ROUND(60 * SAMPLES/ (float)(MINBEATLENGTH + offset));
 }
 
-time_t usec_diff(struct timeval& tv1, struct timeval tv2)
+int BeatKeeper::getBPM()
+{
+    cerr << samples << " samples in " << last - first << " seconds: "
+        << ROUND(samples / (float)(last - first)) << " samples/sec" << endl; 
+
+    std::ofstream bstats("/tmp/beats", std::ios::trunc);
+
+    float max = 0, min = INT_MAX;
+    for (int i = 0; i < MAXBEATLENGTH - MINBEATLENGTH; ++i)
+    {
+        bstats << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
+
+        if (beats[i] > max)
+            max = beats[i];
+        if (beats[i] < min)
+            min = beats[i];
+    }
+
+    // Find peaks in the beat distribution
+    map<int, int> peaks;
+    int up = 0, down = 0, last_peak = 0;
+    for (int i = 1; i < MAXBEATLENGTH - MINBEATLENGTH; ++i)
+    {
+        if (beats[i] > beats[i - 1])
+        {
+            if (up++)
+            {
+                if (last_peak)
+                    peaks[last_peak] = (peaks[last_peak] + down) / 2;
+                last_peak = 0;
+                down = 0;
+            }
+        }
+        else if (beats[i] < beats[i - 1])
+        {
+            if (down++)
+            {
+                if (up > 2 && beats[i] > min + (max - min) * 0.75)
+                {
+                    last_peak = offset2bpm(i - 2);
+                    peaks[last_peak] = up;
+                    cerr << "peak at " << last_peak << endl;
+                }
+                up = 0;
+            }
+        }
+
+        cerr << "i = " << offset2bpm(i) << " up = " << up 
+            << " down = " << down << endl;
+    }
+
+    reset();
+
+    if (peaks.empty())
+    {
+        cerr << "peak are empty" << endl;
+        return -1;
+    }
+
+    if (peaks.size() == 1)
+        return peaks.begin()->first;
+
+    // coalesce peaks
+    map<int, int> combined_peaks;
+    for (map<int, int>::iterator i = peaks.begin(); i != peaks.end(); ++i)
+    {
+        map<int, int>::iterator dbl = peaks.lower_bound(i->first * 2 - 3);
+        if (abs(dbl->first - i->first * 2) < 3)
+        {
+            cerr << "coalescing " << i->first 
+                << " and " << dbl->first << endl; 
+            dbl->second += i->second;
+        }
+        else
+            combined_peaks[i->second] = i->first;
+    }
+
+    if (combined_peaks.size() == 1)
+        return combined_peaks.begin()->second;
+
+    map<int, int>::iterator i = combined_peaks.begin();
+    int biggest = i->second;
+    if (biggest * 2 / 3 > (++i)->second)
+        return combined_peaks[biggest];
+
+    return -1;
+}
+
+time_t usec_diff(struct timeval &tv1, struct timeval &tv2)
 {
     return (tv2.tv_sec - tv1.tv_sec) * 1000000 + tv2.tv_usec - tv1.tv_usec;
+}
+
+const struct timeval& operator +=(struct timeval &tv, int usecs)
+{
+    tv.tv_usec += usecs;
+    tv.tv_sec += tv.tv_usec / MICRO;
+    tv.tv_usec %= MICRO;
+    return tv;
 }
 
 void BeatKeeper::integrate_beat(float power)
@@ -61,15 +137,17 @@ void BeatKeeper::integrate_beat(float power)
 
     last = now.tv_sec;
     if (!first)
+    {
         first = last;
+        prev = now;
+    }
 
+    // find out how many timeslices we should count this sample for
     time_t diff = usec_diff(prev, now);
+    int count_for = ROUND(diff * SAMPLES / (float)MICRO) % 10;
 
-    int count_for = ROUND(diff / 10000.0) % 4;
     samples += count_for;
-    prev = now;
-
-    //cerr << "time " << count_for << " power = " << power << endl;
+    prev += count_for * MICRO / SAMPLES;
 
     for (int i = 0; i < count_for; ++i)
     {
@@ -216,7 +294,7 @@ void SpectrumAnalyzer::integrate_spectrum(
 
 void SpectrumAnalyzer::finalize()
 {
-    bpm.getBPM();
+    cerr << "BPM = " << bpm.getBPM() << endl;
 
     if (!have_spectrums)
         return;

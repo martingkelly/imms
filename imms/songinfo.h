@@ -64,7 +64,9 @@ public:
         { return get_text_frame(ID3FID_TITLE); }
     virtual string get_album()
         { return get_text_frame(ID3FID_ALBUM); }
+#ifdef LEGACY_RATINGS
     virtual int get_rating(const string &email);
+#endif
 protected:
     string get_text_frame(ID3_FrameID id);
     ID3_Tag id3tag;

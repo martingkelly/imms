@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[1.0-pre7],[mag@luminal.org])
+AC_INIT([IMMS],[1.0-pre8],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -20,6 +20,12 @@ AC_ARG_WITH(screensaver,
             AC_HELP_STRING([--with-screensaver],
                            [Use MIT ScreenSaver extension]))
 
+AC_ARG_ENABLE(legacy,
+            AC_HELP_STRING([--enable-legacyratings],
+                           [Use ratings from ID3 tags]), 
+             [enable_legacy='yes'],
+             [enable_legacy='no'])
+
 AC_ARG_ENABLE(debug,
             AC_HELP_STRING([--enable-debug],
                            [Extra debug output]),
@@ -32,9 +38,15 @@ AC_PROG_INSTALL
 
 AC_LANG(C++)
 
-AC_SUBST(enable_debug)
 AC_MSG_CHECKING([for --enable-debug])
 AC_MSG_RESULT([$enable_debug])
+
+AC_MSG_CHECKING([for --enable-legacy])
+AC_MSG_RESULT([$enable_legacy])
+
+if test "$enable_legacy" != "no"; then
+    AC_DEFINE(LEGACY_RATINGS,, [Legacy ratings in ID3 tags support])
+fi
 
 AC_CHECK_PROG(have_xmms_config, xmms-config, "yes", "no")
 if test "$have_xmms_config" = "no"; then
@@ -71,9 +83,8 @@ if test "$with_pcre" = "no"; then
 fi
 
 if test "$with_id3lib" != "no"; then
-    AC_CHECK_LIB(id3, ID3Tag_New,, [with_zlib=no])
-    AC_CHECK_MEMBER(class ID3_Frame.GetField(ID3FN_EMAIL),,
-        [with_id3lib=no], [#include <id3/tag.h>])
+    AC_CHECK_LIB(id3, ID3Tag_New,, [with_id3lib=no])
+    AC_CHECK_HEADERS(id3/tag.h,, [with_id3lib=no])
 fi
 if test "$with_id3lib" = "no"; then
     AC_MSG_WARN([id3lib is missing.])

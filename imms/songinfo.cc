@@ -62,6 +62,7 @@ string Mp3Info::get_text_frame(ID3_FrameID id)
     return "";
 }
 
+#ifdef LEGACY_RATINGS
 int Mp3Info::get_rating(const string &email)
 {
     ID3_Frame* popmframe = id3tag.Find(ID3FID_POPULARIMETER,
@@ -77,6 +78,8 @@ int Mp3Info::get_rating(const string &email)
     }
     return INITIAL_RATING;
 }
+#endif
+
 #endif
 
 #ifdef WITH_VORBIS
