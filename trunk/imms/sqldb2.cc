@@ -23,7 +23,7 @@ static void fuzzy_like(sqlite3_context *context, int argc, sqlite3_value** val)
 
 extern sqlite3 *db();
 
-SqlDb::SqlDb(const string &dbname)
+SqlDb::SqlDb()
 {
     string dotimms = getenv("HOME");
     dotimms.append("/.imms");
@@ -45,7 +45,7 @@ SqlDb::SqlDb(const string &dbname)
         cerr << string(60, '*') << endl;
     }
 
-    dbcon.open(dbname);
+    dbcon.open(dotimms + "/imms2.db");
     sqlite3_create_function(db(), "similar", 2, 1, 0, fuzzy_like, 0, 0);
 }
 

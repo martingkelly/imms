@@ -30,4 +30,4 @@ immsremote: -lreadline -lcurses
 analyzer-LIBS=`pkg-config fftw3f --libs`
 
 analyzer: $(call objects,../analyzer)
-analyzer: utils.o
+analyzer: libimmscore.a

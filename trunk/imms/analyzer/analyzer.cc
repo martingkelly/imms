@@ -9,12 +9,15 @@
 #include <math.h>
 
 #include <utils.h>
+#include <song.h>
+#include <immsdb.h>
 
 #include "spectrum.h"
 
 #define SCALE       100000.0
 
 using std::cout;
+using std::cerr;
 using std::endl;
 using std::string;
 using std::ostringstream;
@@ -22,16 +25,27 @@ using std::vector;
 
 typedef uint16_t sample_t;
 
+int usage()
+{
+    cout << "usage: analyzer <filename>" << endl;
+    return -1;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 2 || access(argv[1], R_OK))
+        return usage();
+
+    string path = argv[1];
+
+    if (access(path.c_str(), R_OK))
     {
-        cout << "usage: analyzer <filename>" << endl;
-        return -1;
+        cerr << "could not open file " << path << endl;
+        return -4;
     }
 
     ostringstream command;
-    command << "sox \"" <<  argv[1] << "\" -t .raw -w -u -c 1 "
+    command << "sox \"" << argv[1] << "\" -t .raw -w -u -c 1 "
         "-r " << SAMPLERATE << " -";
     cout << "running " << command.str() << endl;
     FILE *p = popen(command.str().c_str(), "r");
@@ -61,34 +75,41 @@ int main(int argc, char *argv[])
     fftwf_plan plan = fftwf_plan_dft_r2c_1d(WINDOWSIZE,
             infftdata, outfftdata, 0);
 
-    SpectrumAnalyzer analyzer;
+    try {
+        ImmsDb immsdb;
+        SpectrumAnalyzer analyzer(path);
 
-    while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p) == READSIZE)
-    {
-        for (int i = 0; i < WINDOWSIZE; ++i)
-            infftdata[i] = (float)indata[i];
-
-        fftwf_execute(plan);
-
-        for (int i = 0; i < NFREQS; ++i)
+        while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p)
+                == READSIZE)
         {
-            outdata[i] = sqrt(pow(outfftdata[i][0] / SCALE, 2)
-                    + pow(outfftdata[i][1] / SCALE, 2));
-            if (outdata[i] > maxes[i])
-                maxes[i] = outdata[i];
+            for (int i = 0; i < WINDOWSIZE; ++i)
+                infftdata[i] = (float)indata[i];
+
+            fftwf_execute(plan);
+
+            for (int i = 0; i < NFREQS; ++i)
+            {
+                outdata[i] = sqrt(pow(outfftdata[i][0] / SCALE, 2)
+                        + pow(outfftdata[i][1] / SCALE, 2));
+                if (outdata[i] > maxes[i])
+                    maxes[i] = outdata[i];
+            }
+
+            analyzer.integrate_spectrum(outdata);
+
+            memmove(indata, indata + READSIZE, OVERLAP * sizeof(sample_t));
+            counter++;
         }
-    
-        analyzer.integrate_spectrum(outdata);
 
-        memmove(indata, indata + READSIZE, OVERLAP * sizeof(sample_t));
-        counter++;
     }
-
-    pclose(p);
+    catch (std::string &s)
+    {
+        cerr << s << endl;
+    }
 
     fftwf_destroy_plan(plan);
 
-    analyzer.finalize();
+    pclose(p);
 
     cout << "processed " << counter << " windows" << endl;
 }

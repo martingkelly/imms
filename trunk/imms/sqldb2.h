@@ -9,7 +9,7 @@ using std::string;
 class SqlDb
 {
 public:
-    SqlDb(const string &dbname);
+    SqlDb();
     ~SqlDb();
 
 protected:

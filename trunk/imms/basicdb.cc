@@ -10,7 +10,6 @@ using std::endl;
 using std::cerr; 
 
 BasicDb::BasicDb()
-    : SqlDb(string(getenv("HOME")).append("/.imms/imms2.db"))
 {
     sql_set_pragma();
 }

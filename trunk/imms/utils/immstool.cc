@@ -36,9 +36,6 @@ char **g_argv;
 class ImmsTool : public SqlDb
 {
 public:
-    ImmsTool()
-        : SqlDb(string(getenv("HOME")).append("/.imms/imms.db")) { }
-
     void do_distance();
     int distance_callback(const string &path,
             const string &spectrum, int sid);
