@@ -14,7 +14,6 @@
 #include "imms.h"
 
 using std::string;
-using std::cerr;
 
 #define DEFAULT_EMAIL       "default@imms.org"
 #define POLL_DELAY          5

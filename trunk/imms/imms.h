@@ -3,23 +3,16 @@
 
 #include <string>
 #include <fstream>
-#include <list>
 
-#include "fetcher.h"
-#include "immsdb.h"
+#include "picker.h"
 #include "plugin.h"
 #include "xidle.h"
 
 using std::string;
 using std::ofstream;
-using std::list;
-
-#define ROUND(x) (int)((x) + 0.5)
 
 static const int short_spectrum_size = 16;
 static const int long_spectrum_size = 256;
-
-int imms_random(int max);
 
 class BeatKeeper
 {
@@ -32,18 +25,12 @@ private:
     int max_bass, average_bass, beats;
 };
 
-typedef list<SongData> Candidates;
-
 // IMMS, UMMS, we all MMS for XMMS?
 
-class Imms : protected InfoFetcher
+class Imms : public SongPicker
 {
 public:
     Imms();
-
-    // Public interface
-    int  select_next();
-    bool add_candidate(int playlist_num, string path, bool urgent = false);
 
     void start_song(const string &path);
     void end_song(bool at_the_end, bool jumped, bool bad);
@@ -64,9 +51,8 @@ protected:
     void finalize_spectrum();
 
     // State variables
-    bool last_skipped, last_jumped, use_xidle, winner_valid;
-    int have_candidates, attempts, local_max, have_spectrums;
-    int last_handpicked, playlist_size;
+    bool last_skipped, last_jumped, use_xidle;
+    int local_max, have_spectrums, last_handpicked, playlist_size;
     double long_spectrum[long_spectrum_size];
     time_t spectrum_start_time;
     string last_spectrum;
@@ -75,8 +61,6 @@ protected:
 
     // Helper objects
     ofstream fout;
-    SongData winner;
-    Candidates candidates;
     BeatKeeper bpm0, bpm1;
     XIdle xidle;
 };
