@@ -113,7 +113,7 @@ void Imms::playlist_changed(int _playlist_size)
     local_max = playlist_size * 8;
 #ifdef DEBUG
     cerr << " *** playlist changed!" << endl;
-    cerr << "local_max is now " << local_max / (24 * 60) << endl;
+    cerr << "local_max is now " << strtime(local_max) << endl;
 #endif
 }
 
@@ -142,10 +142,7 @@ bool Imms::add_candidate(int playlist_num, string path, bool urgent)
     ++have_candidates;
     candidates.push_back(data);
 
-    if (have_candidates >= (urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE))
-        return false;
-
-    return true;
+    return have_candidates < (urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE);
 }
 
 int Imms::select_next()
@@ -167,7 +164,7 @@ int Imms::select_next()
         i->composite_rating =
             ROUND((i->rating + i->relation * CORRELATION_FACTOR)
                     * i->last_played / (double)max_last_played);
-        
+
         if (i->composite_rating > max_composite)
             max_composite = i->composite_rating;
         if (i->composite_rating < min_composite)
@@ -188,7 +185,7 @@ int Imms::select_next()
 
         i->composite_rating =
             ROUND(pow(((double)(i->composite_rating - min_composite))
-                    / DISPERSION_FACTOR, DISPERSION_FACTOR));
+                        / DISPERSION_FACTOR, DISPERSION_FACTOR));
         i->composite_rating += BASE_BIAS;
         total += i->composite_rating;
     }
@@ -224,8 +221,6 @@ int Imms::select_next()
     cerr << endl;
 #endif
 
-    have_candidates = attempts = 0;
-
     return winner.position;
 }
 
@@ -233,6 +228,7 @@ void Imms::start_song(const string &path)
 {
     xidle.reset();
     candidates.clear();
+    have_candidates = attempts = 0;
 
     if (!winner_valid)
     {
@@ -385,6 +381,7 @@ bool Imms::fetch_song_info(SongData &data)
         data.relation = 15;
 
 #ifdef DEBUG
+    cerr << "path:\t" << path << endl;
 #if 0
     cerr << "path:\t" << path << endl;
     cerr << "artist:\t" << artist << (identified ? " *" : "") << endl;
