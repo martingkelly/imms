@@ -6,8 +6,7 @@ first: configure
 	$(error Please run the "configure" script)
  
 configure: configure.ac
-	autoheader
-	autoconf
+	autoreconf
 
 immsconf.h: configure
 	$(error Please run the "configure" script)
@@ -16,7 +15,7 @@ immsconf.h: configure
 
 clean:
 	rm -f $(wildcard build/*.o)
-	rm -f $(wildcard build/libxmmsimms.so build/libimmscore.a build/analyzer build/immstool build/immsd build/imms-*.tar.* build/imms*.o core* build/.*.d)
+	rm -f $(wildcard build/lib*imms*.* build/analyzer build/immstool build/immsd build/imms-*.tar.* build/imms*.o core* build/.*.d)
 
 distclean: clean
 	rm -f $(wildcard .\#* config.* configure immsconf.h* vars.mk)
