@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[1.2a],[mag@luminal.org])
+AC_INIT([IMMS],[1.3-pre1],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -124,7 +124,7 @@ if test "$with_taglib" != "no"; then
     AC_TRY_LINK([#include <tag.h>
                  #include <fileref.h>],
                 [TagLib::FileRef f((TagLib::File*)0); f.tag()->title()],
-        [XCPPFLAGS="$XCPPFLAGS `taglib-config --cflags`" 
+        [TAGCPPFLAGS="$TAGCPPFLAGS `taglib-config --cflags`" 
                                             AC_MSG_RESULT(yes)],
         [LIBS=$saved_libs AC_MSG_RESULT(no)])
 fi
@@ -181,6 +181,7 @@ AC_SUBST(CXX)
 AC_SUBST(CC)
 AC_SUBST(INSTALL)
 AC_SUBST(XCPPFLAGS)
+AC_SUBST(TAGCPPFLAGS)
 AC_SUBST(LIBS)
 AC_SUBST(PLUGIN_OBJ)
 

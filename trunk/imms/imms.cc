@@ -32,7 +32,7 @@ using std::ofstream;
 #define     MAX_TIME                20*DAY
 
 #define     MAX_CORRELATION         12.0
-#define     PRIMARY                 0.75
+#define     SECONDARY               0.3
 #define     CORRELATION_IMPACT      40
 #define     BPM_IMPACT              25
 #define     SPECTRUM_IMPACT         10
@@ -306,8 +306,9 @@ bool Imms::fetch_song_info(SongData &data)
 
     data.specrating = data.bpmrating = data.relation = 0;
 
-    evaluate_transition(data, handpicked, PRIMARY);
-    evaluate_transition(data, last, 1 - PRIMARY);
+    evaluate_transition(data, handpicked, 1);
+    evaluate_transition(data, last,
+            SECONDARY * (handpicked.sid == -1 ? 2 : 1));
 
     return true;
 }

@@ -18,10 +18,12 @@ public:
     void set_title(const string &_title);
     void set_artist(const string &_artist);
     void set_rating(int rating);
+    void set_trend(int trend);
     void set_acoustic(const string &spectrum, const string &bpmgraph);
     void increment_playcounter();
 
     int get_rating();
+    int get_trend();
     time_t get_last();
     int get_playcounter();
 
