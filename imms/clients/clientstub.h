@@ -56,7 +56,9 @@ public:
 
         IDBusOMessage m(IMMSDBUSID, "PlaylistChanged");
         m << length;
+#ifdef DEBUG
         cerr << "sending out pl len = " << length << endl;
+#endif
         client.send(m);
     }
 

@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 int usage()
 {
     cout << "End user functionality: " << endl;
-    cout << " immstool missing|purge|lint|identify|help" << endl;
+    cout << " immstool rate|missing|purge|lint|identify|help" << endl;
     cout << "Debug functionality: " << endl;
     cout << " immstool bpmdistance|specdistance|deviation|graph" << endl;
     return -1;
