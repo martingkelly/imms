@@ -1,10 +1,8 @@
 #include "playlist.h"
 #include "strmanip.h"
 
-void PlaylistDB::sql_create_tables()
+void PlaylistDb::sql_create_tables()
 {
-    ImmsDb::sql_create_tables();
-
     run_query(
         "CREATE TABLE 'Playlist' ("
             "'pos' INTEGER PRIMARY KEY, "
@@ -13,7 +11,7 @@ void PlaylistDB::sql_create_tables()
             "'ided' INTEGER DEFAULT '0');");    
 }
 
-int PlaylistDB::get_unknown_playlist_item()
+int PlaylistDb::get_unknown_playlist_item()
 {
     if (all_known)
         return -1;
@@ -34,7 +32,7 @@ int PlaylistDB::get_unknown_playlist_item()
     return -1;
 }
 
-bool PlaylistDB::playlist_id_from_item(int pos)
+bool PlaylistDb::playlist_id_from_item(int pos)
 {
     select_query("SELECT Library.uid, Library.sid FROM 'Library' "
            "INNER JOIN 'Playlist' ON Library.uid = Playlist.uid "
@@ -48,13 +46,13 @@ bool PlaylistDB::playlist_id_from_item(int pos)
     return true;
 }
 
-void PlaylistDB::playlist_update_identity(int pos)
+void PlaylistDb::playlist_update_identity(int pos)
 {
     run_query("UPDATE 'Playlist' SET ided = '1', uid = '" + itos(uid) + "' "
             "WHERE pos = '" + itos(pos) + "';");
 }
 
-void PlaylistDB::playlist_insert_item(int pos, const string &path)
+void PlaylistDb::playlist_insert_item(int pos, const string &path)
 {
     string epath = escape_string(path);
     run_query("INSERT INTO 'Playlist' ('pos', 'path', 'uid') "
@@ -62,7 +60,7 @@ void PlaylistDB::playlist_insert_item(int pos, const string &path)
                 "(SELECT uid FROM Library WHERE path = '" + epath + "'));");
 }
 
-string PlaylistDB::get_playlist_item(int pos)
+string PlaylistDb::get_playlist_item(int pos)
 {
     select_query("SELECT path FROM 'Playlist' "
             "WHERE pos = '" + itos(pos) + "';");
@@ -70,7 +68,7 @@ string PlaylistDB::get_playlist_item(int pos)
     return nrow && resultp[1] ? resultp[1] : "";
 }
 
-void PlaylistDB::clear_playlist()
+void PlaylistDb::clear_playlist()
 {
     all_known = false;
     run_query("DELETE FROM 'Playlist';");

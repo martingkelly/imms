@@ -6,7 +6,7 @@ DESTDIR = @prefix@
 
 SHELL = bash
 XMMS_OBJ = @PLUGIN_OBJ@ interface.o player.o libimmscore.a 
-CORE_OBJ = imms.o immsdb.o playlist.o sqldb.o \
+CORE_OBJ = imms.o immsdb.o basicdb.o correlate.o playlist.o sqldb.o \
 	   fetcher.o picker.o spectrum.o songinfo.o \
 	   regexx.o utils.o strmanip.o levenshtein.o xidle.o md5.o
 
