@@ -68,118 +68,96 @@ void ImmsServer::do_events()
         conn = 0;
     }
 
-    if (conn)
+    if (!conn)
+        return;
+
+    string command = conn->read();
+    command = string_tolower(string_delete(command, "\n"));
+    if (command == "")
+        return;
+
+    string predicate = "";
+    list<string> parsed;
+    string_split(parsed, command, " ");
+
+    while (1)
     {
-        string command = conn->read();
-        command = string_tolower(string_delete(command, "\n"));
-        if (command == "")
-            return;
+        string str = parsed.front();
+        parsed.pop_front();
 
-        string predicate = "";
-        list<string> parsed;
-        string_split(parsed, command, " ");
-
-        while (1)
+        if (str == "or" || str == "and")
         {
-            string str = parsed.front();
-            parsed.pop_front();
-
-            if (str == "or" || str == "and")
-            {
-                predicate = str;
-                continue;
-            }
-
-            if (str == "help")
-            {
-                *conn << "known commands:" << "\n";
-                *conn << "  show" << "\n";
-                *conn << "  clear" << "\n";
-                *conn << "  [or|and] artist <str>" << "\n";
-                *conn << "  [or|and] rating [<|>] <int>" << "\n";
-                *conn << "  [or|and] bpm [<|>] <int>" << "\n";
-                *conn << "  sql <str>" << "\n";
-
-                break;
-            }
-            if (str == "show" || str == "ls" || str == "filter")
-            {
-                *conn << "filter: " << filter << "\n";
-                break;
-            }
-            if (str == "clear" || str == "reset")
-            {
-                filter = "";
-                immsdb.install_filter(filter);
-                break;
-            }
-            if (str == "sql")
-            {
-                if (parsed.front() == "=")
-                    parsed.pop_front();
-                filter = consume(parsed);
-                int n = immsdb.install_filter(filter);
-                *conn << itos(n) << " hits" << "\n";
-                break;
-            }
-            if (str == "artist")
-            {
-                if (parsed.empty())
-                {
-                    *conn << "artist: parameter required" << "\n";
-                    return;
-                }
-                if (parsed.front() == "=")
-                    parsed.pop_front();
-                str = consume(parsed);
-                if (filter != "")
-                    filter += predicate + " ";
-                filter += "similar(Info.artist, '"
-                    + string_normalize(str) + "') ";
-                int n = immsdb.install_filter(filter);
-                *conn << itos(n) << " hits" << "\n";
-                break;
-            }
-            if (str == "rating")
-            {
-                str = getnum(parsed);
-                if (str == "")
-                {
-                    *conn << "rating: parse error" << "\n";
-                    return;
-                }
-
-                if (filter != "")
-                    filter += predicate + " ";
-                filter += "Rating.rating " + str + " ";
-                int n = immsdb.install_filter(filter);
-                *conn << itos(n) << " hits" << "\n";
-                break;
-            }
-            if (str == "bpm")
-            {
-                str = getnum(parsed);
-                if (str == "")
-                {
-                    *conn << "bpm: parse error" << "\n";
-                    return;
-                }
-
-                if (filter != "")
-                    filter += predicate + " ";
-                filter += "Acoustic.bpm " + str + " ";
-                int n = immsdb.install_filter(filter);
-                *conn << itos(n) << " hits" << "\n";
-                break;
-            }
-
-            *conn << "parse error at " << str << "\n";
-            return;
+            predicate = str;
+            continue;
         }
-    
-        if (parsed.size())
-            *conn << "warning: ignored after " << parsed.front() << "\n";
+
+        if (str == "help")
+        {
+            *conn << "known commands:" << "\n";
+            *conn << "  show" << "\n";
+            *conn << "  clear" << "\n";
+            *conn << "  [or|and] artist <str>" << "\n";
+            *conn << "  [or|and] rating [<|>] <int>" << "\n";
+            *conn << "  [or|and] bpm [<|>] <int>" << "\n";
+            *conn << "  sql <str>" << "\n";
+
+            break;
+        }
+        if (str == "show" || str == "ls" || str == "filter")
+        {
+            *conn << "filter: " << filter << "\n";
+            break;
+        }
+        if (str == "clear" || str == "reset")
+        {
+            filter = "";
+            immsdb.install_filter(filter);
+            break;
+        }
+        if (str == "artist" || str == "sql" || str == "rating" || str == "bpm")
+        {
+            string params;
+            if (str == "artist" || str == "sql")
+            {
+                if (parsed.front() == "=")
+                    parsed.pop_front();
+                params = consume(parsed);
+            }
+            else
+                params = getnum(parsed);
+
+            if (params == "")
+            {
+                *conn << str << ": parse error" << "\n";
+                return;
+            }
+
+            if (predicate == "")
+                filter = "";
+            if (filter != "")
+                filter += predicate + " ";
+
+            if (str == "sql")
+                filter = params;
+            else if (str == "artist")
+                filter += "similar(Info.artist, '"
+                    + string_normalize(params) + "') ";
+            else if (str == "rating")
+                filter += "Rating.rating " + params + " ";
+            else if (str == "bpm")
+                filter += "Acoustic.bpm " + params + " ";
+
+            int n = immsdb.install_filter(filter);
+            *conn << itos(n) << " hits" << "\n";
+            break;
+        }
+
+        *conn << "parse error at " << str << "\n";
+        return;
     }
+
+    if (parsed.size())
+        *conn << "warning: ignored after " << parsed.front() << "\n";
 }
 
 ImmsServer::~ImmsServer()
