@@ -32,8 +32,32 @@ static inline bool roughly_double(int a, int b)
     return abs(a - 2 * b) < 6;
 }
 
+bool BeatKeeper::check_peak(int index, float minampl)
+{
+    float max_pos_dist = 0, max_neg_dist = 0;
+    int pos_had_ups = 0, neg_had_ups = 0;
+    for (int i = 2; index + i < BEATSSIZE && i < 8; ++i)
+    {
+        if (pos_had_ups < 2 && index + i < BEATSSIZE 
+                && beats[index] - beats[index + i] > max_pos_dist)
+            max_pos_dist = beats[index] - beats[index + i];
+        if (neg_had_ups < 2 && index - i > -1
+                && beats[index] - beats[index - i] > max_neg_dist)
+            max_neg_dist = beats[index] - beats[index - i];
+
+        pos_had_ups += beats[index + i] > beats[index + i - 1];
+        neg_had_ups += beats[index - i] > beats[index - i + 1];
+    }
+
+    bool res = max_pos_dist > minampl && max_neg_dist > minampl;
+    if (!res)
+        cerr << "rejecting peak @ " << index << " ("
+            << max_pos_dist << "/" << max_neg_dist << ")" << endl;
+    return max_pos_dist > minampl && max_neg_dist > minampl;
+}
+
 int BeatKeeper::peak_finder_helper(vector<int> &peaks, int min,
-        int max, float cutoff)
+        int max, float cutoff, float range)
 {
     int count = 0;
     for (int i = min; i < max; ++i)
@@ -51,7 +75,7 @@ int BeatKeeper::peak_finder_helper(vector<int> &peaks, int min,
             ++i;
         }
 
-        if (local_max)
+        if (local_max && check_peak(index, range * 0.2))
         {
             ++count;
             cerr << " >> found peak @ " << offset2bpm(index) << endl;
@@ -59,6 +83,20 @@ int BeatKeeper::peak_finder_helper(vector<int> &peaks, int min,
         }
     }
     return count;
+}
+
+int BeatKeeper::maybe_double(int i, float min, float range)
+{
+    vector<int> dpeaks;
+    int found = peak_finder_helper(dpeaks, i / 2 - 5, i / 2 + 5,
+            min + range / 2, range * 0.4);
+
+    if (found == 1)
+    {
+        cerr << "upgrading " << i << " to " << dpeaks.front() << endl;
+        return dpeaks.front();
+    }
+    return i;
 }
 
 int BeatKeeper::getBPM()
@@ -92,14 +130,15 @@ int BeatKeeper::getBPM()
     }
 
     // look at the top 20%
-    float cutoff = min + (max - min) * 0.80;
+    float range = max - min;
+    float cutoff = min + range * 0.80;
 
     int totalpeaks = 0;
     vector<int> slowpeaks;
     vector<int> fastpeaks;
     // offset = 38 --> 93 bpm
-    totalpeaks += peak_finder_helper(slowpeaks, 38, BEATSSIZE, cutoff);
-    totalpeaks += peak_finder_helper(fastpeaks, 0, 38, cutoff);
+    totalpeaks += peak_finder_helper(slowpeaks, 38, BEATSSIZE, cutoff, range);
+    totalpeaks += peak_finder_helper(fastpeaks, 0, 38, cutoff, range);
 
     reset();
 
@@ -107,13 +146,38 @@ int BeatKeeper::getBPM()
         return -1;
 
     if (totalpeaks == 1)
-        return fastpeaks.empty() ? slowpeaks.front() : fastpeaks.front();
+        return fastpeaks.empty() ?
+            maybe_double(slowpeaks.front(), min, range) : fastpeaks.front();
 
+    // look for peaks that are at double the bpm from each other
     if (!fastpeaks.empty())
         for (vector<int>::iterator i = slowpeaks.begin();
                 i != slowpeaks.end(); ++i)
             if (roughly_double(fastpeaks.front(), *i))
                 return fastpeaks.front();
+
+    // see if only one of the slow peaks doubles
+    if (fastpeaks.empty())
+    {
+        int peak, count = 0;
+        for (vector<int>::iterator i = slowpeaks.begin();
+                i != slowpeaks.end(); ++i)
+        {
+            int dbl = maybe_double(*i, min, range);
+            if (*i != dbl)
+            {
+                peak = dbl;
+                ++count;
+            }
+        }
+        if (count == 1)
+            return peak;
+        return -1;
+    }
+
+    // see if there is only one peak in fasts below ~145
+    if (fastpeaks.size() == 1 || (fastpeaks.size() > 1 && fastpeaks[1] > 145))
+        return fastpeaks.front();
 
     return -1;
 }
@@ -140,7 +204,6 @@ void BeatKeeper::integrate_beat(float power)
     if (!first)
     {
         first = last;
-        prev = now;
     }
 
     // find out how many timeslices we should count this sample for
@@ -148,7 +211,11 @@ void BeatKeeper::integrate_beat(float power)
     int count_for = ROUND(diff * SAMPLES / (float)MICRO) % 10;
 
     samples += count_for;
-    prev += count_for * MICRO / SAMPLES;
+
+    if (diff > MICRO)
+        prev = now;
+    else 
+        prev += count_for * MICRO / SAMPLES;
 
     for (int i = 0; i < count_for; ++i)
     {
