@@ -165,10 +165,9 @@ int SongPicker::select_next()
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
-        float scale = 1 + 0.33 * (i->trend ? int((i->trend + 8) / 9): 0);
-        i->last_played = ROUND(i->last_played * scale);
-        if (i->last_played > max_last_played)
-            max_last_played = i->last_played;
+        time_t effective_last_played = ROUND(i->last_played * i->trend_scale);
+        if (effective_last_played > max_last_played)
+            max_last_played = effective_last_played;
     }
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
@@ -176,8 +175,8 @@ int SongPicker::select_next()
         i->composite_rating = i->rating + i->relation +
             i->specrating + i->bpmrating + i->newness;
 
-        i->composite_rating = ROUND(i->composite_rating 
-                * i->last_played / (double)max_last_played);
+        i->composite_rating = ROUND(i->composite_rating * i->last_played
+                * i->trend_scale / (double)max_last_played);
         
         if (i->composite_rating > max_composite)
             max_composite = i->composite_rating;

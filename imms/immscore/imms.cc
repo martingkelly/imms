@@ -24,11 +24,11 @@ using std::ofstream;
 #define     CONS_NON_SKIP_RATE      1
 #define     JUMPED_TO_FINNISHED     7
 #define     NO_XIDLE_BONUS          1
-#define     INTERACTIVE_BONUS       2
 #define     JUMPED_FROM             -1
 #define     JUMPED_TO_SKIPPED       1
+#define     INTERACTIVE_BONUS       2
 
-#define     MAX_TIME                20*DAY
+#define     MAX_TIME                21*DAY
 
 #define     MAX_CORRELATION         12.0
 #define     SECONDARY               0.3
@@ -40,7 +40,6 @@ using std::ofstream;
 #define     BPM_RADIUS              2.5
 
 #define     LAST_EXPIRE             HOUR
-#define     MAX_TREND               20
 
 #define     TERM_WIDTH              80
 
@@ -167,7 +166,12 @@ void Imms::print_song_info()
     fout << resetiosflags(std::ios::showpos);
 
     fout << "] [Last: " << strtime(current.last_played) <<
-        (current.last_played == local_max ?  "!" : "") << "] ";
+        (current.last_played == local_max ?  "!" : "");
+
+    if (current.trend_scale != 1)
+        fout << "*" << current.trend_scale;
+       
+    fout << "] ";
 
     fout << (!current.identified ? "[Unknown] " : "");
     fout << (!current.get_playcounter() ? "[New] " : "");
@@ -238,7 +242,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     fout << (jumped ? "[Jumped] " : "");
     fout << (!jumped && last_skipped ? "[Skipped] " : "");
     fout << "[Delta " << setiosflags(std::ios::showpos) << mod <<
-        resetiosflags (std::ios::showpos) << "] ";
+        resetiosflags(std::ios::showpos) << "] ";
     fout << endl;
 
     last_jumped = jumped;
