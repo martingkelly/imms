@@ -161,13 +161,12 @@ void quit(int signum)
 int main(int argc, char **argv)
 {
     int r = mkdir(get_imms_root().c_str(), 0700);
-    if (r && r != EEXIST)
+    if (r < 0 && errno != EEXIST)
     {
         cerr << "IMMSd: could not create directory " 
-            << get_imms_root() << ": " << strerror(r) << endl;
+            << get_imms_root() << ": " << strerror(errno) << endl;
         exit(r);
     }
-    
 
     StackLockFile lock(get_imms_root(".immsd_lock"));
     if (!lock.isok())

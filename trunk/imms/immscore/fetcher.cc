@@ -9,9 +9,6 @@
 #include "md5digest.h"
 #include "utils.h"
 
-#define     NEW_PLAYS               2
-#define     NEW_BONUS               20
-
 using std::endl;
 using std::cerr;
 
@@ -24,7 +21,8 @@ InfoFetcher::SongData::SongData(int _position, const string &_path)
 void InfoFetcher::SongData::reset()
 {
     bpmrating = specrating = rating = relation = 0;
-    trend = composite_rating = newness = 0;
+    composite_rating = newness = 0;
+    trend_scale = 0;
     identified = false;
     last_played = 0;
 }
@@ -92,7 +90,9 @@ bool InfoFetcher::fetch_song_info(SongData &data)
             std::min(BasicDb::avg_playcounter(), NEW_PLAYS))
         data.newness = NEW_BONUS / (data.get_playcounter() + 1);
 
-    data.trend = data.get_trend();
+    int trend = data.get_trend();
+    data.trend_scale = 1 + (1 / TREND_FACTOR) *
+        (trend ? trend * TREND_FACTOR / MAX_TREND : 0);
 
     return true;
 }
