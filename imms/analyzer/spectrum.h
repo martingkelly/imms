@@ -60,7 +60,7 @@ class SpectrumAnalyzer
 public:
     SpectrumAnalyzer(const string &path);
     ~SpectrumAnalyzer() { finalize(); }
-    void integrate_spectrum(float long_spectrum[LONGSPECTRUM]);
+    void integrate_spectrum(double long_spectrum[LONGSPECTRUM]);
     void finalize();
 
     bool is_known();
