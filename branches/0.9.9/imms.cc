@@ -36,9 +36,9 @@ using std::list;
 
 #define     SAMPLE_SIZE             40
 #define     MIN_SAMPLE_SIZE         15
-#define     MAX_ATTEMPTS            (SAMPLE_SIZE+MIN_SAMPLE_SIZE)
+#define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
 #define     BASE_BIAS               10
-#define     DISPERSION_FACTOR       4.2
+#define     DISPERSION_FACTOR       4.0
 #define     MAX_TIME                20*DAY
 #define     MAX_RATING              150
 #define     MIN_RATING              75
@@ -174,12 +174,13 @@ int Imms::select_next()
             min_composite = i->composite_rating;
     }
 
-    if (max_composite > MIN_RATING && min_composite < MIN_RATING)
+    bool have_good = (max_composite > MIN_RATING);
+    if (have_good && min_composite < MIN_RATING)
         min_composite = MIN_RATING;
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
-        if (i->composite_rating < MIN_RATING)
+        if (have_good && i->composite_rating < MIN_RATING)
         {
             i->composite_rating = 0;
             continue;
