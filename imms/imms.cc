@@ -119,10 +119,11 @@ int Imms::get_previous()
     return result;
 }
 
-void Imms::start_song(int position, const string &path)
+void Imms::start_song(int position, string path)
 {
     XIdle::reset();
 
+    path = path_normalize(path);
     revalidate_current(position, path);
 
     history.push_back(position);
