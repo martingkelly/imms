@@ -38,7 +38,7 @@ using std::list;
 #define     MIN_SAMPLE_SIZE         15
 #define     MAX_ATTEMPTS            (SAMPLE_SIZE+MIN_SAMPLE_SIZE)
 #define     BASE_BIAS               10
-#define     DISPERSION_FACTOR       4
+#define     DISPERSION_FACTOR       4.2
 #define     MAX_TIME                20*DAY
 #define     MAX_RATING              150
 #define     MIN_RATING              75
@@ -258,11 +258,10 @@ void Imms::print_song_info()
     fout << "]\n  [Rating: " << winner.rating;
     if (winner.relation)
         fout << setiosflags(std::ios::showpos) << winner.relation
-            << resetiosflags(std::ios::showpos) << "!";
+            << resetiosflags(std::ios::showpos) << "x";
 
-    fout << "] [Last: " << 
-        (winner.last_played == local_max ?
-            "max" : strtime(winner.last_played)) << "] ";
+    fout << "] [Last: " << strtime(winner.last_played) <<
+        (winner.last_played == local_max ?  "!" : "") << "] ";
 
     fout << (!winner.identified ? "[Unknown] " : "");
     fout << (winner.unrated ? "[New] " : "");
@@ -385,8 +384,8 @@ bool Imms::fetch_song_info(SongData &data)
         data.relation = 15;
 
 #ifdef DEBUG
-    cerr << "path:\t" << path << endl;
 #if 0
+    cerr << "path:\t" << path << endl;
     cerr << "artist:\t" << artist << (identified ? " *" : "") << endl;
     cerr << "title:\t" << title << (identified ? " *" : "") << endl;
 #endif
