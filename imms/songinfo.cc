@@ -83,22 +83,20 @@ OggInfo::OggInfo(const string &filename)
 {
     comment = 0;
 
-    FILE *fh = fopen(filename.c_str(), "rw");
+    FILE *fh = fopen(filename.c_str(), "r");
     if (!fh)
         return;
 
-    OggVorbis_File vf;
     if (ov_open(fh, &vf, NULL, 0))
         return;
 
     comment = ov_comment(&vf, -1);
-
-    fclose(fh);
 }
 
 OggInfo::~OggInfo()
 {
     vorbis_comment_clear(comment);
+    ov_clear(&vf);
 }
 
 string OggInfo::get_comment(const string &id)

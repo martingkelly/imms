@@ -14,7 +14,7 @@ using std::cerr;
 #define CORRELATION_TIME    (15*30)   // n * 30 ==> n minutes
 #define MAX_CORR_STR        "15"
 #define MAX_CORRELATION     15
-#define SECOND_DEGREE       0.5
+#define SECOND_DEGREE       0.6
 
 #define MAX(x,y) (x > y ? x : y)
 #define MIN(x,y) (x < y ? x : y)
@@ -84,7 +84,7 @@ void ImmsDb::add_recent(int weight)
 void ImmsDb::expire_recent(const string &where_clause)
 {
     select_query(
-            "SELECT sid, weight FROM 'Recent' " + where_clause + " LIMIT 5;",
+            "SELECT sid, weight FROM 'Recent' " + where_clause + " LIMIT 7;",
             (SqlCallback)&ImmsDb::expire_recent_callback_1, 2);
 }
 

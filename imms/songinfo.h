@@ -87,6 +87,8 @@ public:
     ~OggInfo();
 private:
     string get_comment(const string &id);
+
+    OggVorbis_File vf;
     vorbis_comment *comment;
 };
 #endif
