@@ -24,6 +24,7 @@ SongPicker::SongPicker() : current(0, "current"), winner(0, "winner")
 
 void SongPicker::reset()
 {
+    playlist_ready = 0;
     candidates.clear();
     acquired = attempts = 0;
 }
@@ -35,15 +36,31 @@ bool SongPicker::add_candidate(bool urgent)
     ++attempts;
 
     int want = urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE;
-    if (acquired >= std::min(want, pl_length))
+    if (acquired >= std::min(want, pl_length - 2))
         return false;
 
-    int position = ImmsDb::random_playlist_position();
-    if (position < 0)
-        position = imms_random(pl_length);
+    int position = 0;
+    while (1)
+    {
+        position = ImmsDb::random_playlist_position();
+        if (position < 0)
+            position = imms_random(pl_length);
+
+        for (Candidates::iterator i = candidates.begin();
+              i != candidates.end(); ++i)
+        {
+            if (i->position == position)
+                continue;
+        }
+        break;
+    }
+
     string path = ImmsDb::get_item_from_playlist(position);
 
     request_playlist_item(position);
+
+    if (path == "")
+        return false;
 
     SongData data(position, path);
 
@@ -64,12 +81,10 @@ bool SongPicker::add_candidate(bool urgent)
 
 void SongPicker::identify_more()
 {
-    if (playlist_ready)
-        return;
     int pos = ImmsDb::get_unknown_playlist_item();
     if (pos < 0)
     {
-        playlist_ready = true;
+        playlist_ready = 2;
         return;
     }
     identify_playlist_item(pos);
@@ -77,9 +92,9 @@ void SongPicker::identify_more()
 
 void SongPicker::do_events()
 {
-    bool more = false;
-    for (int i = 0; i < 4 && (more = add_candidate()); ++i);
-    if (!more)
+    if (playlist_ready)
+        for (int i = 0; i < 5 && add_candidate(); ++i);
+    if (playlist_ready == 1)
         identify_more();
 }
 
@@ -98,6 +113,9 @@ void SongPicker::revalidate_current(int pos, const string &path)
 
 int SongPicker::select_next()
 {
+    if (PlaylistDb::get_effective_playlist_length(true) < pl_length - 2)
+        return -1;
+
     if (candidates.size() < MIN_SAMPLE_SIZE)
         while (add_candidate(true));
 

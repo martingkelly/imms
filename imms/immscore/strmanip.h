@@ -84,6 +84,7 @@ inline string string_brfilter(string s)
     return news;
 };            
 
+string trim(const string &s);
 string string_normalize(string s);
 string title_filter(const string &title);
 string album_filter(const string &album);

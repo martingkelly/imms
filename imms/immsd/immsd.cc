@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "imms.h"
+#include "strmanip.h"
 #include "utils.h"
 #include "serverstub.h"
 #include "socketserver.h"
@@ -42,6 +43,21 @@ public:
 
         exit(0);
     }
+    void check_playlist_item(int pos, const string &path)
+    {
+        string oldpath = imms->get_item_from_playlist(pos);
+        if (oldpath != "")
+        {
+            if (oldpath != path)
+            {
+                cerr << "IMMSd: playlist triggered refresh: "
+                    << oldpath << " != " << path << endl;
+                write_command("PlaylistChanged");
+            }
+        }
+        else
+            imms->playlist_insert_item(pos, path);
+    }
     void process_line(const string &line)
     {
         stringstream sstr;
@@ -50,8 +66,7 @@ public:
         string command = "";
         sstr >> command;
 #ifdef DEBUG
-        cerr << "Got line: " << line << endl;
-        cerr << "The command is: " << command << endl;
+        cerr << "> " << line << endl;
 #endif
 
         if (command == "Setup")
@@ -64,8 +79,11 @@ public:
         if (command == "StartSong")
         {
             int pos;
+            sstr >> pos;
             string path;
-            sstr >> pos >> path;
+            getline(sstr, path);
+            path = path_normalize(path);
+            check_playlist_item(pos, path);
             imms->start_song(pos, path);
             return;
         }
@@ -80,16 +98,10 @@ public:
         {
             int pos;
             sstr >> pos;
-            string path = sstr.str();
-            string oldpath = imms->get_item_from_playlist(pos);
-            cerr << "item " << pos << ": " << path << endl;
-            if (oldpath != "")
-            {
-                if (oldpath != path)
-                    write_command("PlaylistChanged");
-            }
-            else
-                imms->playlist_insert_item(pos, path);
+            string path;
+            getline(sstr, path);
+            path = path_normalize(path);
+            check_playlist_item(pos, path);
             return;
         }
         if (command == "PlaylistChanged")
@@ -100,11 +112,19 @@ public:
             cerr << "got playlist length = " << length << endl;
 #endif
             imms->playlist_changed(length);
+            write_command("GetEntirePlaylist");
 
             return;
         }
         if (command == "SelectNext")
         {
+            int pos = imms->select_next();
+            if (pos == -1)
+            {
+                write_command("TryAgain");
+                return;
+            }
+            write_command("EnqueueNext " + itos(pos));
             return;
         }
         cerr << "IMMSd: Unknown command: " << command << endl;

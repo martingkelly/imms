@@ -8,23 +8,27 @@
 #include <stdlib.h>
 
 #include <sstream>
+#include <iostream>
 
 using std::stringstream;
 using std::ostringstream;
+using std::cerr;
+using std::endl;
 
 template <typename Ops>
 class IMMSClient : public IMMSClientStub, protected GIOSocket 
 {
 public:
-    IMMSClient() : connected(false) { connect(); }
+    IMMSClient() : connected(false) { }
     bool connect()
     {
         int fd = socket_connect(get_imms_root("socket"));
-        if (fd < 1)
+        if (fd > 0)
         {
             init(fd);
             return connected = true;
         }
+        cerr << "Connection failed: " << strerror(errno) << endl;
         return false;
     }
     virtual void write_command(const string &line)
@@ -34,12 +38,21 @@ public:
         stringstream sstr;
         sstr << line;
 
+#ifdef DEBUG
+        cerr << "< " << line << endl;
+#endif
+
         string command = "";
         sstr >> command;
 
         if (command == "ResetSelection")
         {
             Ops::reset_selection();
+            return;
+        }
+        if (command == "TryAgain")
+        {
+            write_command("SelectNext");
             return;
         }
         if (command == "EnqueueNext")
@@ -49,7 +62,7 @@ public:
             Ops::set_next(next);
             return;
         }
-        if (command == "RequestPlaylistChange")
+        if (command == "PlaylistChanged")
         {
             IMMSClientStub::playlist_changed(Ops::get_length());
             return;

@@ -56,7 +56,7 @@ XMMSClient *imms = 0;
 
 static void enqueue_next()
 {
-    if (just_enqueued  || select_pending)
+    if (just_enqueued || select_pending)
     {
         --just_enqueued;
         return;
@@ -208,7 +208,7 @@ void do_checks()
     int qlength = xmms_remote_get_playqueue_length(session);
     if (qlength > 1)
         xmms_reset_selection();
-    else if (!qlength && !select_pending)
+    else if (!qlength)
         enqueue_next();
 }
 

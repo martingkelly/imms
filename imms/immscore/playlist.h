@@ -19,7 +19,7 @@ public:
 
     int install_filter(const string &filter);
     int random_playlist_position();
-    int get_effective_playlist_length();
+    int get_effective_playlist_length(bool nofilter = false);
     time_t get_average_first_seen();
 
     void playlist_clear();

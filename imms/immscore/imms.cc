@@ -91,8 +91,6 @@ void Imms::playlist_changed(int length)
 
     ImmsDb::clear_recent();
     SongPicker::reset();
-
-    playlist_ready = false;
 } 
 
 void Imms::reset_selection()

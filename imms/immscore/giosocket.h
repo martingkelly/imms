@@ -6,6 +6,8 @@
 #include <string>
 #include <list>
 #include <iostream>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "immsconf.h"
 
@@ -23,6 +25,8 @@ public:
     bool isok() { return con; }
     void init(int fd)
     {
+        fcntl(fd, F_SETFD, O_NONBLOCK);
+
         con = g_io_channel_unix_new(fd);
         g_io_add_watch(con,
                 (GIOCondition)(G_IO_IN | G_IO_PRI | G_IO_ERR | G_IO_HUP),
@@ -42,6 +46,9 @@ public:
             g_io_channel_close(con);
             g_io_channel_unref(con);
         }
+        inbuf = "";
+        outbuf.clear();
+        outp = 0;
         con = 0;
     }
 
@@ -68,7 +75,6 @@ public:
             GIOError e = g_io_channel_read(con, buf, sizeof(buf), &n);
             if (e == G_IO_ERROR_NONE)
             {
-                cerr << "read " << n << " bytes" << endl;
                 buf[n] = '\0';
                 char *lineend = strchr(buf, '\n');
                 if (lineend)
@@ -113,6 +119,7 @@ public:
         if (condition & G_IO_HUP)
         {
             connection_lost();
+            close();
             cerr << "Connection terminated." << endl;
             return false;
         }

@@ -60,12 +60,6 @@ SocketServer::~SocketServer()
 
 void SocketServer::_connection_established()
 {
-    if (isok())
-    {
-        cerr << "IMMS: Another session is already active" << endl;
-        return;
-    }
-
     struct sockaddr_un sun;
     memset(&sun, 0, sizeof(sun));
     socklen_t size = 0;
