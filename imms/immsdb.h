@@ -46,7 +46,6 @@ protected:
     int expire_recent_callback_1(int argc, char **argv);
     int expire_recent_callback_2(int argc, char **argv);
     int update_secondaty_correlations(int argc, char **argv);
-    void update_secondaty_correlations_2(int p, int q);
 
     void sql_create_tables();
     void sql_schema_upgrade();
