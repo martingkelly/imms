@@ -44,6 +44,8 @@ public:
     bool check_artist(string &artist);
     bool check_title(string &title);
 
+    void clear_recent() { expire_recent(""); }
+
 protected:
     void register_new_sid(int new_sid = -1);
 
@@ -53,6 +55,7 @@ protected:
     int expire_recent_callback_2(int argc, char **argv);
     int update_secondaty_correlations(int argc, char **argv);
 
+    void sql_set_pragma();
     void sql_create_tables();
     void sql_schema_upgrade();
 

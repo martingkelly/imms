@@ -9,9 +9,9 @@
 using std::endl;
 using std::cerr; 
 
-#define SCHEMA_VERSION 4
+#define SCHEMA_VERSION 5
 
-#define CORRELATION_TIME    (15*30)   // n * 30 ==> n minutes
+#define CORRELATION_TIME    (10*30)   // n * 30 ==> n minutes
 #define MAX_CORR_STR        "15"
 #define MAX_CORRELATION     15
 #define SECOND_DEGREE       0.5
@@ -19,16 +19,41 @@ using std::cerr;
 #define MAX(x,y) (x > y ? x : y)
 #define MIN(x,y) (x < y ? x : y)
 
+static inline time_t usec_diff(struct timeval &tv1, struct timeval &tv2)
+{
+    return (tv2.tv_sec - tv1.tv_sec) * 1000000 + tv2.tv_usec - tv1.tv_usec;
+}
+
+static inline string mkkey(int i, int j)
+{
+    int min = MIN(i, j);
+    int max = MAX(i, j);
+    return itos(min) + "|" + itos(max);
+}
+
+static inline string mkkey(string i, string j)
+{
+    return i + "|" + j;
+}
+
 ImmsDb::ImmsDb()
     : SqlDb(string(getenv("HOME")).append("/.imms/imms.db"))
 {
+    sql_set_pragma();
     sql_schema_upgrade();
     sql_create_tables();
 }
 
 ImmsDb::~ImmsDb()
 {
-    expire_recent("");
+    clear_recent();
+}
+
+void ImmsDb::sql_set_pragma()
+{
+    run_query("PRAGMA cache_size = 6666");
+    run_query("PRAGMA synchronous = OFF;");
+    run_query("PRAGMA temp_store = MEMORY;");
 }
 
 void ImmsDb::sql_create_tables()
@@ -65,6 +90,7 @@ void ImmsDb::sql_create_tables()
 
     run_query(
             "CREATE TABLE 'Correlations' ("
+                "'key' VARCHAR(13) UNIQUE NOT NULL, "
                 "'origin' INTEGER NOT NULL, "
                 "'destination' INTEGER NOT NULL, "
                 "'weight' INTEGER DEFAULT '0');");
@@ -95,11 +121,13 @@ void ImmsDb::expire_recent(const string &where_clause)
     select_query(
             "SELECT sid, weight FROM 'Recent' " + where_clause + ";",
             (SqlCallback)&ImmsDb::expire_recent_callback_1, 2);
-}
 
-static inline time_t usec_diff(struct timeval &tv1, struct timeval &tv2)
-{
-    return (tv2.tv_sec - tv1.tv_sec) * 1000000 + tv2.tv_usec - tv1.tv_usec;
+#ifdef DEBUG
+    struct timeval now;
+    gettimeofday(&now, 0);
+    int msec = usec_diff(start, now) / 1000;
+    cerr << "Update took " << msec << " microseconds." << endl;
+#endif
 }
 
 int ImmsDb::expire_recent_callback_1(int argc, char **argv)
@@ -138,12 +166,12 @@ int ImmsDb::expire_recent_callback_2(int argc, char **argv)
         return 4; // SQLITE_ABORT
 
 #ifdef DEBUG
-    cerr << string(55, '-') << endl;
-    cerr << "processing update between " << MIN(from, to) <<
+    std::cout << string(55, '-') << endl;
+    std::cout << "processing update between " << MIN(from, to) <<
         " and " << MAX(from, to) << endl;
 #endif
 
-    weight = sqrt(abs(from_weight*to_weight));
+    weight = sqrt(abs(from_weight * to_weight));
 
     if (from_weight < 0 || to_weight < 0)
         weight = -weight;
@@ -151,12 +179,12 @@ int ImmsDb::expire_recent_callback_2(int argc, char **argv)
     // Update the primary link
     update_correlation(from, to, weight);
 
-    if (fabs(weight) <= 3)
+    if (fabs(weight) < 3)
         return 0;
 
     // Update secondary links
     select_query(
-            "SELECT * FROM 'Correlations' "
+            "SELECT origin,destination,weight FROM 'Correlations' "
             "WHERE ("
                     "origin = '" + itos(to) + "' "
                     "OR origin = '" + itos(from) + "' "
@@ -164,6 +192,7 @@ int ImmsDb::expire_recent_callback_2(int argc, char **argv)
                     "OR destination = '" + itos(from) + "'"
                 ") AND " + (weight > 0 ? "abs" : "") + " (weight) > 1;",
             (SqlCallback)&ImmsDb::update_secondaty_correlations, 3);
+
     return 0;
 }
 
@@ -174,14 +203,13 @@ int ImmsDb::update_secondaty_correlations(int argc, char **argv)
     int node1 = atoi(argv[0]), node2 = atoi(argv[1]);
 
     // Don't update the primary link again
-    if ((node1 == to && node1 == from) || (node1 == from && node2 == to))
+    if ((node1 == to && node2 == from) || (node1 == from && node2 == to))
         return 0;
 
     node1 = (node1 == to ? from : (node1 == from) ? to : node1);
     node2 = (node2 == to ? from : (node2 == from) ? to : node2);
 
     float scale = atof(argv[2]) * SECOND_DEGREE / MAX_CORRELATION;
-
     update_correlation(node1, node2, weight * scale);
 
     return 0;
@@ -196,26 +224,17 @@ void ImmsDb::update_correlation(int from, int to, float weight)
 
     string min = itos(MIN(from, to)), max = itos(MAX(from, to));
 
-    // Make sure the link we are about to update exists
-    run_query(
-        "SELECT count(weight) FROM 'Correlations' "
-        "WHERE origin = '" + min + "' AND destination = '" + max + "';");
+    if (run_query("INSERT INTO 'Correlations' "
+            " ('key', 'origin', 'destination', 'weight') "
+                "VALUES ('" + mkkey(min, max) + "', '" + min +
+                "', '" + max + "', '" + itos(weight) + "');"))
+        return;
 
-    if (nrow && resultp[0] && atoi(resultp[0]))
-    {
-        run_query(
-            "UPDATE 'Correlations' SET weight = "
-                 "max(min(weight + '" + itos(weight) + "', "
-                  MAX_CORR_STR "), -" MAX_CORR_STR ") "
-            "WHERE origin = '" + min + "' AND destination = '" + max + "';");
-    }
-    else
-    {
-        run_query("INSERT INTO 'Correlations' "
-            " ('origin', 'destination', 'weight') "
-                "VALUES ('" + min + "', '" + max + "', '"
-                + itos(weight) + "');");
-    }
+    run_query(
+        "UPDATE 'Correlations' SET weight = "
+             "max(min(weight + '" + itos(weight) + "', "
+              MAX_CORR_STR "), -" MAX_CORR_STR ") "
+        "WHERE key = '" + mkkey(min, max) + "';");
 }
 
 float ImmsDb::correlate(int from)
@@ -225,8 +244,7 @@ float ImmsDb::correlate(int from)
     
     select_query(
             "SELECT weight FROM 'Correlations' "
-            "WHERE origin = '" + itos(MIN(from, sid)) + "' "
-                "AND destination = '" + itos(MAX(from, sid)) + "';");
+            "WHERE key = '" + mkkey(from, sid) + "';");
 
     return nrow && resultp[1] ? atof(resultp[1]) : 0;
 }
@@ -253,7 +271,8 @@ int ImmsDb::identify(const string &path, time_t modtime)
     return -1;
 }
 
-int ImmsDb::identify(const string &path, time_t modtime, const string &checksum)
+int ImmsDb::identify(const string &path, time_t modtime,
+        const string &checksum)
 {
     // old path but modtime has changed - update checksum
     if (nrow)
@@ -468,12 +487,16 @@ void ImmsDb::register_new_sid(int new_sid)
     else
     {
         run_query(
-                "UPDATE 'Correlations' SET origin = '" + itos(new_sid) + "' "
+                "UPDATE 'Correlations' SET "
+                    "origin = '" + itos(new_sid) + "', "
+                    "key = '" + itos(new_sid) + "'||'|'||destination "
                 "WHERE origin = '" + itos(sid) + "';");
 
         run_query(
-                "UPDATE 'Correlations' SET destination = '" + itos(new_sid) + 
-                "' WHERE destination = '" + itos(sid) + "';");
+                "UPDATE 'Correlations' SET "
+                    "destination = '" + itos(new_sid) + "', "
+                    "key = origin||'|'||'" + itos(new_sid) + "' "
+                "WHERE destination = '" + itos(sid) + "';");
     }
 
     sid = new_sid;
@@ -603,6 +626,22 @@ void ImmsDb::sql_schema_upgrade()
                 "SELECT uid, sid, path, modtime, checksum "
                 "FROM Library_backup;");
         run_query("DROP TABLE Library_backup;");
+    }
+    if (schema < 5)
+    {
+        // Backup the existing tables
+        run_query("CREATE TEMP TABLE Correlations_backup "
+                   "AS SELECT * FROM Correlations;");
+        run_query("DROP TABLE Correlations;");
+
+        // Create new tables
+        sql_create_tables();
+
+        // Copy the data into new tables, and drop the backups
+        run_query("INSERT OR REPLACE INTO 'Correlations' "
+                "SELECT origin||'|'||destination,origin,destination,weight "
+                "FROM 'Correlations_backup';");
+        run_query("DROP TABLE Correlations_backup;");
     }
 
     run_query(

@@ -169,6 +169,8 @@ void ImmsTool::do_lint()
             "DELETE FROM Correlations "
             "WHERE origin NOT IN (SELECT sid FROM Library) "
             "OR destination NOT IN (SELECT sid FROM Library);");
+
+    run_query("VACUUM all;");
 }
 
 void ImmsTool::do_distance()
