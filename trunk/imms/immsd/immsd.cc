@@ -5,8 +5,7 @@
 #include "dbuscore.h"
 #include "dbusserver.h"
 
-int pl_length;
-int cur_plpos;
+int pl_length, cur_plpos;
 
 IDBusConnection activecon;
 Imms *imms;
@@ -53,7 +52,8 @@ class ImmsDFilter : public IDBusFilter
 #endif
                     delete imms;
                     imms = 0;
-                    return true;
+
+                    exit(0);
                 }
             }
 
@@ -90,7 +90,9 @@ class ImmsDFilter : public IDBusFilter
             {
                 int length;
                 message >> length;
+#ifdef DEBUG
                 cerr << "got playlist length = " << length << endl;
+#endif
                 imms->playlist_changed(length);
                 return true;
             }
@@ -103,10 +105,6 @@ class ImmsDFilter : public IDBusFilter
             }
 
             cerr << "Unhandled signal: " << message.get_member() << "!" << endl;
-        }
-        else if (message.get_type() == MTMethod)
-        {
-            cerr << "Unhandled method: " << message.get_member() << "!" << endl;
         }
 
         return false;

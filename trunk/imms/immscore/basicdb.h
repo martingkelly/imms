@@ -22,6 +22,7 @@ public:
 protected:
     void sql_set_pragma();
     virtual void sql_create_tables();
+    void sql_create_v7_tables();
     virtual void sql_schema_upgrade(int from = 0);
 };
 
