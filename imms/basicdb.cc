@@ -79,7 +79,7 @@ int BasicDb::identify(const string &path, time_t modtime)
 
     try {
         Q q("SELECT uid, sid, modtime FROM 'Library' WHERE path = ?;");
-        q << escape_string(path);
+        q << path;
 
         if (q.next())
         {
@@ -106,7 +106,7 @@ int BasicDb::identify(const string &path, time_t modtime,
         {
             Q q("UPDATE 'Library' SET modtime = ?, "
                     "checksum = ? WHERE path = ?';");
-            q << modtime << checksum << escape_string(path);
+            q << modtime << checksum << path;
             q.execute();
             a.commit();
             return uid;
@@ -135,8 +135,7 @@ int BasicDb::identify(const string &path, time_t modtime,
                         Q q("UPDATE 'Library' SET sid = -1, "
                                 "path = ?, modtime = ? WHERE path = ?;");
 
-                        q << escape_string(path) << modtime
-                            << escape_string(oldpath);
+                        q << path << modtime << oldpath;
 
                         q.execute();
                     }
@@ -163,7 +162,7 @@ int BasicDb::identify(const string &path, time_t modtime,
                     "('uid', 'sid', 'path', 'modtime', 'checksum') "
                     "VALUES (?, -1, ?, ?, ?);");
 
-            q << uid << escape_string(path) << modtime << checksum;
+            q << uid << path << modtime << checksum;
 
             q.execute();
         }
@@ -299,6 +298,7 @@ string BasicDb::get_spectrum()
         return "";
 
     string spectrum;
+    bpm = "";
     try {
         Q q("SELECT spectrum, bpm FROM 'Acoustic' WHERE uid = ?;");
         q << uid;
@@ -439,6 +439,9 @@ void BasicDb::register_new_sid()
         q << sid << uid;
         q.execute();
     }
+
+    cerr << __func__ << " registered sid = " << sid << " for uid = "
+        << uid << endl;
 }
 
 void BasicDb::set_id(const IntPair &p)
@@ -475,6 +478,8 @@ void BasicDb::set_bpm(const string &bpm)
 {
     if (uid < 0)
         return;
+
+    cerr << __func__ << " called with bpm = " << bpm << endl;
 
     try
     {

@@ -209,8 +209,13 @@ SQLQuery &SQLQuery::operator>>(int &i)
 
 SQLQuery &SQLQuery::operator>>(string &s)
 {
+    s = "";
     if (stmt)
-        s = (char *)sqlite3_column_text(stmt, curbind++);
+    {
+        char *c = (char *)sqlite3_column_text(stmt, curbind++);
+        if (c)
+            s = c;
+    }
     return *this;
 }
 

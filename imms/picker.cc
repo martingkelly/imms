@@ -47,6 +47,8 @@ bool SongPicker::add_candidate(bool urgent)
 
     if (path != realpath)
     {
+        cerr << "path triggered" << endl;
+        cerr << path << " != " << realpath << endl;
         playlist_changed();
         return true;
     }

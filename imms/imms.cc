@@ -80,6 +80,7 @@ void Imms::do_events()
 
 void Imms::playlist_changed()
 {
+    cerr << "playlist changed" << endl;
     local_max = Player::get_playlist_length() * 8 * 60;
     if (local_max > MAX_TIME)
         local_max = MAX_TIME;

@@ -111,12 +111,10 @@ void PlaylistDb::playlist_update_identity(int pos)
 
 void PlaylistDb::playlist_insert_item(int pos, const string &path)
 {
-    string epath = escape_string(path);
-
     try {
         Q q("INSERT INTO 'Playlist' ('pos', 'path', 'uid') "
                 "VALUES (?, ?, (SELECT uid FROM Library WHERE path = ?));");
-        q << pos << epath << epath;
+        q << pos << path << path;
         q.execute();
     }
     WARNIFFAILED();
