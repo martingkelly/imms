@@ -140,7 +140,6 @@ void enqueue_next()
         return;
     }
 
-    std::cerr << "queue is empty!" << std::endl;
     if (need_more)
     {
         do { next_plpos = random_index(); }
@@ -150,7 +149,6 @@ void enqueue_next()
 
     // have imms select the next song for us
     next_plpos = imms->select_next();
-    std::cerr << "enqueuing " << next_plpos << std::endl;
     xmms_remote_playqueue_add(session, next_plpos);
 
     just_enqueued = 2;

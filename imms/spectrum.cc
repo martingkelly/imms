@@ -307,7 +307,9 @@ static float scales[] =
 
 static const float scale_scale = 1.7;
 
+#ifdef DEBUG
 double max_vals[SHORTSPECTRUM] = { 0 };
+#endif
 
 SpectrumAnalyzer::SpectrumAnalyzer() : bpm_low("low"), bpm_hi("hi")
 {
@@ -439,9 +441,11 @@ void SpectrumAnalyzer::finalize()
 
     for (int i = 0; i < SHORTSPECTRUM; ++i)
     {
+#ifdef DEBUG
         if (max_vals[i] < spectrum[i])
             max_vals[i] = spectrum[i];
         cerr << max_vals[i] << endl;
+#endif
         int c = 'a' + ROUND(spectrum[i]);
         c = c > 'z' ? 'z' : (c < 'a' ? 'a' : c);
 
