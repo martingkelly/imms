@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <algorithm>
 
 #include "fetcher.h"
 #include "strmanip.h"
