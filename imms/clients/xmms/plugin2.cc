@@ -187,7 +187,13 @@ void do_checks()
         }
     }
 
-    imms->check_connection();
+    if (imms->check_connection())
+    {
+        imms->setup(xidle_val);
+        imms->playlist_changed(pl_length);
+        if (xmms_remote_is_playing(session))
+            imms->start_song(cur_plpos, cur_path);
+    }
 
     check_time();
 

@@ -60,10 +60,14 @@ public:
         client.send(m);
     }
 
-    void check_connection()
+    bool check_connection()
     {
         if (!client.isok())
+        {
             client.connect();
+            return client.isok();
+        }
+        return false;
     }
 
     void connection_lost() { client.connection_lost(); }

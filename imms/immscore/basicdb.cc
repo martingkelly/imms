@@ -196,9 +196,9 @@ void BasicDb::sql_schema_upgrade(int from)
                     "SELECT path, uid, modtime, checksum "
                     "FROM Library_backup;").execute();
 
-            Q("INSERT INTO Library "
+            Q("INSERT OR REPLACE INTO Library "
                     "(uid, sid, playcounter, lastseen, firstseen) "
-                    "SELECT DISTINCT uid, sid, 10, ?, ? FROM Library_backup;")
+                    "SELECT uid, sid, 10, ?, ? FROM Library_backup;")
                  << time(0) << time(0) << execute;
 
             Q("DROP TABLE Library_backup;").execute();

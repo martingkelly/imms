@@ -8,7 +8,7 @@ define compile
 endef
 
 # usage link(objects, output, flags) 
-link = $(CXX) $3 $(filter-out %.a,$1) $(filter %.a,$1) -o $2
+link = $(CXX) $(filter-out %.a,$1) $(filter %.a,$1) $3 -o $2
 
 %.o: %.cc; $(call compile, $(CXX), $<, $@, $($*-CXXFLAGS) $(CXXFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
 %.o: %.c; $(call compile, $(CC), $<, $@, $($*-CFLAGS) $(CFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
