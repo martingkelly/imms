@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[1.3-pre1],[mag@luminal.org])
+AC_INIT([IMMS],[1.99-pre1],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -102,7 +102,7 @@ fi
 AC_CHECK_HEADERS(fftw3.h,, [with_fftw=no])
 if test "$with_fftw" != "no"; then
     saved_libs="$LIBS"
-    LIBS=`pkg-config fftw3f --libs`
+    LIBS="`pkg-config fftw3f --libs`"
     AC_CHECK_LIB(fftw3f, fftwf_plan_dft_r2c_1d,, [with_fftw=no])
     if test "$with_fftw" = "no"; then
         AC_MSG_ERROR([FFTW 3.0 required and missing.])
@@ -118,7 +118,7 @@ if test "$with_taglib" != "no"; then
     AC_MSG_CHECKING([taglib usability])
 
     saved_libs="$LIBS"
-    LIBS="$LIBS-ltag"
+    LIBS="$LIBS -ltag"
     CPPFLAGS=`taglib-config --cflags`
 
     AC_TRY_LINK([#include <tag.h>
@@ -175,6 +175,7 @@ if test "$with_screensaver" = "no"; then
     AC_MSG_WARN([XScreenSaver is missing.])
 else
     AC_DEFINE(WITH_XSCREENSAVER,, [XScreenSaver extension])
+    LIBS="$LIBS -L/usr/X11R6/lib"
 fi
 
 AC_SUBST(CXX)

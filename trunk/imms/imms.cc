@@ -39,6 +39,7 @@ using std::ofstream;
 #define     SPECTRUM_RADIUS         3.75
 #define     BPM_RADIUS              2.5
 #define     LAST_EXPIRE             2*HOUR
+#define     MAX_TREND               20
 
 #define     TERM_WIDTH              80
 
@@ -253,7 +254,11 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     if (abs(mod) > INTERACTIVE_BONUS)
     {
         if ((trend >= 0 && mod > 0) || (trend <= 0 && mod < 0))
+        {
             trend += mod;
+            if (abs(trend) > MAX_TREND)
+                trend = trend > 0 ? MAX_TREND : - MAX_TREND;
+        }
         else 
             trend = mod;
     }
@@ -288,7 +293,9 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     if (last.acoustic.first != "" && acoustic.first != "")
     {
         float d = rms_string_distance(last.acoustic.first, acoustic.first, 15);
-        float rel =  (SPECTRUM_RADIUS - d) / SPECTRUM_RADIUS;
+        float rel = (SPECTRUM_RADIUS - d) / SPECTRUM_RADIUS;
+        if (rel < 0)
+            rel *= 2;
         data.specrating += ROUND(rel * weight * SPECTRUM_IMPACT);
     }
 
@@ -298,6 +305,8 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
                 rescale_bpmgraph(last.acoustic.second),
                 rescale_bpmgraph(acoustic.second));
         float rel =  (BPM_RADIUS - d) / BPM_RADIUS;
+        if (rel < 0)
+            rel *= 2;
         data.bpmrating += ROUND(rel * weight * BPM_IMPACT);
     }
 }

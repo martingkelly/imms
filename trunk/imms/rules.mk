@@ -11,6 +11,10 @@ link = $(CXX) $3 $(filter-out %.a,$1) $(filter %.a,$1) -o $2
 %.o: %.cc; $(call compile, $(CXX), $<, $@, $($*-CXXFLAGS) $(CXXFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
 %.o: %.c; $(call compile, $(CC), $<, $@, $($*-CFLAGS) $(CFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
 %: %.o; $(call link, $^ $($*-OBJ) $($*-LIBS) $(LIBS), $@, $(LDFLAGS))
+%.so:
+	$(CXX) $^ $($*-OBJ) $($*-LIBS) $(LIBS) \
+	    $(LDFLAGS) \
+	    -shared -Wl,-z,defs,-soname,$@ -o $@
 
 # macros that expand to the object files in the given directories
 objects=$(sort $(notdir $(foreach type,c cc,$(call objects_$(type),$1))))
@@ -34,7 +38,7 @@ system-message:
 	$(warning Use 'make install-user' to install for the current user only.)
 
 install-system: all
-	${INSTALL_PROGRAM} libimms.so `xmms-config --general-plugin-dir`
+	${INSTALL_PROGRAM} libxmmsimms.so `xmms-config --general-plugin-dir`
 	$(call installprogs)
 
 user-message:
@@ -43,5 +47,5 @@ user-message:
 
 install-user: all
 	mkdir -p ${HOME}/.xmms/Plugins/General/
-	${INSTALL_PROGRAM} libimms.so ${HOME}/.xmms/Plugins/General/
+	${INSTALL_PROGRAM} libxmmsimms.so ${HOME}/.xmms/Plugins/General/
 	$(call installprogs)

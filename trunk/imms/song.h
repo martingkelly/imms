@@ -38,6 +38,7 @@ public:
     void reset() { playcounter = uid = sid = -1; artist = title = ""; }
 protected:
     void register_new_sid();
+    void identify(time_t modtime);
 
     int uid, sid, playcounter;
     string title, artist, path;

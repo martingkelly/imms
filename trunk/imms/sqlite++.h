@@ -48,7 +48,7 @@ private:
     bool commited;
 };
 
-class SQLException
+class SQLException : public std::exception
 {
 public:
     SQLException(const string &source = "Error",
@@ -56,6 +56,7 @@ public:
         : msg(source + ": " + error) {};
     SQLException(const string &file, int line, const string &error);
     const string &what() { return msg; }
+    ~SQLException() throw () {};
 private:
     string msg;
 };
