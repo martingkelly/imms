@@ -22,7 +22,7 @@ protected:
             string path;
     };
 
-    virtual bool fetch_song_info(SongData &data);
+    virtual int fetch_song_info(SongData &data);
     virtual bool parse_song_info(const string &path, string &title);
     string email;
 };

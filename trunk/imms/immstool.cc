@@ -19,14 +19,20 @@ using std::setw;
 
 int usage()
 {
-    cout << "immstool distance|deviation|help" << endl;
+    cout << "immstool distance|deviation|test|help" << endl;
     return -1;
 }
+
+#include <utility>
+using std::pair;
+extern pair<float, float> spectrum_analyze(const string &spectstr);
+extern int spectrum_distance(const string &s1, const string &s2);
 
 class DistanceSqlDb : public SqlDb
 {
 public:
-    DistanceSqlDb(const string &_reference) : SqlDb(string(getenv("HOME")).append("/.imms/imms.db"))
+    DistanceSqlDb(const string &_reference)
+        : SqlDb(string(getenv("HOME")).append("/.imms/imms.db"))
     { reference = _reference; }
 
     void do_stuff()
@@ -36,24 +42,11 @@ public:
                 (SqlCallback)&DistanceSqlDb::spectrum_callback);
     }
 
-    int spectrum_distance(const string &str1, const string &str2)
-    {
-        int distance = 0;
-        if (str1.length() != str2.length())
-            return -1;
-    
-        static double weight[] =
-            { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
-        for (unsigned int i = 0; i < str1.length(); ++i)
-            distance += ROUND(pow(str1[i] - str2[i], 2) * weight[i]);
-
-        return distance;
-    }
-
     int spectrum_callback(int argc, char *argv[])
     {
         assert(argc == 3);
-        cout << setw(4) << spectrum_distance(reference, argv[1])
+        string temp = argv[1];
+        cout << setw(4) << spectrum_distance(reference, temp)
             << "  " << argv[1] << "  ";
 
         select_query("SELECT artist, title FROM Info "
@@ -74,7 +67,6 @@ public:
 private:
     string reference;
 };
-
 
 int main(int argc, char *argv[])
 {
@@ -135,6 +127,24 @@ int main(int argc, char *argv[])
         for (int i = 0; i < short_spectrum_size; ++i)
             cout << std::setw(4) << ROUND(deviations[i] * 10);
         cout << endl;
+    }
+    else if (!strcmp(argv[1], "test"))
+    {
+        const string bitter = "hiiikijghihhhghe";
+        const string alles = "hnpmknmghhfeddba";
+
+        pair<float, float> stats = spectrum_analyze(bitter);
+
+        cout << "spectrum " << bitter << " mean = " << (char)stats.first
+            << " dev = " << stats.second << endl;
+
+        stats = spectrum_analyze(alles);
+
+        cout << "spectrum " << alles << " mean = " << (char)stats.first
+            << " dev = " << stats.second << endl;
+
+        cout << "distance = " << spectrum_distance(alles, bitter) << endl;
+        cout << "distance = " << spectrum_distance(bitter, alles) << endl;
     }
     else if (!strcmp(argv[1], "help"))
     {

@@ -1,6 +1,5 @@
 #include <time.h>
 #include <ctype.h>
-#include <unistd.h>
 #include <math.h>
 #include <stdlib.h>     // for (s)random
 
@@ -210,10 +209,9 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     immsdb.set_rating(new_rating);
 }
 
-bool Imms::fetch_song_info(SongData &data)
+int Imms::fetch_song_info(SongData &data)
 {
-    if (!InfoFetcher::fetch_song_info(data))
-        return false;
+    int result = InfoFetcher::fetch_song_info(data);
 
     data.relation = 0;
     if (last_handpicked != -1)
@@ -225,5 +223,5 @@ bool Imms::fetch_song_info(SongData &data)
     if (data.last_played > local_max)
         data.last_played = local_max;
 
-    return true;
+    return result;
 }

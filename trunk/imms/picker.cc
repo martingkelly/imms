@@ -3,12 +3,12 @@
 #include "picker.h"
 #include "strmanip.h"
 
-#define     SAMPLE_SIZE             80
+#define     SAMPLE_SIZE             100
 #define     MIN_SAMPLE_SIZE         30
 #define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
 #define     BASE_BIAS               10
-#define     DISPERSION_FACTOR       4.0
-#define     CORRELATION_FACTOR      3
+#define     DISPERSION_FACTOR       4.1
+#define     CORRELATION_FACTOR      5
 
 using std::endl;
 using std::cerr;
@@ -21,22 +21,23 @@ SongPicker::SongPicker()
 void SongPicker::reset()
 {
     candidates.clear();
-    have_candidates = attempts = 0;
+    acquired = attempts = 0;
 }
 
-bool SongPicker::add_candidate(int playlist_num, string path, bool urgent)
+bool SongPicker::add_candidate(int position, string path, bool urgent)
 {
     ++attempts;
     if (attempts > MAX_ATTEMPTS)
         return false;
 
-    SongData data(playlist_num, path);
+    SongData data(position, path);
 
     if (find(candidates.begin(), candidates.end(), data)
             != candidates.end())
         return true;
 
-    if (!fetch_song_info(data))
+    int cost = fetch_song_info(data);
+    if (cost < 0)
     {
         // In case the playlist just a has a lot of songs that are not
         // currently accessible, don't count a failure to fetch info about
@@ -45,10 +46,10 @@ bool SongPicker::add_candidate(int playlist_num, string path, bool urgent)
         return true;
     }
 
-    ++have_candidates;
+    acquired += cost;
     candidates.push_back(data);
 
-    return have_candidates < (urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE);
+    return acquired < (urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE);
 }
 
 void SongPicker::revalidate_winner(const string &path)
@@ -118,20 +119,17 @@ int SongPicker::select_next()
         if (weight_index < 0)
         {
             winner = *i;
-#ifdef DEBUG
+#ifndef DEBUG
+            break;
+        }
+    }
+#else
             weight_index = INT_MAX;
             cerr << "{" << i->composite_rating << "} ";
-#else
-            break;
-#endif
         }
-#ifdef DEBUG
         else if (i->composite_rating)
             cerr << i->composite_rating << " ";
-#endif
     }
-
-#ifdef DEBUG
     cerr << endl;
 #endif
 
