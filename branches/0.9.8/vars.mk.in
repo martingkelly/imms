@@ -1,0 +1,17 @@
+CC = @CC@
+CXX = @CXX@
+VERSION = @PACKAGE_VERSION@
+INSTALL_PROGRAM = @INSTALL@
+DESTDIR = @prefix@
+
+SHELL = bash
+XMMS_OBJ = plugin.o interface.o libimmscore.a 
+CORE_OBJ = imms.o immsdb.o sqldb.o songinfo.o regexx.o strmanip.o \
+	   levenshtein.o xidle.o md5.o
+
+CFLAGS = `xmms-config --cflags` @DEBUG_CFLAGS@ -Wall -fPIC -D_REENTRANT
+CPPFLAGS = ${CFLAGS} -pedantic -fno-rtti
+LDFLAGS = `xmms-config --libs` @LIBS@
+ARFLAGS = rs
+
+default: all
