@@ -29,7 +29,7 @@ static inline int offset2bpm(int offset)
 
 static inline bool roughly_double(int a, int b)
 {
-    return abs(a - 2 * b) < 4;
+    return abs(a - 2 * b) < 6;
 }
 
 int BeatKeeper::peak_finder_helper(vector<int> &peaks, int min,
@@ -66,12 +66,7 @@ int BeatKeeper::getBPM()
     cerr << samples << " samples in " << last - first << " seconds: "
         << ROUND(samples / (float)(last - first)) << " samples/sec" << endl; 
 
-    std::ofstream bstats("/tmp/beats", std::ios::trunc);
-    std::ofstream bstats1("/tmp/beats1", std::ios::trunc);
-
-    for (int i = 0; i < BEATSSIZE; ++i)
-        bstats << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
-
+    // smooth ends so we don't confuse the peak finder
     int i = 0, val = 0;
     while (i < BEATSSIZE && beats[i] >= beats[i + 1]) ++i;
     val = i;
@@ -82,8 +77,10 @@ int BeatKeeper::getBPM()
     val = i - 1;
     while (++i < BEATSSIZE) beats[i] = beats[val];
 
+    std::ofstream bstats("/tmp/beats", std::ios::trunc);
+
     for (int i = 0; i < BEATSSIZE; ++i)
-        bstats1 << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
+        bstats << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
 
     float max = 0, min = INT_MAX;
     for (int i = 0; i < BEATSSIZE; ++i)
@@ -103,6 +100,8 @@ int BeatKeeper::getBPM()
     // offset = 38 --> 93 bpm
     totalpeaks += peak_finder_helper(slowpeaks, 38, BEATSSIZE, cutoff);
     totalpeaks += peak_finder_helper(fastpeaks, 0, 38, cutoff);
+
+    reset();
 
     if (!totalpeaks)
         return -1;
