@@ -1,7 +1,6 @@
 #include <time.h>
 #include <ctype.h>
 #include <math.h>
-#include <stdlib.h>     // for (s)random
 
 #include <iostream>
 #include <iomanip>
@@ -9,6 +8,7 @@
 #include "imms.h"
 #include "strmanip.h"
 #include "player.h"
+#include "utils.h"
 
 using std::string;
 using std::endl;
@@ -44,23 +44,6 @@ using std::ofstream;
 
 //////////////////////////////////////////////
 
-// Random
-int imms_random(int max)
-{
-    int rand_num;
-    static struct random_data rand_data;
-    static char rand_state[256];
-    static bool initialized = false;
-    if (!initialized)
-    {
-        initstate_r(time(0), rand_state, sizeof(rand_state), &rand_data);
-        initialized = true;
-    }
-    random_r(&rand_data, &rand_num);
-    double cof = rand_num / (RAND_MAX + 1.0);
-    return (int)(max * cof);
-}
-
 // Imms
 Imms::Imms() 
 {
@@ -87,21 +70,16 @@ void Imms::setup(const char* _email, bool use_xidle)
 
 void Imms::pump()
 {
+    SongPicker::add_candidate();
     XIdle::query();
 }
 
 void Imms::reload_playlist()
 {
-#ifdef DEBUG
-    cerr << "reloading playlist... ";
-#endif
     immsdb.clear_playlist();
 
     for (int i = 0; i < Player::get_playlist_length(); ++i)
         immsdb.insert_playlist_item(i, Player::get_playlist_item(i));
-#ifdef DEBUG
-    cerr << "done" << endl;
-#endif
 }
 
 void Imms::playlist_changed()

@@ -14,11 +14,11 @@ class SongPicker : protected InfoFetcher
 {
 public:
     SongPicker();
-    int  select_next();
-    bool add_candidate(int position, std::string path,
-            bool urgent = false);
+    int select_next();
+    virtual void playlist_changed() = 0;
 
 protected:
+    bool add_candidate(bool urgent = false);
     void revalidate_current(const std::string &path);
     void reset();
 

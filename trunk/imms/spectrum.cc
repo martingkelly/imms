@@ -7,6 +7,7 @@
 #include <map>
 
 #include "spectrum.h"
+#include "utils.h"
 
 using std::endl;
 using std::cerr;
@@ -232,11 +233,6 @@ int BeatKeeper::getBPM()
         return fastpeaks.front();
 
     return 0;
-}
-
-time_t usec_diff(struct timeval &tv1, struct timeval &tv2)
-{
-    return (tv2.tv_sec - tv1.tv_sec) * 1000000 + tv2.tv_usec - tv1.tv_usec;
 }
 
 const struct timeval& operator +=(struct timeval &tv, int usecs)

@@ -5,6 +5,7 @@
 
 #include "strmanip.h"
 #include "immsdb.h"
+#include "utils.h"
 
 using std::endl;
 using std::cerr; 
@@ -16,25 +17,11 @@ using std::cerr;
 #define MAX_CORRELATION     15
 #define SECOND_DEGREE       0.5
 
-#define MAX(x,y) (x > y ? x : y)
-#define MIN(x,y) (x < y ? x : y)
-
-static inline time_t usec_diff(struct timeval &tv1, struct timeval &tv2)
-{
-    return (tv2.tv_sec - tv1.tv_sec) * 1000000 + tv2.tv_usec - tv1.tv_usec;
-}
-
 static inline string mkkey(int i, int j)
-{
-    int min = MIN(i, j);
-    int max = MAX(i, j);
-    return itos(min) + "|" + itos(max);
-}
+    { return itos(std::min(i, j)) + "|" + itos(std::max(i, j)); }
 
 static inline string mkkey(string i, string j)
-{
-    return i + "|" + j;
-}
+    { return i + "|" + j; }
 
 ImmsDb::ImmsDb()
     : SqlDb(string(getenv("HOME")).append("/.imms/imms.db"))
@@ -97,7 +84,7 @@ void ImmsDb::sql_create_tables()
 
     run_query(
             "CREATE TEMPORARY TABLE 'Playlist' ("
-                "'index' INTEGER PRIMARY KEY, "
+                "'pos' INTEGER PRIMARY KEY, "
                 "'path' VARCHAR(4096) NOT NULL, "
                 "'uid' INTEGER DEFAULT '-1');");
 
@@ -108,19 +95,19 @@ void ImmsDb::sql_create_tables()
                 "'time' TIMESTAMP);");
 }
 
-void ImmsDb::insert_playlist_item(int index, const string &path)
+void ImmsDb::insert_playlist_item(int pos, const string &path)
 {
-    run_query("INSERT INTO 'Playlist' ('index', 'path') "
-            "VALUES ('" + itos(index) + "', '"
+    run_query("INSERT INTO 'Playlist' ('pos', 'path') "
+            "VALUES ('" + itos(pos) + "', '"
             + escape_string(path) + "');");
 }
 
-bool ImmsDb::check_playlist_item(int index, const string &path)
+string ImmsDb::get_playlist_item(int pos)
 {
     select_query("SELECT path FROM 'Playlist' "
-            "WHERE index = '" + itos(index) + "';");
+            "WHERE pos = '" + itos(pos) + "';");
 
-    return nrow && resultp[1] && path == resultp[1];
+    return nrow && resultp[1] ? resultp[1] : "";
 }
 
 void ImmsDb::clear_playlist()
@@ -193,8 +180,8 @@ int ImmsDb::expire_recent_callback_2(int argc, char **argv)
 
 #ifdef DEBUG
     cerr << string(55, '-') << endl;
-    cerr << "processing update between " << MIN(from, to) <<
-        " and " << MAX(from, to) << endl;
+    cerr << "processing update between " << std::min(from, to) <<
+        " and " << std::max(from, to) << endl;
 #endif
 
     weight = sqrt(abs(from_weight * to_weight));
@@ -244,11 +231,11 @@ int ImmsDb::update_secondaty_correlations(int argc, char **argv)
 void ImmsDb::update_correlation(int from, int to, float weight)
 {
 #ifdef DEBUG
-    cerr << " >> Updating link from " << MIN(from, to) << " to "
-        << MAX(from, to) << " by " << weight << endl;
+    cerr << " >> Updating link from " << std::min(from, to) << " to "
+        << std::max(from, to) << " by " << weight << endl;
 #endif
 
-    string min = itos(MIN(from, to)), max = itos(MAX(from, to));
+    string min = itos(std::min(from, to)), max = itos(std::max(from, to));
 
     if (run_query("INSERT INTO 'Correlations' "
             " ('key', 'origin', 'destination', 'weight') "
