@@ -43,27 +43,27 @@ bool imms_magic_preprocess_filename(string &filename)
 {
     filename = rex.replace(filename, "[-\\s_\\.]{2,}", "/");
 
-	bool confident = rex.matches();
+    bool confident = rex.matches();
 
-	if (confident)
-		return true;
+    if (confident)
+        return true;
 
-        if (extradelims != "")
+    if (extradelims != "")
     {
-            filename = rex.replace(filename, "[" + extradelims + "]",
-                    "/", Regexx::global);
+        filename = rex.replace(filename, "[" + extradelims + "]",
+                "/", Regexx::global);
         confident = rex.matches();
     }
 
-	if (!confident)
-	{
-		int spaces = rex.exec(filename, " ", Regexx::global);
-		int dashes = rex.exec(filename, "-", Regexx::global);
-		int scores = rex.exec(filename, "_", Regexx::global);
+    if (!confident)
+    {
+        int spaces = rex.exec(filename, " ", Regexx::global);
+        int dashes = rex.exec(filename, "-", Regexx::global);
+        int scores = rex.exec(filename, "_", Regexx::global);
 
-		if ((!spaces || !scores) && dashes && dashes < 3
-				&& (spaces >= dashes || scores >= dashes))
-			filename = rex.replace(filename, "-", "/", Regexx::global);
+        if ((!spaces || !scores) && dashes && dashes < 3
+                && (spaces >= dashes || scores >= dashes))
+            filename = rex.replace(filename, "-", "/", Regexx::global);
     }
 
     return confident;
