@@ -246,6 +246,20 @@ SQLQuery &SQLQuery::operator<<(int i)
     return *this;
 }
 
+SQLQuery &SQLQuery::operator<<(long i)
+{
+    if (stmt) {
+        if (sizeof(long) == 8) {
+            if (sqlite3_bind_int64(stmt, ++curbind, i))
+                throw SQLStandardException();
+        } else {
+            if (sqlite3_bind_int(stmt, ++curbind, i))
+                throw SQLStandardException();
+        }
+    }
+    return *this;
+}
+
 SQLQuery &SQLQuery::operator<<(double i)
 {
     if (stmt)
@@ -272,6 +286,17 @@ SQLQuery &SQLQuery::operator>>(int &i)
 {
     if (stmt)
         i = sqlite3_column_int(stmt, curbind++);
+    return *this;
+}
+
+SQLQuery &SQLQuery::operator>>(long &i)
+{    
+    if (stmt) {
+        if (sizeof( long ) == 8)
+            i = sqlite3_column_int64(stmt, curbind++);
+        else 
+            i = sqlite3_column_int(stmt, curbind++);
+    }
     return *this;
 }
 

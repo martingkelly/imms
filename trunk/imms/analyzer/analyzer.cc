@@ -45,9 +45,9 @@ int analyze(const string &path)
         return -4;
     }
 
-    string epath = rex.replace(path, "'", "\'", Regexx::global);
+    string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
     ostringstream command;
-    command << "nice -n 15 sox \'" << path << "\' -t .raw -w -u -c 1 -r "
+    command << "nice -n 15 sox \'" << epath << "\' -t .raw -w -u -c 1 -r "
         << SAMPLERATE << " -";
 #ifdef DEBUG
     cout << "analyzer: Executing: " << command.str() << endl;
