@@ -188,9 +188,16 @@ xmms_enable_playqueue=$enable_queuecontrol
 if test "$with_xmms" = "no"; then
     AC_MSG_WARN([Not building XMMS plugin])
 else 
-    if test "$enable_queuecontrol" != "no"; then
-        AC_CHECK_LIB(xmms, xmms_remote_playqueue_add,,
-                     [xmms_enable_playqueue=no])
+    if test "$xmms_enable_playqueue" != "no"; then
+        AC_MSG_CHECKING([for xmms_remote_playqueue_add in -lxmms])
+        saved_libs="$LIBS"
+        LIBS="$LIBS -lxmms"
+        AC_TRY_LINK([#include <xmms/xmmsctrl.h>],
+                    [xmms_remote_playqueue_add(0, 0)],
+                    [AC_MSG_RESULT(yes)],
+                    [xmms_enable_playqueue="no"
+                         AC_MSG_RESULT(no)]);
+        LIBS="$saved_libs"
     fi
     if test "$xmms_enable_playqueue" = "no"; then
         AC_APPEND(PLUGINS, libxmmsimms.so)
@@ -215,9 +222,13 @@ bmp_enable_playqueue=$enable_queuecontrol
 if test "$with_bmp" = "no"; then
     AC_MSG_WARN([Not building BMP plugin])
 else 
-    if test "$enable_queuecontrol" != "no"; then
-        AC_CHECK_LIB(beep, xmms_remote_playqueue_add,,
-                     [bmp_enable_playqueue=no])
+    if test "$bmp_enable_playqueue" != "no"; then
+        AC_MSG_CHECKING([for xmms_remote_playqueue_add in -lbeep])
+        AC_TRY_LINK([#include <bmp/beepctrl.h>],
+                    [xmms_remote_playqueue_add(0, 0)],
+                    [AC_MSG_RESULT(yes)],
+                    [bmp_enable_playqueue="no"
+                         AC_MSG_RESULT(no)]);
     fi
     if test "$bmp_enable_playqueue" = "no"; then
         AC_APPEND(PLUGINS, libbmpimms.so)

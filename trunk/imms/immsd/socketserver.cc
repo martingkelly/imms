@@ -25,7 +25,7 @@ SocketServer::SocketServer(const string &sockpath)
     if (fd < 0)
     {
         cerr << "Could not create a socket: " << strerror(errno) << endl;
-        return;
+        exit(3);
     }
 
     struct sockaddr_un sun;
@@ -35,13 +35,13 @@ SocketServer::SocketServer(const string &sockpath)
     if (bind(fd, (sockaddr*)&sun, sizeof(sun)))
     {
         cerr << "Could not bind socket: " << strerror(errno) << endl;
-        return;
+        exit(4);
     }
 
     if (listen(fd, 5))
     {
         cerr << "Could not listen: " << strerror(errno) << endl;
-        return;
+        exit(5);
     }
 
     listener = g_io_channel_unix_new(fd);
