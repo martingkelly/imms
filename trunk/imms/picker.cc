@@ -13,6 +13,17 @@
 using std::endl;
 using std::cerr;
 
+SongPicker::SongPicker()
+{
+    reset();
+}
+
+void SongPicker::reset()
+{
+    candidates.clear();
+    have_candidates = attempts = 0;
+}
+
 bool SongPicker::add_candidate(int playlist_num, string path, bool urgent)
 {
     ++attempts;
