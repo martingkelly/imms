@@ -134,6 +134,9 @@ void Imms::start_song(int position, const string &path)
 
     print_song_info();
 
+    if (last_jumped)
+        set_lastinfo(handpicked);
+
     StringPair acoustic = ImmsDb::get_acoustic();
     if (acoustic.first == "")
         system(string("analyzer \"" + path + "\" &").c_str());

@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
     {
         string str;
         if (argc > 1)
-            str = argv[1];
+            str = argv[2];
         else
             cin >> str;
         for (unsigned i = 0; i < str.length(); ++i)
