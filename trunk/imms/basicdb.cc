@@ -45,11 +45,6 @@ void BasicDb::sql_create_tables()
                 "'modtime' TIMESTAMP NOT NULL, "
                 "'checksum' TEXT NOT NULL);").execute();
 
-        Q("CREATE TABLE 'Acoustic' ("
-                "'uid' INTEGER UNIQUE NOT NULL, "
-                "'bpm' TEXT DEFAULT NULL, "
-                "'spectrum' TEXT DEFAULT NULL);").execute();
-
         Q("CREATE TABLE 'Rating' ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'rating' INTEGER NOT NULL);").execute();
@@ -292,32 +287,6 @@ StringPair BasicDb::get_info()
     return StringPair(artist, title);
 }
 
-string BasicDb::get_spectrum()
-{
-    if (uid < 0)
-        return "";
-
-    string spectrum;
-    bpm = "";
-    try {
-        Q q("SELECT spectrum, bpm FROM 'Acoustic' WHERE uid = ?;");
-        q << uid;
-        if (q.next())
-            q >> spectrum >> bpm;
-    }
-    WARNIFFAILED();
-
-    return spectrum;
-}
-
-string BasicDb::get_bpm()
-{
-    if (uid < 0)
-        return 0;
-
-    return bpm;
-}
-
 time_t BasicDb::get_last()
 {
     if (sid < 0)
@@ -450,46 +419,6 @@ void BasicDb::set_id(const IntPair &p)
     sid = p.second;
 }
 
-void BasicDb::set_spectrum(const string &spectrum)
-{
-    if (uid < 0)
-        return;
-
-    try
-    {
-        AutoTransaction a;
-        {
-            Q q("INSERT INTO 'Acoustic' ('uid') VALUES (?);");
-            q << uid;
-            q.execute();
-        }
-
-        {
-            Q q("UPDATE 'Acoustic' SET spectrum = ? WHERE uid = ?;");
-            q << spectrum << uid;
-            q.execute();
-        }
-        a.commit();
-    }
-    WARNIFFAILED();
-}
-
-void BasicDb::set_bpm(const string &bpm)
-{
-    if (uid < 0)
-        return;
-
-    cerr << __func__ << " called with bpm = " << bpm << endl;
-
-    try
-    {
-        Q q("UPDATE 'Acoustic' SET bpm = ? WHERE uid = ?;");
-        q << bpm << uid;
-        q.execute();
-    }
-    WARNIFFAILED();
-}
-
 void BasicDb::set_rating(int rating)
 {
     if (uid < 0)
@@ -526,21 +455,6 @@ void BasicDb::sql_schema_upgrade(int from)
                     "SELECT uid, sid, path, modtime, checksum "
                     "FROM Library_backup;").execute();
             Q("DROP TABLE Library_backup;").execute();
-        }
-        if (from < 6)
-        {
-            // Backup the existing tables
-            Q("CREATE TEMP TABLE Acoustic_backup "
-                    "AS SELECT * FROM Acoustic;").execute();
-            Q("DROP TABLE Acoustic;").execute();
-
-            // Create new tables
-            sql_create_tables();
-
-            // Copy the data into new tables, and drop the backups
-            Q("INSERT INTO Acoustic (uid, spectrum) "
-                    "SELECT uid, spectrum FROM Acoustic_backup;").execute();
-            Q("DROP TABLE Acoustic_backup;").execute();
         }
 
         a.commit();

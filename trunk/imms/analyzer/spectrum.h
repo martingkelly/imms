@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "immsconf.h"
-#include "immsbase.h"
 
 using std::string;
 using std::vector;
@@ -50,7 +49,7 @@ protected:
     float beats[BEATSSIZE];
 };
 
-class SpectrumAnalyzer : virtual protected ImmsBase
+class SpectrumAnalyzer
 {
 public:
     SpectrumAnalyzer();

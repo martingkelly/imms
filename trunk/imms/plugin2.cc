@@ -17,14 +17,12 @@
 
 using std::string;
 
-#define SPECTRUM_SKIP       0.15
-
 // Local vars
 static Imms *imms = NULL;
 int cur_plpos, next_plpos = -1, pl_length = -1;
 int last_plpos = -1, last_song_length = -1;
 int good_length = 0, song_length = 0, busy = 0, just_enqueued = 0, ending = 0;
-bool spectrum_ok = false, shuffle = false;
+bool shuffle = false;
 
 string cur_path = "", last_path = "";
 
@@ -64,12 +62,6 @@ void imms_cleanup(void)
 {
     delete imms;
     imms = 0;
-}
-
-void imms_spectrum(uint16_t spectrum[256])
-{
-    if (imms && spectrum_ok)
-        imms->integrate_spectrum(spectrum);
 }
 
 int random_index() { return imms_random(pl_length); }
@@ -134,9 +126,6 @@ static void check_playlist()
 static void check_time()
 {
     int cur_time = xmms_remote_get_output_time(session);
-
-    spectrum_ok = (cur_time > song_length * SPECTRUM_SKIP
-            && cur_time < song_length * (1 - SPECTRUM_SKIP));
 
     ending += song_length - cur_time < 20 * 1000
                             ? ending < 10 : -(ending > 0);

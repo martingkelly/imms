@@ -1,7 +1,9 @@
 #include <sqlite3.h>
+#include <sstream>
 
 #include "sqlite++.h"
-#include "strmanip.h"
+
+using std::ostringstream;
 
 // SQLDatabase
 
@@ -30,6 +32,8 @@ void SQLDatabase::open(const string &filename)
         close();
     if (sqlite3_open(filename.c_str(), &db_ptr))
         throw SQLStandardException();
+
+    sqlite3_busy_timeout(db(), 5000);
 }
 
 void SQLDatabase::close()
@@ -53,7 +57,11 @@ sqlite3 *SQLDatabase::db()
 } 
 
 SQLException::SQLException(const string &file, int line, const string &error)
-    : msg(file + ":" + itos(line) + ": " + error) {};
+{
+    ostringstream sstr;
+    sstr << file << ":" << line << ": " << error;
+    msg = sstr.str().c_str();
+}
 
 // SQLDatabaseConnection
 

@@ -23,7 +23,7 @@ protected:
         int composite_rating, color_rating, bpm_rating;
         bool identified, unrated;
         time_t last_played;
-        string path, spectrum, bpm;
+        string path;
     };
 
     bool playlist_identify_item(int pos);

@@ -32,8 +32,6 @@ using std::ofstream;
 #define     MAX_TIME                20*DAY
 
 #define     MAX_CORRELATION         12.0
-#define     SPECTRUM_IMPACT         10
-#define     BPM_IMPACT              15
 #define     PRIMARY                 0.80
 #define     CORRELATION_IMPACT      40
 #define     LAST_EXPIRE             2*HOUR
@@ -50,7 +48,6 @@ Imms::Imms()
 
     handpicked.set_on = 0;
     last.sid = handpicked.sid = -1;
-    handpicked.bpm = "";
 
     string homedir = getenv("HOME");
     fout.open(homedir.append("/.imms/imms.log").c_str(),
@@ -117,7 +114,6 @@ int Imms::get_previous()
 void Imms::start_song(int position, const string &path)
 {
     XIdle::reset();
-    SpectrumAnalyzer::reset();
 
     revalidate_current(position, path);
 
@@ -145,10 +141,6 @@ void Imms::print_song_info()
     fout << setiosflags(std::ios::showpos);
     if (current.relation)
         fout << current.relation << "r";
-    if (current.color_rating)
-        fout << current.color_rating << "s";
-    if (current.bpm_rating)
-        fout << current.bpm_rating << "b";
     fout << resetiosflags(std::ios::showpos);
 
     fout << "] [Last: " << strtime(current.last_played) <<
@@ -164,8 +156,6 @@ void Imms::set_lastinfo(LastInfo &last)
 {
     last.set_on = time(0);
     last.sid = current.id.second;
-    last.bpm = SpectrumAnalyzer::get_last_bpm();
-    last.spectrum = SpectrumAnalyzer::get_last_spectrum();
 }
 
 void Imms::end_song(bool at_the_end, bool jumped, bool bad)
@@ -217,8 +207,6 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     cerr << " *** " << path_get_filename(current.path) << endl;
 #endif
 
-    SpectrumAnalyzer::finalize();
-
     if (mod >= CONS_NON_SKIP_RATE)
         set_lastinfo(last);
 
@@ -259,12 +247,6 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     float rel = immsdb.correlate(last.sid) / MAX_CORRELATION;
     rel = rel > 1 ? 1 : rel < -1 ? -1 : rel;
     data.relation += ROUND(rel * weight * CORRELATION_IMPACT);
-
-    data.color_rating += ROUND(rescale(color_transition(
-                    last.spectrum, data.spectrum)) * weight * SPECTRUM_IMPACT);
-
-    data.bpm_rating += ROUND(rescale(bpm_transition(
-                    last.bpm, data.bpm)) * weight * BPM_IMPACT);
 }
 
 bool Imms::fetch_song_info(SongData &data)
@@ -275,18 +257,10 @@ bool Imms::fetch_song_info(SongData &data)
     if (data.last_played > local_max)
         data.last_played = local_max;
 
-    data.bpm_rating = data.color_rating = data.relation = 0;
+    data.relation = 0;
 
     evaluate_transition(data, handpicked, PRIMARY);
     evaluate_transition(data, last, 1 - PRIMARY);
 
-#if defined(DEBUG) && 1
-    cerr << "[" << std::setw(60) << path_get_filename(data.path) << "] ";
-    if (data.color_rating)
-        cerr << "[ color = " << data.color_rating << " ] ";
-    if (data.bpm_rating)
-        cerr << "[ bpm = " << data.bpm_rating << " ] ";
-    cerr << endl;
-#endif
     return true;
 }

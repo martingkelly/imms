@@ -9,7 +9,7 @@
 using std::endl;
 using std::cerr;
 
-#define CORRELATION_TIME    (12*30)   // n * 30 ==> n minutes
+#define CORRELATION_TIME    (2*30)   // n * 30 ==> n minutes
 #define MAX_CORR_STR        "10"
 #define MAX_CORRELATION     10
 #define SECOND_DEGREE       0.5
@@ -62,15 +62,17 @@ void CorrelationDb::expire_recent(time_t cutoff)
                         "FROM 'Journal' INNER JOIN 'Library' "
                             "ON Journal.uid = Library.uid "
                         "WHERE Journal.time > ? ORDER BY Journal.time ASC;");
-                q << correlate_from++;
+                q << correlate_from;
 
                 if (!q.next())
                     break;
 
-                cerr << "time now " << time(0) << endl;
-                cerr << "correlate_from was " << correlate_from << endl;
-                q >> from >> from_weight >> correlate_from;
-                cerr << "setting correlate_from to " << correlate_from << endl;
+                time_t next;
+                q >> from >> from_weight >> next;
+                if (next > cutoff)
+                    return;
+
+                correlate_from = next + 1;
 
                 while (q.next())
                 {
@@ -111,9 +113,9 @@ void CorrelationDb::expire_recent_helper()
     //    return 0;
     
     try {
-        Q("DELETE FROM TmpCorr;").execute();
+        Q("DROP TABLE TmpCorr;").execute();
     }
-    WARNIFFAILED();
+    catch (SQLException &e) {}
 
     {
         string query("CREATE TEMP TABLE TmpCorr AS SELECT x, y, weight "
@@ -161,6 +163,7 @@ void CorrelationDb::update_correlation(int from, int to, float weight)
 #endif
 
     int min = std::min(from, to), max = std::max(from, to);
+
 
     try {
         Q q("INSERT INTO 'Correlations' ('x', 'y', 'weight') VALUES (?, ?, ?);");
