@@ -15,6 +15,7 @@
 
 using std::string;
 using std::cerr;
+using std::endl;
 
 #define DEFAULT_EMAIL       "default@imms.org"
 #define POLL_DELAY          5
@@ -155,11 +156,9 @@ void imms_poll()
             if (time_left < 8 * (sloppy_skips + 1) * 2)
                 time_left = 0;
 
-            int pl_length = imms_get_playlist_length();
             cur_plpos = xmms_remote_get_playlist_pos(session);
-            bool forced = (last_plpos + 1 != cur_plpos) &&
-                (cur_plpos != 0 || last_plpos != pl_length - 1);
-
+            int pl_length = imms_get_playlist_length();
+            bool forced = ((last_plpos + 1) % pl_length ) != cur_plpos;
             bool bad = good_length < 3 || song_length <= 30*1000;
 
             if (last_path != "")
