@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <string>
+#include <fstream>
 #include <sstream>
 #include <string.h>
 #include <fftw3.h>
@@ -21,6 +22,7 @@ using std::cerr;
 using std::endl;
 using std::string;
 using std::ostringstream;
+using std::fstream;
 
 typedef uint16_t sample_t;
 
@@ -43,7 +45,7 @@ int analyze(const string &path)
     }
 
     ostringstream command;
-    command << "sox \"" << path << "\" -t .raw -w -u -c 1 -r "
+    command << "nice -n 15 sox \"" << path << "\" -t .raw -w -u -c 1 -r "
         << SAMPLERATE << " -";
     cout << "analyzer: Executing: " << command.str() << endl;
     FILE *p = popen(command.str().c_str(), "r");
@@ -119,7 +121,33 @@ int main(int argc, char *argv[])
 
     ImmsDb immsdb;
 
-    plan = fftwf_plan_dft_r2c_1d(WINDOWSIZE, infftdata, outfftdata, 0);
+    nice(15);
+
+    bool shouldexport = true;
+    FILE *wisdom = fopen(get_imms_root(".fftw_wisdom").c_str(), "r");
+    if (wisdom)
+    {
+        fftwf_import_wisdom_from_file(wisdom);
+        fclose(wisdom);
+    }
+    else
+        cerr << "analyzer: Growing wiser. This may take a while." << endl;
+
+    plan = fftwf_plan_dft_r2c_1d(WINDOWSIZE, infftdata, outfftdata,
+            FFTW_MEASURE | FFTW_PATIENT | FFTW_EXHAUSTIVE);
+
+    if (shouldexport)
+    {
+        FILE *wisdom = fopen(get_imms_root(".fftw_wisdom").c_str(), "w");
+        if (wisdom)
+        {
+            fftwf_export_wisdom_to_file(wisdom);
+            fclose(wisdom);
+        }
+        else
+            cerr << "analyzer: Could not write to wisdom file!" << endl;
+
+    }
 
     for (int i = 1; i < argc; ++i)
         analyze(argv[i]);

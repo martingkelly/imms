@@ -43,7 +43,7 @@ StackTimer::~StackTimer()
     std::cout << usec_diff(start, end) / 1000 << " msecs elapsed" << std::endl;
 }
 
-string get_imms_root()
+string get_imms_root(const string &file)
 {
     static string dotimms;
     if (dotimms == "")
@@ -51,7 +51,7 @@ string get_imms_root()
         dotimms = getenv("HOME");
         dotimms.append("/.imms/");
     }
-    return dotimms;
+    return dotimms + file;
 }
 
 StackLockFile::StackLockFile(const string &_name) : name(_name)

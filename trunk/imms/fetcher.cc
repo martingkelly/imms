@@ -16,7 +16,7 @@ using std::cerr;
 InfoFetcher::SongData::SongData(int _position, const string &_path)
     : Song(_path), position(_position)
 {
-    rating = relation = 0;
+    bpmrating = specrating = rating = relation = 0;
     identified = unrated = false;
     last_played = 0;
 }

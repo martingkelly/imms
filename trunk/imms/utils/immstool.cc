@@ -39,8 +39,8 @@ void do_missing();
 void do_purge(const string &path);
 time_t get_last(const string &path);
 void do_lint();
-void do_distance(const string &to);
-void do_distance2(const string &to);
+void do_spec_distance(const string &to);
+void do_bpm_distance(const string &to);
 void do_identify(const string &path);
 
 int main(int argc, char *argv[])
@@ -50,17 +50,17 @@ int main(int argc, char *argv[])
 
     SqlDb sqldb;
 
-    if (!strcmp(argv[1], "distance2"))
+    if (!strcmp(argv[1], "bpmdistance"))
     {
         if (argc < 3)
         {
-            cout << "immstool distance <reference spectrum>" << endl;
+            cout << "immstool distance <reference bpm>" << endl;
             return -1;
         }
 
-        do_distance2(argv[2]);
+        do_bpm_distance(argv[2]);
     }
-    if (!strcmp(argv[1], "distance"))
+    if (!strcmp(argv[1], "specdistance"))
     {
         if (argc < 3)
         {
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        do_distance(argv[2]);
+        do_spec_distance(argv[2]);
     }
     if (!strcmp(argv[1], "identify"))
     {
@@ -117,6 +117,17 @@ int main(int argc, char *argv[])
         
         do_lint();
     }
+    else if (!strcmp(argv[1], "graph"))
+    {
+        string str;
+        if (argc > 1)
+            str = argv[1];
+        else
+            cin >> str;
+        for (unsigned i = 0; i < str.length(); ++i)
+            cout << i << " " << (int)str[i] << endl;
+        return 0;
+    }
     else if (!strcmp(argv[1], "lint"))
     {
         do_lint();
@@ -131,21 +142,29 @@ int main(int argc, char *argv[])
 
 int usage()
 {
-    cout << "immstool distance|deviation|missing|purge|lint|identify|help" << endl;
+    cout << "End user functionality: " << endl;
+    cout << " immstool missing|purge|lint|identify|help" << endl;
+    cout << "Debug functionality: " << endl;
+    cout << " immstool bpmdistance|specdistance|deviation|graph" << endl;
     return -1;
 }
 
 void do_help()
 {
-    cout << "immstool" << endl;
+    cout << "immstool <command> <arguments>" << endl;
     cout << "  Available commands are:" << endl;
-    cout << "       distance    - calculate distance from a given spectrum" << endl;
-    cout << "       deviation   - calculate statistics on a list of spectrums" << endl;
-    cout << "       missing     - list missing files" << endl;
-    cout << "       purge       - remove from database if last played more than n days ago" << endl;
-    cout << "       lint        - remove unneeded entries" << endl;
-    cout << "       identify    - get information about a given file" << endl;
-    cout << "       help        - show this help" << endl;
+    cout << "    missing                " <<
+        "- list missing files" << endl;
+    cout << "    purge [n]              " <<
+        "- remove from database if last played more than n days ago" << endl;
+    cout << "                           " << 
+        "  hint: 'immstool missing | sort | immstool purge' works well" << endl;
+    cout << "    lint                   " <<
+        "- vacuum the database" << endl;
+    cout << "    identify <filename>    " <<
+        "- print information about a given file" << endl;
+    cout << "    help                   " << 
+        "- show this help" << endl;
 }
 
 string sid2info(int sid)
@@ -287,7 +306,7 @@ void do_lint()
     WARNIFFAILED();
 }
 
-void do_distance2(const string &to)
+void do_bpm_distance(const string &to)
 {
     string rescaled = rescale_bpmgraph(to);
 
@@ -320,7 +339,7 @@ void do_distance2(const string &to)
     }
 }
 
-void do_distance(const string &to)
+void do_spec_distance(const string &to)
 {
     Q q("SELECT Library.path, Acoustic.spectrum, Library.sid "
             "FROM 'Library' INNER JOIN 'Acoustic' ON "
