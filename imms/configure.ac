@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[2.0],[mag@luminal.org])
+AC_INIT([IMMS],[2.0.1-pre1],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -184,17 +184,18 @@ if test "$xmms_config" != "no"; then
     AC_CHECK_HEADERS(xmms/xmmsctrl.h,, [with_xmms=no])
 fi
 
+xmms_enable_playqueue=$enable_queuecontrol
 if test "$with_xmms" = "no"; then
     AC_MSG_WARN([Not building XMMS plugin])
 else 
     if test "$enable_queuecontrol" != "no"; then
         AC_CHECK_LIB(xmms, xmms_remote_playqueue_add,,
-                     [enable_queuecontrol=no])
+                     [xmms_enable_playqueue=no])
     fi
-    if test "$enable_queuecontrol" = "no"; then
+    if test "$xmms_enable_playqueue" = "no"; then
         AC_APPEND(PLUGINS, libxmmsimms.so)
     else
-        AC_DEFINE(HAVE_QUEUE_CONTROL,,
+        AC_DEFINE(XMMS_HAVE_QUEUE_CONTROL,,
                   [XMMS provides functions to control the play queue])
         AC_APPEND(PLUGINS, libxmmsimms2.so)
     fi
@@ -209,8 +210,22 @@ CPPFLAGS=$BMP_CFLAGS
 
 AC_CHECK_HEADERS(bmp/plugin.h,, [with_bmp=no])
 AC_CHECK_HEADERS(bmp/beepctrl.h,, [with_bmp=no])
-if test "$with_bmp" != "no"; then
-    AC_APPEND(PLUGINS, libbmpimms.so)
+
+bmp_enable_playqueue=$enable_queuecontrol
+if test "$with_bmp" = "no"; then
+    AC_MSG_WARN([Not building BMP plugin])
+else 
+    if test "$enable_queuecontrol" != "no"; then
+        AC_CHECK_LIB(beep, xmms_remote_playqueue_add,,
+                     [bmp_enable_playqueue=no])
+    fi
+    if test "$bmp_enable_playqueue" = "no"; then
+        AC_APPEND(PLUGINS, libbmpimms.so)
+    else
+        AC_DEFINE(BMP_HAVE_QUEUE_CONTROL,,
+                  [BMP provides functions to control the play queue])
+        AC_APPEND(PLUGINS, libbmpimms2.so)
+    fi
 fi
 
 LIBS=$saved_libs
