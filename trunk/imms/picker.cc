@@ -47,7 +47,7 @@ bool SongPicker::add_candidate(bool urgent)
 
     if (path != realpath)
     {
-        cerr << "path triggered" << endl;
+        cerr << "path triggered playlist refresh" << endl;
         cerr << path << " != " << realpath << endl;
         playlist_changed();
         return true;
@@ -109,7 +109,7 @@ int SongPicker::select_next()
 
     if (candidates.empty())
     {
-        cerr << "warning: candidates are empty!" << endl;
+        cerr << "warning: no candidates!" << endl;
         return 0;
     }
 

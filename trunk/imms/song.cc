@@ -12,15 +12,13 @@
 using std::cerr;
 using std::endl;
 
-Song Song::identify(const string &path_)
+Song::Song(const string &path_) : path(path_)
 {
-    Song song;
-
-    song.path = path_;
+    reset();
 
     struct stat statbuf;
-    if (stat(song.path.c_str(), &statbuf))
-        return Song();
+    if (stat(path.c_str(), &statbuf))
+        return;
 
     time_t modtime = statbuf.st_mtime;
 
@@ -29,33 +27,33 @@ Song Song::identify(const string &path_)
 
         {
             Q q("SELECT uid, sid, modtime FROM 'Library' WHERE path = ?;");
-            q << song.path;
+            q << path;
 
             if (q.next())
             {
                 time_t last_modtime;
-                q >> song.uid >> song.sid >> last_modtime;
+                q >> uid >> sid >> last_modtime;
 
                 if (modtime == last_modtime)
-                    return song;
+                    return;
             }
         }
 
-        string checksum = Md5Digest::digest_file(song.path);
+        string checksum = Md5Digest::digest_file(path);
 
         // old path but modtime has changed - update checksum
-        if (song.uid != -1)
+        if (uid != -1)
         {
             Q q("UPDATE 'Library' SET modtime = ?, "
                     "checksum = ? WHERE path = ?';");
-            q << modtime << checksum << song.path;
+            q << modtime << checksum << path;
             q.execute();
             a.commit();
-            return song;
+            return;
         }
 
         // moved or new file and path needs updating
-        song.reset();
+        reset();
 
         Q q("SELECT uid, sid, path FROM 'Library' WHERE checksum = ?;");
         q << checksum;
@@ -67,25 +65,23 @@ Song Song::identify(const string &path_)
             do
             {
                 string oldpath;
-                q >> song.uid >> song.sid >> oldpath;
+                q >> uid >> sid >> oldpath;
 
                 if (access(oldpath.c_str(), F_OK))
                 {
                     q.reset();
 
-                    {
-                        Q q("UPDATE 'Library' SET sid = -1, "
-                                "path = ?, modtime = ? WHERE path = ?;");
+                    Q q("UPDATE 'Library' SET sid = -1, "
+                            "path = ?, modtime = ? WHERE path = ?;");
 
-                        q << song.path << modtime << oldpath;
+                    q << path << modtime << oldpath;
 
-                        q.execute();
-                    }
+                    q.execute();
 #ifdef DEBUG
-                    cerr << "identify: moved: uid = " << song.uid << endl;
+                    cerr << "identify: moved: uid = " << uid << endl;
 #endif
                     a.commit();
-                    return song;
+                    return;
                 }
             } while (q.next());
         }
@@ -94,8 +90,8 @@ Song Song::identify(const string &path_)
             // figure out what the next uid should be
             Q q("SELECT max(uid) FROM Library;");
             if (q.next())
-                q >> song.uid;
-            ++song.uid;
+                q >> uid;
+            ++uid;
         }
 
         {
@@ -104,21 +100,19 @@ Song Song::identify(const string &path_)
                     "('uid', 'sid', 'path', 'modtime', 'checksum') "
                     "VALUES (?, -1, ?, ?, ?);");
 
-            q << song.uid << song.path << modtime << checksum;
+            q << uid << path << modtime << checksum;
 
             q.execute();
         }
 
 #ifdef DEBUG
-        cerr << "identify: new: uid = " << song.uid << endl;
+        cerr << "identify: new: uid = " << uid << endl;
 #endif
 
         a.commit();
-        return song;
+        return;
     }
     WARNIFFAILED();
-
-    return Song();
 }
 
 void Song::set_last(time_t last)
@@ -165,6 +159,21 @@ void Song::set_acoustic(const string &spectrum, const string &bpmgraph)
         q.execute();
     }
     WARNIFFAILED();
+}
+
+StringPair Song::get_acoustic()
+{
+    StringPair res;
+    try
+    {
+        Q q("SELECT spectrum, bpm FROM 'Acoustic' WHERE uid = ?;");
+        q << uid;
+        if (q.next())
+            q >> res.first >> res.second;
+    }
+    WARNIFFAILED();
+
+    return res;
 }
 
 void Song::set_artist(const string &_artist) { artist = _artist; }
@@ -298,6 +307,8 @@ void Song::register_new_sid()
         q.execute();
     }
 
+#ifdef DEBUG
     cerr << __func__ << " registered sid = " << sid << " for uid = "
         << uid << endl;
+#endif
 }

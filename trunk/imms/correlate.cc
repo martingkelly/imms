@@ -59,34 +59,33 @@ void CorrelationDb::expire_recent(time_t cutoff)
     cerr << "Running expire recent..." << endl;
     StackTimer t;
 #endif
+    gettimeofday(&start, 0);
 
     try {
         AutoTransaction a;
 
         while (1)
         {
+            Q q("SELECT Library.sid, Journal.delta, Journal.time "
+                    "FROM 'Journal' INNER JOIN 'Library' "
+                    "ON Journal.uid = Library.uid "
+                    "WHERE Journal.time > ? ORDER BY Journal.time ASC;");
+            q << correlate_from;
+
+            if (!q.next())
+                break;
+
+            time_t next;
+            q >> from >> from_weight >> next;
+            if (next > cutoff)
+                return;
+
+            correlate_from = next + 1;
+
+            while (q.next())
             {
-                Q q("SELECT Library.sid, Journal.delta, Journal.time "
-                        "FROM 'Journal' INNER JOIN 'Library' "
-                            "ON Journal.uid = Library.uid "
-                        "WHERE Journal.time > ? ORDER BY Journal.time ASC;");
-                q << correlate_from;
-
-                if (!q.next())
-                    break;
-
-                time_t next;
-                q >> from >> from_weight >> next;
-                if (next > cutoff)
-                    return;
-
-                correlate_from = next + 1;
-
-                while (q.next())
-                {
-                    q >> to >> to_weight;
-                    expire_recent_helper();
-                }
+                q >> to >> to_weight;
+                expire_recent_helper();
             }
         }
 
@@ -119,6 +118,12 @@ void CorrelationDb::expire_recent_helper()
 
     //if (fabs(weight) < 3)
     //    return 0;
+    
+    struct timeval now;
+    gettimeofday(&now, 0);
+
+    if (usec_diff(start, now) > 2000000)
+        return;
     
     try {
         Q("DELETE FROM TmpCorr;").execute();

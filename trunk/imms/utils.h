@@ -22,6 +22,19 @@ private:
     struct timeval start;
 };
 
+class StackLockFile
+{
+public:
+    class AlreadyLocked {};
+    StackLockFile(const string &_name);
+    ~StackLockFile();
+    bool isok() { return name != ""; }
+private:
+    string name;
+};
+
+string get_imms_root();
+
 float rms_string_distance(const string &s1, const string &s2, int max = INT_MAX);
 
 #endif

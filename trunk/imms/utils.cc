@@ -1,9 +1,15 @@
 #include <stdlib.h>     // for (s)random
+#include <signal.h>
 #include <time.h>
 #include <iostream>
+#include <fstream>
 #include <math.h>
 
 #include "utils.h"
+
+using std::ifstream;
+using std::ofstream;
+using std::ios_base;
 
 // Random
 int imms_random(int max)
@@ -37,6 +43,42 @@ StackTimer::~StackTimer()
     std::cout << usec_diff(start, end) / 1000 << " msecs elapsed" << std::endl;
 }
 
+string get_imms_root()
+{
+    static string dotimms;
+    if (dotimms == "")
+    {
+        dotimms = getenv("HOME");
+        dotimms.append("/.imms/");
+    }
+    return dotimms;
+}
+
+StackLockFile::StackLockFile(const string &_name) : name(_name)
+{
+    while (1)
+    {
+        ifstream lockfile(name.c_str());
+        int pid = 0;
+        lockfile >> pid;
+        if (!pid)
+            break;
+        if (kill(pid, 0))
+            break;
+        name = "";
+        return;
+    }
+
+    ofstream lockfile(name.c_str(), ios_base::trunc | ios_base::out);
+    lockfile << getpid() << std::endl;
+    lockfile.close();
+}
+
+StackLockFile::~StackLockFile()
+{
+    if (name != "")
+        unlink(name.c_str());
+}
 
 float rms_string_distance(const string &s1, const string &s2, int max)
 {

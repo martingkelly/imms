@@ -20,7 +20,7 @@ public:
     int avg_rating(const string &title, const string &artist);
 
     bool identify(const string &path)
-        { *static_cast<Song*>(this) = Song::identify(path); return uid != -1; }
+        { *static_cast<Song*>(this) = Song(path); return uid != -1; }
 
 protected:
     void sql_set_pragma();
