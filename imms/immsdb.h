@@ -61,6 +61,7 @@ protected:
     float weight;
 
     // state cache
+    int bpm;
     int uid, sid;
     string artist, title;
 

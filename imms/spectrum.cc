@@ -306,7 +306,7 @@ static float scales[] =
     { 11000, 5000, 4200, 3500, 2600, 2100, 1650, 1200, 1000, 780, 550,
         400, 290, 200, 110, 40 };
 
-SpectrumAnalyzer::SpectrumAnalyzer() : bpm_l3("l3"), bpm_h3("h3")
+SpectrumAnalyzer::SpectrumAnalyzer() : bpm_low("low"), bpm_hi("hi")
 {
     last_spectrum = "";
     last_bpm = 0;
@@ -318,8 +318,8 @@ void SpectrumAnalyzer::reset()
     have_spectrums = 0;
     memset(spectrum, 0, sizeof(spectrum));
 
-    bpm_l3.reset();
-    bpm_h3.reset();
+    bpm_low.reset();
+    bpm_hi.reset();
 }
 
 pair<float, float> spectrum_analyze(const string &spectstr)
@@ -378,21 +378,42 @@ int spectrum_distance(const string &s1, const string &s2)
     return distance;
 }
 
-float SpectrumAnalyzer::evaluate_transition(const string &from,
+float SpectrumAnalyzer::color_transition(const string &from,
         const string &to)
 {
-    if (from.length() != to.length()
-            && (int)from.length() != SHORTSPECTRUM)
-        assert(0 && "malformed spectrums in evaluate_transition");
+    assert(from.length() == to.length()
+            && (int)from.length() == SHORTSPECTRUM);
 
     float distance =  1 - spectrum_distance(spectrum_normalize(from),
             spectrum_normalize(to)) / 1000.0;
     distance = distance < -1 ? -1 : distance;
 
-    int power_diff = abs(spectrum_power(from) - spectrum_power(to));
-    power_diff = 5 - (power_diff > 10 ? 10 : power_diff);
+    float power_diff = abs(spectrum_power(from) - spectrum_power(to));
+    power_diff = 1 - (power_diff > 10 ? 10 : power_diff) / 5.0;
 
-    return (distance + power_diff / 5.0) / 2;
+    return distance * 0.3 + power_diff * 0.7;
+}
+
+float SpectrumAnalyzer::bpm_transition(int from, int to)
+{
+    if (from < 1 || to < 1)
+        return 0;
+
+    int avg = (from + to) / 2;
+    int distance = offset2bpm(bpm2offset(avg) + 1) - avg;
+    if (avg < 100 || avg > 160)
+        distance *= 2;
+
+    cerr << "from = " << from << " to = " << to
+        << " target distance = " << distance << endl;
+
+    int diff = 2 - abs(from - to) / distance;
+    if (diff < -2)
+        diff = -2;
+
+    cerr << "diff = " << diff / 2.0 << endl;
+
+    return diff / 2.0;
 }
 
 void SpectrumAnalyzer::integrate_spectrum(
@@ -402,13 +423,13 @@ void SpectrumAnalyzer::integrate_spectrum(
     for (int i = 0; i < 3; ++i)
         power += long_spectrum[i] / (float)scales[i];
 
-    bpm_l3.integrate_beat(power);
+    bpm_low.integrate_beat(power);
 
     power = 0;
     for (int i = 255; i > 150; --i)
         power += long_spectrum[i];
 
-    bpm_h3.integrate_beat(power / 2000.0);
+    bpm_hi.integrate_beat(power / 2000.0);
 
     static char delay = 0;
     if (++delay % 32 != 0)
@@ -431,16 +452,14 @@ void SpectrumAnalyzer::finalize()
 {
     BeatKeeper bpm_com("com");
 
-    bpm_com += bpm_l3; 
-    bpm_com += bpm_h3; 
-
-    bpm_l3.getBPM();
-    bpm_h3.getBPM();
+    bpm_com += bpm_low; 
+    bpm_com += bpm_hi; 
 
     last_bpm = bpm_com.getBPM();
 
+#ifdef DEBUG
     cerr << "BPM [com] = " << last_bpm << endl;
-
+#endif
     if (!have_spectrums)
         return;
 

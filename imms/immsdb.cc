@@ -196,16 +196,24 @@ void ImmsDb::update_correlation(int from, int to, float weight)
 
     // Make sure the link we are about to update exists
     run_query(
-        "UPDATE 'Correlations' SET weight = "
-             "max(min(weight + '" + itos(weight) + "', "
-              MAX_CORR_STR "), -" MAX_CORR_STR ") "
+        "SELECT count(weight) FROM 'Correlations' "
         "WHERE origin = '" + min + "' AND destination = '" + max + "';");
 
-    if (!changes())
+    if (nrow && resultp[0] && atoi(resultp[0]))
+    {
+        run_query(
+            "UPDATE 'Correlations' SET weight = "
+                 "max(min(weight + '" + itos(weight) + "', "
+                  MAX_CORR_STR "), -" MAX_CORR_STR ") "
+            "WHERE origin = '" + min + "' AND destination = '" + max + "';");
+    }
+    else
+    {
         run_query("INSERT INTO 'Correlations' "
             " ('origin', 'destination', 'weight') "
                 "VALUES ('" + min + "', '" + max + "', '"
                 + itos(weight) + "');");
+    }
 }
 
 float ImmsDb::correlate(int from)
@@ -362,15 +370,13 @@ StringPair ImmsDb::get_info()
 
     artist = nrow ? resultp[3] : "";
     title = nrow ? resultp[2] : "";
-#ifdef DEBUG
-#if 0
+#if defined(DEBUG) && 0
     if (title != "" && artist != "")
     {
         cerr << " >> from cache: " << endl;
         cerr << " >>     artist  = '" << artist << "'" << endl;
         cerr << " >>     title   = '" << title << "'" << endl;
     }
-#endif
 #endif
     return StringPair(artist, title);
 }
@@ -381,10 +387,12 @@ string ImmsDb::get_spectrum()
         return "";
 
     select_query(
-            "SELECT spectrum FROM 'Acoustic' "
+            "SELECT spectrum, bpm FROM 'Acoustic' "
             "WHERE uid = '" + itos(uid) + "';");
 
-    return nrow && resultp[1] ? resultp[1] : "";
+    bpm = nrow && resultp[3] ? atoi(resultp[3]) : 0;
+
+    return nrow && resultp[2] ? resultp[2] : "";
 }
 
 int ImmsDb::get_bpm()
@@ -392,11 +400,7 @@ int ImmsDb::get_bpm()
     if (uid == -1)
         return 0;
 
-    select_query(
-            "SELECT bpm FROM 'Acoustic' "
-            "WHERE uid = '" + itos(uid) + "';");
-
-    return nrow && resultp[1] ? atoi(resultp[1]) : 0;
+    return bpm;
 }
 
 time_t ImmsDb::get_last()
@@ -578,22 +582,6 @@ void ImmsDb::sql_schema_upgrade()
                 "CREATE TABLE 'Schema' ("
                 "'description' VARCHAR(10) UNIQUE NOT NULL, "
                 "'version' INTEGER NOT NULL);");
-    }
-    if (schema < 3)
-    {
-        // Backup the existing tables
-        run_query("CREATE TEMP TABLE Library_backup "
-                   "AS SELECT * FROM Library;");
-        run_query("DROP TABLE Library;");
-
-        // Create new tables
-        sql_create_tables();
-
-        // Copy the data into new tables, and drop the backups
-        run_query(
-                "INSERT INTO Library (uid, sid, path, modtime, checksum) "
-                "SELECT * FROM Library_backup;");
-        run_query("DROP TABLE Library_backup;");
     }
     if (schema < 4)
     {
