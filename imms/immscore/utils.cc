@@ -6,6 +6,8 @@
 #include <math.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <dirent.h>
+#include <errno.h>
 
 #include "utils.h"
 
@@ -136,4 +138,17 @@ string path_normalize(const string &path)
     char resolved[4096];
     realpath(start, resolved);
     return resolved;
+}
+
+int listdir(const string &dirname, vector<string> &files)
+{
+    files.clear();
+    DIR *dir = opendir(dirname.c_str());
+    if (!dir)
+        return errno;
+    struct dirent *de;
+    while ((de = readdir(dir)))
+        files.push_back(de->d_name);
+    closedir(dir);
+    return 0;
 }

@@ -1,5 +1,6 @@
 #include <glib.h>
 #include <signal.h>
+#include <unistd.h>
 #include <iostream>
 #include <sstream>
 #include <errno.h>
@@ -181,6 +182,10 @@ int main(int argc, char **argv)
         cerr << "IMMSd: another instance already active - exiting." << endl;
         exit(1);
     }
+
+    // clean up after XMMS
+    for (int i = 3; i < 255; ++i)
+        close(i);
 
     loop = g_main_loop_new(NULL, FALSE);
 

@@ -48,12 +48,17 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     if (access(data.get_path().c_str(), R_OK))
         return false;
 
+    AutoTransaction at;
     if (!data.get_song_from_playlist())
     {
         if (!identify_playlist_item(data.position))
             return false;
         data.get_song_from_playlist();
     }
+    at.commit();
+
+    if (!data.isok())
+        return false;
 
     StringPair info = data.get_info();
 
