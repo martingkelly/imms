@@ -4,14 +4,12 @@
 #include <iostream>
 #include <utility>
 #include <fstream>
-#include <map>
 
 #include "spectrum.h"
 
 using std::endl;
 using std::cerr;
 using std::pair;
-using std::map;
 
 void BeatKeeper::reset()
 {
@@ -24,9 +22,43 @@ void BeatKeeper::reset()
     last_window = &data[MAXBEATLENGTH];
 }
 
-inline int offset2bpm(int offset)
+static inline int offset2bpm(int offset)
 {
     return ROUND(60 * SAMPLES/ (float)(MINBEATLENGTH + offset));
+}
+
+static inline bool roughly_double(int a, int b)
+{
+    return abs(a - 2 * b) < 4;
+}
+
+int BeatKeeper::peak_finder_helper(vector<int> &peaks, int min,
+        int max, float cutoff)
+{
+    int count = 0;
+    for (int i = min; i < max; ++i)
+    {
+        int index = 0;
+        float local_max = 0;
+        while (i < max && (beats[i] > cutoff
+                    || (i + 1 < max && beats[i + 1] > cutoff)))
+        {
+            if (beats[i] > local_max)
+            {
+                index = i;
+                local_max = beats[i];
+            }
+            ++i;
+        }
+
+        if (local_max)
+        {
+            ++count;
+            cerr << " >> found peak @ " << offset2bpm(index) << endl;
+            peaks.push_back(offset2bpm(index));
+        }
+    }
+    return count;
 }
 
 int BeatKeeper::getBPM()
@@ -35,84 +67,54 @@ int BeatKeeper::getBPM()
         << ROUND(samples / (float)(last - first)) << " samples/sec" << endl; 
 
     std::ofstream bstats("/tmp/beats", std::ios::trunc);
+    std::ofstream bstats1("/tmp/beats1", std::ios::trunc);
 
-    float max = 0, min = INT_MAX;
-    for (int i = 0; i < MAXBEATLENGTH - MINBEATLENGTH; ++i)
-    {
+    for (int i = 0; i < BEATSSIZE; ++i)
         bstats << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
 
+    int i = 0, val = 0;
+    while (i < BEATSSIZE && beats[i] >= beats[i + 1]) ++i;
+    val = i;
+    while (i--) beats[i] = beats[val];
+
+    i = BEATSSIZE - 1;
+    while (i && beats[i] >= beats[i - 1]) --i;
+    val = i - 1;
+    while (++i < BEATSSIZE) beats[i] = beats[val];
+
+    for (int i = 0; i < BEATSSIZE; ++i)
+        bstats1 << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
+
+    float max = 0, min = INT_MAX;
+    for (int i = 0; i < BEATSSIZE; ++i)
+    {
         if (beats[i] > max)
             max = beats[i];
         if (beats[i] < min)
             min = beats[i];
     }
 
-    // Find peaks in the beat distribution
-    map<int, int> peaks;
-    int up = 0, down = 0, last_peak = 0;
-    for (int i = 1; i < MAXBEATLENGTH - MINBEATLENGTH; ++i)
-    {
-        if (beats[i] > beats[i - 1])
-        {
-            if (up++)
-            {
-                if (last_peak)
-                    peaks[last_peak] = (peaks[last_peak] + down) / 2;
-                last_peak = 0;
-                down = 0;
-            }
-        }
-        else if (beats[i] < beats[i - 1])
-        {
-            if (down++)
-            {
-                if (up > 2 && beats[i] > min + (max - min) * 0.75)
-                {
-                    last_peak = offset2bpm(i - 2);
-                    peaks[last_peak] = up;
-                    cerr << "peak at " << last_peak << endl;
-                }
-                up = 0;
-            }
-        }
+    // look at the top 15%
+    float cutoff = min + (max - min) * 0.85;
 
-        cerr << "i = " << offset2bpm(i) << " up = " << up 
-            << " down = " << down << endl;
-    }
+    int totalpeaks = 0;
+    vector<int> slowpeaks;
+    vector<int> fastpeaks;
+    // offset = 38 --> 93 bpm
+    totalpeaks += peak_finder_helper(slowpeaks, 38, BEATSSIZE, cutoff);
+    totalpeaks += peak_finder_helper(fastpeaks, 0, 38, cutoff);
 
-    reset();
-
-    if (peaks.empty())
-    {
-        cerr << "peak are empty" << endl;
+    if (!totalpeaks)
         return -1;
-    }
 
-    if (peaks.size() == 1)
-        return peaks.begin()->first;
+    if (totalpeaks == 1)
+        return fastpeaks.empty() ? slowpeaks.front() : fastpeaks.front();
 
-    // coalesce peaks
-    map<int, int> combined_peaks;
-    for (map<int, int>::iterator i = peaks.begin(); i != peaks.end(); ++i)
-    {
-        map<int, int>::iterator dbl = peaks.lower_bound(i->first * 2 - 3);
-        if (abs(dbl->first - i->first * 2) < 3)
-        {
-            cerr << "coalescing " << i->first 
-                << " and " << dbl->first << endl; 
-            dbl->second += i->second;
-        }
-        else
-            combined_peaks[i->second] = i->first;
-    }
-
-    if (combined_peaks.size() == 1)
-        return combined_peaks.begin()->second;
-
-    map<int, int>::iterator i = combined_peaks.begin();
-    int biggest = i->second;
-    if (biggest * 2 / 3 > (++i)->second)
-        return combined_peaks[biggest];
+    if (!fastpeaks.empty())
+        for (vector<int>::iterator i = slowpeaks.begin();
+                i != slowpeaks.end(); ++i)
+            if (roughly_double(fastpeaks.front(), *i))
+                return fastpeaks.front();
 
     return -1;
 }
