@@ -21,17 +21,20 @@ void ImmsDb::sql_create_tables()
 
 void ImmsDb::sql_schema_upgrade(int from)
 {
-    select_query("SELECT version FROM 'Schema' WHERE description ='latest';");
+    try {
+        Q q("SELECT version FROM 'Schema' WHERE description ='latest';");
+        if (q.next())
+            q >> from;
+    }
+    WARNIFFAILED();
 
-    if (nrow && resultp[1] && atoi(resultp[1]) > SCHEMA_VERSION)
+    if (from > SCHEMA_VERSION)
     {
         cerr << "IMMS: Newer database schema detected." << endl;
         cerr << "IMMS: Please update IMMS!" << endl;
         close_database();
         return;
     }
-
-    from = nrow && resultp[1] ? atoi(resultp[1]) : 0;
 
     if (from == SCHEMA_VERSION)
         return;
@@ -43,7 +46,6 @@ void ImmsDb::sql_schema_upgrade(int from)
     CorrelationDb::sql_schema_upgrade(from);
     PlaylistDb::sql_schema_upgrade(from);
 
-    run_query(
-            "INSERT OR REPLACE INTO 'Schema' ('description', 'version') "
-            "VALUES ('latest', '" +  itos(SCHEMA_VERSION) + "');");
+    Q("INSERT OR REPLACE INTO 'Schema' ('description', 'version') "
+            "VALUES ('latest', '" +  itos(SCHEMA_VERSION) + "');").execute();
 }

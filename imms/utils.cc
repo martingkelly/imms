@@ -1,5 +1,6 @@
 #include <stdlib.h>     // for (s)random
-#include <time.h>     // for (s)random
+#include <time.h>
+#include <iostream>
 
 #include "utils.h"
 
@@ -24,4 +25,13 @@ time_t usec_diff(struct timeval &tv1, struct timeval &tv2)
 {
     return (tv2.tv_sec - tv1.tv_sec) * 1000000
         + tv2.tv_usec - tv1.tv_usec;
+}
+
+StackTimer::StackTimer() { gettimeofday(&start, 0); }
+
+StackTimer::~StackTimer()
+{
+    struct timeval end;
+    gettimeofday(&end, 0);
+    std::cout << usec_diff(start, end) / 1000 << " msecs elapsed" << std::endl;
 }
