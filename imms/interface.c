@@ -12,7 +12,6 @@ char *ch_email = NULL;
 int use_xidle = 1;
 int use_sloppy = 0;
 int poll_tag = 0;
-int spectrum_ok = 0;
 
 GtkWidget *configure_win = NULL, *about_win = NULL,
     *xidle_button = NULL, *sloppy_button = NULL;
@@ -206,12 +205,8 @@ void about(void)
 
 void render_freq(gint16 freq_data[2][256])
 {
-    static unsigned char delay;
     static uint16_t spectrum[256];
     int i;
-
-    if (!spectrum_ok || ++delay % 64)
-        return;
 
     for (i = 0; i < 256; ++i)
         spectrum[i] = (freq_data[0][i] + freq_data[1][i]) / 2;
