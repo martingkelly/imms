@@ -132,7 +132,21 @@ int BeatKeeper::maybe_double(int bpm, float min, float range)
     return bpm;
 }
 
-int BeatKeeper::getBPM()
+string BeatKeeper::get_bpm_graph()
+{
+    bool empty = true;
+    string graph;
+    for (int i = 0; i < BEATSSIZE; ++i)
+    {
+        int c = 'a' + ROUND(beats[i] / 10);
+        if (c != 'a')
+            empty = false;
+        graph += (char)(c > 'z' ? 'z' : c);
+    }
+    return empty ? "" : graph;
+}
+
+int BeatKeeper::guess_actual_bpm()
 {
 #ifdef DEBUG
 #if 0
@@ -309,8 +323,7 @@ double max_vals[SHORTSPECTRUM] = { 0 };
 
 SpectrumAnalyzer::SpectrumAnalyzer() : bpm_low("low"), bpm_hi("hi")
 {
-    last_spectrum = "";
-    last_bpm = 0;
+    last_bpm = last_spectrum = "";
     reset();
 }
 
@@ -340,53 +353,40 @@ pair<float, float> spectrum_analyze(const string &spectstr)
     return pair<float, float>(mean, deviation);
 }
 
-int spectrum_distance(const string &s1, const string &s2)
+float SpectrumAnalyzer::rms_string_distance(const string &s1,
+        const string &s2)
 {
-    int distance = 0;
+    if (s1 == "" || s2 == "")
+        return 0;
+
+    unsigned len = s1.length();
+    assert(len == s2.length());
+    float distance = 0;
 
     for (int i = 0; i < SHORTSPECTRUM; ++i)
-        distance += ROUND(pow(s1[i] - s2[i], 2));
+        distance += pow(s1[i] - s2[i], 2);
 
-    return distance;
+    return ROUND(sqrt(distance / len));
 }
 
 float SpectrumAnalyzer::color_transition(const string &from,
         const string &to)
 {
-    assert(from.length() == to.length()
-            && (int)from.length() == SHORTSPECTRUM);
-
-    float distance = 1 - spectrum_distance(from, to) / 500.0;
-    distance = distance < -1 ? -1 : distance;
-
-    return distance;
+    float rms = rms_string_distance(from, to);
+    if (rms)
+        cerr << "spectrum distance [" << from << "]  [" << to << "] = "
+            << rms << endl;
+    return 0;
 }
 
-float SpectrumAnalyzer::bpm_transition(int from, int to)
+float SpectrumAnalyzer::bpm_transition(const string &from,
+        const string &to)
 {
-    if (from < 1 || to < 1)
-        return 0;
-
-    int avg = (from + to) / 2;
-    int distance = avg - offset2bpm(bpm2offset(avg) + 1);
-    if (!distance)
-        distance = 1;
-    if (avg < 75)
-        distance *= 3;
-    else if (avg > 160)
-        distance *= 2;
-
-    int diff = 2 - abs(from - to) / distance;
-    if (diff < -2)
-        diff = -2;
-
-#if defined(DEBUG) && 0
-    cerr << "from = " << from << " to = " << to << endl;
-    cerr << "target distance = " << distance
-        << " diff = " << diff / 2.0 << endl;
-#endif
-
-    return diff / 2.0;
+    float rms = rms_string_distance(from, to);
+    if (rms)
+        cerr << "bpm distance [" << from << "]  [" << to << "] = "
+            << rms << endl;
+    return 0;
 }
 
 void SpectrumAnalyzer::integrate_spectrum(
@@ -425,7 +425,7 @@ void SpectrumAnalyzer::finalize()
     bpm_com += bpm_low; 
     bpm_com += bpm_hi; 
 
-    last_bpm = bpm_com.getBPM();
+    last_bpm = bpm_com.get_bpm_graph();
 
 #ifdef DEBUG
     cerr << "BPM [com] = " << last_bpm << endl;
@@ -455,7 +455,7 @@ void SpectrumAnalyzer::finalize()
     if (have_spectrums > 20000)
     {
         immsdb.set_spectrum(last_spectrum);
-        if (last_bpm > 0)
+        if (last_bpm != "")
             immsdb.set_bpm(last_bpm);
     }
 }

@@ -45,8 +45,8 @@ public:
 protected:
     struct LastInfo {
         time_t set_on;
-        std::string spectrum;
-        int bpm, sid;
+        int sid;
+        std::string spectrum, bpm;
     };
 
     void reset_selection();

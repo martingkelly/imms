@@ -27,13 +27,13 @@ public:
     IntPair get_id();
     StringPair get_info();
     string get_spectrum();
-    int get_bpm();
+    string get_bpm();
 
     void set_last(time_t last);
     void set_title(const string &_title);
     void set_artist(const string &_artist);
     void set_spectrum(const string &spectrum);
-    void set_bpm(int bpm);
+    void set_bpm(const string& bpm);
     void set_rating(int rating);
     void set_id(const IntPair &p);
 
@@ -50,7 +50,7 @@ protected:
     virtual void sql_schema_upgrade(int from = 0);
 
     // state cache
-    int bpm;
+    string bpm;
     int uid, sid;
     string artist, title;
 };
