@@ -76,17 +76,12 @@ Song::Song(const string &path_) : path(path_)
 
                     sid = -1;
 
-                    {
-                        Q q("UPDATE 'Identify' SET path = ?, "
-                                "modtime = ? WHERE path = ?;");
-                        q << path << modtime << oldpath;
-                        q.execute();
-                    }
-                    {
-                        Q q("UPDATE 'Library' SET sid = -1 WHERE uid = ?;");
-                        q << uid;
-                        q.execute();
-                    }
+                    Q("UPDATE 'Identify' SET path = ?, "
+                            "modtime = ? WHERE path = ?;")
+                        << path << modtime << oldpath << execute;
+
+                    Q("UPDATE 'Library' SET sid = -1 WHERE uid = ?;")
+                        << uid << execute;
 #ifdef DEBUG
                     cerr << "identify: moved: uid = " << uid << endl;
 #endif
@@ -150,6 +145,46 @@ void Song::set_last(time_t last)
     WARNIFFAILED();
 }
 
+int Song::get_playcounter()
+{
+    if (uid < 0)
+        return -1;
+
+    if (playcounter != -1)
+        return playcounter;
+
+    try
+    {
+        Q q("SELECT playcounter FROM 'Library' WHERE uid = ?;");
+        q << uid;
+
+        if (q.next())
+            q >> playcounter;
+    }
+    WARNIFFAILED();
+
+    return playcounter;
+}
+
+void Song::increment_playcounter()
+{
+    if (uid < 0)
+        return;
+
+    try
+    { 
+        Q q("SELECT playcounter FROM 'Library' WHERE uid = ?;");
+        q << uid;
+
+        if (q.next())
+            q >> playcounter;
+
+        Q("UPDATE 'Library' SET playcounter = playcounter + 1 WHERE uid = ?;")
+            << uid << execute;
+    }
+    WARNIFFAILED();
+}
+
 void Song::set_rating(int rating)
 {
     if (uid < 0)
@@ -157,9 +192,8 @@ void Song::set_rating(int rating)
 
     try
     {
-        Q q("INSERT OR REPLACE INTO 'Rating' ('uid', 'rating') VALUES (?, ?);");
-        q << uid << rating;
-        q.execute();
+        Q("INSERT OR REPLACE INTO 'Rating' ('uid', 'rating') VALUES (?, ?);")
+            << uid << rating << execute;
     }
     WARNIFFAILED();
 }

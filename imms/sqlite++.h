@@ -7,6 +7,9 @@
 using std::string;
 using std::map;
 
+class SQLExec {};
+extern SQLExec execute;
+
 class SQLDatabaseConnection
 {
 public:
@@ -100,6 +103,7 @@ public:
     SQLQuery &operator<<(float i) { return *this << double(i); }
     SQLQuery &operator<<(time_t i) { return *this << (int)i; }
     SQLQuery &operator<<(const string &s);
+    SQLQuery &operator<<(const SQLExec &execute);
 
     SQLQuery &operator>>(int &i);
     SQLQuery &operator>>(double &i);

@@ -160,20 +160,14 @@ bool BasicDb::check_title(const string &artist, string &title)
 void BasicDb::sql_schema_upgrade(int from)
 {
     QueryCacheDisabler qcd;
-    //RuntimeErrorBlocker reb;
     try 
     {
         AutoTransaction a;
         if (from < 6)
         {
-            // Create new tables
-            sql_create_tables();
-
-            // Copy the data into new tables, and drop the backups
-            Q("INSERT INTO Library (uid, sid, path, modtime, checksum) "
-                    "SELECT uid, sid, path, modtime, checksum "
-                    "FROM Library_backup;").execute();
-            Q("DROP TABLE Library_backup;").execute();
+            cerr << "IMMS: Direct upgrade from SCHEMA version < 6 unsupported"
+                << endl << "Please upgrade to IMMS 1.2 first" << endl;
+            exit(-1);
         }
         if (from < 7)
         {
