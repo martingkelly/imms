@@ -1,5 +1,6 @@
 #include <sys/stat.h>   // for mkdir
 #include <sys/types.h>
+#include <unistd.h>
 
 #include <iostream>
 
@@ -24,11 +25,11 @@ InfoFetcher::SongData::SongData(int _position, const string &_path)
     last_played = 0;
 }
 
-bool InfoFetcher::fetch_song_info(SongData &data)
+int InfoFetcher::fetch_song_info(SongData &data)
 {
     const string &path = data.path;
     if (access(path.c_str(), R_OK))
-        return false;
+        return -1;
 
     struct stat statbuf;
     stat(path.c_str(), &statbuf);
@@ -37,15 +38,17 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     {
         if (immsdb.identify(path, statbuf.st_mtime,
                 Md5Digest::digest_file(path)) < 0)
-            return false;
+            return -1;
     }
 
+    int result = 1;
     data.rating = immsdb.get_rating();
 
     data.unrated = false;
     if (data.rating < 0)
     {
         link(path);
+        ++result;
         data.unrated = true;
         data.rating = get_rating(email);
         immsdb.set_rating(data.rating);
@@ -57,8 +60,12 @@ bool InfoFetcher::fetch_song_info(SongData &data)
 
     if (artist != "" && title != "")
         data.identified = true;
-    else if ((data.identified = parse_song_info(path, title)))
-        immsdb.set_title(title);
+    else
+    {
+        ++result;
+        if ((data.identified = parse_song_info(path, title)))
+            immsdb.set_title(title);
+    }
 
 #ifdef DEBUG
     cerr << "path:\t" << path << endl;
@@ -73,7 +80,7 @@ bool InfoFetcher::fetch_song_info(SongData &data)
 
     data.id = immsdb.get_id();
 
-    return true;
+    return result;
 }
 
 bool InfoFetcher::parse_song_info(const string &path, string &title)

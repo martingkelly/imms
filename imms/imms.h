@@ -44,7 +44,7 @@ public:
 
 protected:
     // Helper functions
-    bool fetch_song_info(SongData &data);
+    int fetch_song_info(SongData &data);
     void print_song_info();
 
     // State variables

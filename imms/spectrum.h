@@ -15,6 +15,7 @@ public:
     SpectrumAnalyzer();
     void integrate_spectrum(uint16_t _long_spectrum[long_spectrum_size]);
     void finalize();
+
 protected:
     void reset();
 

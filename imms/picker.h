@@ -4,31 +4,29 @@
 #include <string>
 #include <list>
 
+#include "immsconf.h"
 #include "fetcher.h"
 
 #define     MAX_RATING              150
 #define     MIN_RATING              75
-
-using std::string;
-using std::list;
 
 class SongPicker : protected InfoFetcher
 {
 public:
     SongPicker();
     int  select_next();
-    bool add_candidate(int playlist_num, string path, bool urgent = false);
+    bool add_candidate(int position, std::string path, bool urgent = false);
 
 protected:
-    void revalidate_winner(const string &path);
+    void revalidate_winner(const std::string &path);
     void reset();
 
     SongData winner;
 
 private:
-    int have_candidates, attempts;
+    int acquired, attempts;
 
-    typedef list<SongData> Candidates;
+    typedef std::list<SongData> Candidates;
     Candidates candidates;
 };
 
