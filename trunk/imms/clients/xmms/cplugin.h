@@ -1,7 +1,6 @@
 #ifndef __PLUGIN_H
 #define __PLUGIN_H
 
-#include <stdint.h>
 #include "immsconf.h"
 
 #ifdef __cplusplus
