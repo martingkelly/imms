@@ -11,6 +11,8 @@
 
 #include "imms.h"
 #include "sqldb.h"
+#include "utils.h"
+#include "player.h"
 #include "strmanip.h"
 
 using std::string;
@@ -20,6 +22,9 @@ using std::list;
 using std::cin;
 using std::setw;
 using std::pair;
+
+int Player::get_playlist_length() { return 0; }
+string Player::get_playlist_item(int i) { return ""; }
 
 int g_argc;
 char **g_argv;
@@ -178,11 +183,12 @@ void ImmsTool::do_lint()
 
 void ImmsTool::do_distance()
 {
+    ImmsCallback<ImmsTool> callback(this, &ImmsTool::distance_callback);
     select_query(
             "SELECT Library.path, Acoustic.spectrum, Library.sid "
             "FROM 'Library' INNER JOIN 'Acoustic' ON "
             "Library.uid = Acoustic.uid WHERE Acoustic.spectrum NOT NULL;",
-            (SqlCallback)&ImmsTool::distance_callback);
+            &callback);
 }
 
 int ImmsTool::distance_callback(int argc, char *argv[])
@@ -208,8 +214,8 @@ int ImmsTool::distance_callback(int argc, char *argv[])
 
 void ImmsTool::do_missing()
 {
-    select_query("SELECT path FROM 'Library';",
-            (SqlCallback)&ImmsTool::missing_callback);
+    ImmsCallback<ImmsTool> callback(this, &ImmsTool::missing_callback);
+    select_query("SELECT path FROM 'Library';", &callback);
 }
 
 int ImmsTool::missing_callback(int argc, char *argv[])
