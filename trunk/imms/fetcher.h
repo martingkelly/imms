@@ -9,7 +9,7 @@
 class InfoFetcher : virtual protected ImmsDb, private SongInfo
 {
 public:
-    virtual void playlist_changed();
+    virtual void playlist_changed(int length);
 
 protected:
     class SongData : public Song
@@ -34,7 +34,7 @@ protected:
 
     bool identify_playlist_item(int pos);
 
-    int next_sid;
+    int next_sid, pl_length;
 };
 
 #endif

@@ -151,6 +151,9 @@ static void new_connection_callback(DBusServer *server,
     dbus_connection_ref(new_connection);
     dbus_connection_setup_with_g_main(new_connection, NULL);
 
+    IDBusConnection con(new_connection);
+    reinterpret_cast<IDBusFilter*>(userdata)->new_connection(con);
+
     dbus_connection_add_filter(new_connection, dispatch_wrapper,
             userdata, NULL);
 }
@@ -226,4 +229,14 @@ DBusMessage *IDBusConnection::send_with_reply(IDBusOMessage &message,
         throw IDBusException("Failed send with reply!");
 
     return reply;
+}
+
+void IDBusConnection::store(int index, void *p)
+{
+    dbus_connection_set_data(con, index, p, 0);
+}
+
+void *IDBusConnection::retrieve(int index)
+{
+    return dbus_connection_get_data(con, index);
 }

@@ -11,14 +11,14 @@
 
 #include "immsconf.h"
 #include "plugin.h"
-#include "player.h"
-#include "imms.h"
 #include "utils.h"
+#include "client.h"
 
 using std::string;
+using std::cerr;
+using std::endl;
 
 // Local vars
-static Imms *imms = NULL;
 int cur_plpos, next_plpos = -1, pl_length = -1;
 int last_plpos = -1, last_song_length = -1;
 int good_length = 0, song_length = 0, busy = 0, just_enqueued = 0, ending = 0;
@@ -43,6 +43,64 @@ string imms_get_playlist_item(int at)
     return result;
 }
 
+static void reset_selection()
+{
+    xmms_remote_playqueue_remove(session, next_plpos);
+    next_plpos = -1;
+}
+
+class XMMSFilter : public IDBusFilter
+{
+public:
+    virtual bool dispatch(IDBusConnection &con, IDBusIMessage &message)
+    {
+        if (message.get_type() == MTError)
+        {
+            g_print("Received error: %s\n", message.get_error().c_str());
+        }
+        else if (message.get_type() == MTSignal)
+        {
+            g_print("Received signal %s %s\n",
+                    message.get_interface().c_str(),
+                    message.get_member().c_str());
+
+            if (message.get_member() == "ResetSelection")
+            {
+                reset_selection();
+                return true;
+            }
+        }
+        else if (message.get_type() == MTMethod)
+        {
+            g_print("Received method call %s %s\n",
+                    message.get_interface().c_str(),
+                    message.get_member().c_str());
+
+            if (message.get_member() == "GetPlaylistItem")
+            {
+                int index;
+                message >> index;
+                IDBusOMessage reply(message.reply());
+                reply << imms_get_playlist_item(index);
+                con.send(reply);
+                return true;
+            }
+            if (message.get_member() == "GetPlaylistLength")
+            {
+                int index;
+                IDBusOMessage reply(message.reply());
+                reply << xmms_remote_get_playlist_length(session);
+                con.send(reply);
+                return true;
+            }
+        }
+
+        return false;
+    }
+};
+
+IMMSClient<XMMSFilter> *imms = 0;
+
 void imms_setup(int use_xidle)
 {
     if (imms)
@@ -53,7 +111,11 @@ void imms_init()
 {
     if (!imms)
     {
-        imms = new Imms();
+        try {
+            imms = new IMMSClient<XMMSFilter>();
+        } catch (IDBusException &e) {
+            cerr << "Error: " << e.what() << endl;
+        }
         busy = 0;
     }
 }
@@ -65,17 +127,6 @@ void imms_cleanup(void)
 }
 
 int random_index() { return imms_random(pl_length); }
-
-static void reset_selection()
-{
-    xmms_remote_playqueue_remove(session, next_plpos);
-    next_plpos = -1;
-}
-
-void Player::reset_selection()
-{
-    ::reset_selection();
-}
 
 static void do_song_change()
 {
@@ -119,7 +170,7 @@ static void check_playlist()
     {
         pl_length = new_pl_length;
         reset_selection();
-        imms->playlist_changed();
+        imms->playlist_changed(new_pl_length);
     }
 }
 
@@ -136,13 +187,7 @@ void do_checks()
     check_playlist();
 
     if (!xmms_remote_is_playing(session))
-    {
-        imms->do_idle_events();
         return;
-    }
-
-    // have imms do it's internal processing
-    imms->do_events();
 
     cur_plpos = xmms_remote_get_playlist_pos(session);
     

@@ -6,7 +6,7 @@ AC_REVISION($Id: configure.ac,v 1.30 2003/10/23 23:53:20 mag Exp $)
 
 AC_CONFIG_SRCDIR(imms.cc)
 
-AC_PREFIX_DEFAULT("/usr/bin")
+AC_PREFIX_DEFAULT("/usr")
 
 AC_ARG_WITH(taglib,
             AC_HELP_STRING([--with-taglib],

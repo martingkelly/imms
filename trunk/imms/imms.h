@@ -4,19 +4,23 @@
 #include <string>
 #include <fstream>
 #include <list>
+#include <memory>
 
 #include "picker.h"
 #include "xidle.h"
 #include "server.h"
+#include "player.h"
 
 // IMMS, UMMS, we all MMS for XMMS?
 
 class Imms : public SongPicker,
              protected XIdle,
-             protected ImmsServer
+             protected ImmsServer,
+             protected IDBusPlayerControl
 {
 public:
-    Imms();
+    Imms() : IDBusPlayerControl(IDBusConnection(0)) {}
+    Imms(const IDBusConnection &con);
     ~Imms();
 
     // Important inherited public methods
@@ -30,7 +34,7 @@ public:
     // get the last song played
     int  get_previous();
 
-    virtual void playlist_changed();
+    virtual void playlist_changed(int length);
 
     // process internal events - call this periodically
     void do_events();
@@ -47,6 +51,8 @@ protected:
     };
 
     void reset_selection();
+
+    virtual string get_playlist_item(int index);
 
     // Helper functions
     bool fetch_song_info(SongData &data);

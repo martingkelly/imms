@@ -15,7 +15,6 @@
 #include <song.h>
 #include <sqldb2.h>
 #include <utils.h>
-#include <player.h>
 #include <spectrum.h>
 #include <strmanip.h>
 
@@ -28,9 +27,6 @@ using std::cin;
 using std::setw;
 using std::pair;
 using std::ifstream;
-
-int Player::get_playlist_length() { return 0; }
-string Player::get_playlist_item(int i) { return ""; }
 
 int usage();
 void do_help();
