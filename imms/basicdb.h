@@ -17,7 +17,7 @@ public:
     bool check_artist(string &artist);
     bool check_title(const string &artist, string &title);
 
-    int avg_rating(const string &title, const string &artist);
+    int avg_rating(const string &artist, const string &title);
 
     bool identify(const string &path)
         { *static_cast<Song*>(this) = Song(path); return uid != -1; }

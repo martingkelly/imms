@@ -70,7 +70,7 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     if (data.rating < 1)
     {
         data.unrated = true;
-        data.rating = ImmsDb::avg_rating(artist, title);
+        data.rating = ImmsDb::avg_rating(ImmsDb::get_info().first, title);
         if (data.rating < 1)
             data.rating = 100;
 
