@@ -162,12 +162,13 @@ void do_identify(const string &path)
         exit(-1);
     }
 
-    cout << "[" << s.get_path() << "]" << endl;
-    cout << "[" << setw(5) << s.get_uid() << " /" << setw(5)
-        << s.get_sid() << "] ";
-    cout << "(" << s.get_rating() << ") ("
-        << strtime(time(0) - s.get_last()) << ") ";
-    cout << setw(20) << s.get_info().first << " " << s.get_info().second << endl;
+    cout << "path       : " << s.get_path() << endl;
+    cout << "uid        : " << s.get_uid() << endl;
+    cout << "sid        : " << s.get_sid() << endl;
+    cout << "artist     : " << s.get_info().first << endl;
+    cout << "title      : " << s.get_info().second << endl;
+    cout << "rating     : " << s.get_rating() << endl;
+    cout << "last       : " << strtime(time(0) - s.get_last()) << endl;
 
     cout << endl << "positively correlated with: " << endl;
 

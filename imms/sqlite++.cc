@@ -127,8 +127,16 @@ sqlite3_stmt *SQLQueryManager::get(const string &query)
     if (i != statements.end())
         return i->second;
 
+    int tr = sqlite3_exec(SQLDatabase::db(), "BEGIN TRANSACTION;", 0, 0, 0);
+
     sqlite3_stmt *statement = 0;
-    if (sqlite3_prepare(SQLDatabase::db(), query.c_str(), -1, &statement, 0))
+    int qr = sqlite3_prepare(SQLDatabase::db(), query.c_str(),
+            -1, &statement, 0);
+
+    if (!tr) 
+        sqlite3_exec(SQLDatabase::db(), "COMMIT TRANSACTION;", 0, 0, 0);
+
+    if (qr)
     {
         if (block)
             return 0;
