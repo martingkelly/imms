@@ -17,6 +17,7 @@ using std::cerr;
 
 SongPicker::SongPicker()
 {
+    state = ON;
     reset();
 }
 
@@ -28,6 +29,9 @@ void SongPicker::reset()
 
 bool SongPicker::add_candidate(int position, string path, bool urgent)
 {
+    if (state != ON)
+        return false;
+
     ++attempts;
     if (attempts > MAX_ATTEMPTS)
         return false;
@@ -38,19 +42,8 @@ bool SongPicker::add_candidate(int position, string path, bool urgent)
             != candidates.end())
         return true;
 
-    int cost = fetch_song_info(data);
-
-    if (cost < 0)
-    {
-        // In case the playlist just a has a lot of songs that are not
-        // currently accessible, don't count a failure to fetch info about
-        // it as an attempt, unless we need to select the next song quickly
-        attempts -= !urgent;
-        return true;
-    }
-
+    acquired += fetch_song_info(data);
     candidates.push_back(data);
-    acquired += cost;
 
     return acquired < (urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE);
 }
@@ -67,7 +60,7 @@ void SongPicker::revalidate_winner(const string &path)
 
 int SongPicker::select_next()
 {
-    if (candidates.empty())
+    if (candidates.empty() || state != ON)
         return 0;
 
     Candidates::iterator i;

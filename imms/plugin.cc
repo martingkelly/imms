@@ -52,12 +52,12 @@ string imms_get_playlist_item(int at)
     return result;
 }
 
-void imms_setup(char *ch_email, int use_xidle, int use_sloppy)
+void imms_setup(char *ch_email, int use_xidle, int use_sloppy, int use_norand)
 {
     sloppy_skips = use_sloppy;
 
     if (imms)
-        imms->setup(ch_email ? ch_email : DEFAULT_EMAIL, use_xidle);
+        imms->setup(ch_email ? ch_email : DEFAULT_EMAIL, use_xidle, use_norand);
 }
 
 void imms_init()
@@ -85,7 +85,7 @@ void do_more_checks()
     delay = 0;
 
     // make sure shuffle is disabled
-    if (xmms_remote_is_shuffle(session))
+    if (imms && imms->is_enabled() && xmms_remote_is_shuffle(session))
         xmms_remote_toggle_shuffle(session);
 
     // update playlist length
@@ -171,7 +171,7 @@ void do_find_next()
 
     if (!forced && pl_length > 2)
     {
-        if (need_more)
+        if (imms->is_enabled() && need_more)
         {
             do { cur_plpos = imms_random(pl_length); }
             while (imms->add_candidate(cur_plpos,
@@ -179,7 +179,7 @@ void do_find_next()
         }
 
         // have imms select the next song for us
-        cur_plpos = imms->select_next();
+        cur_plpos = imms->is_enabled() ? imms->select_next() : cur_plpos;
     }
     else if (back)
     {
