@@ -23,7 +23,7 @@ using std::endl;
 int cur_plpos, next_plpos = -1, pl_length = -1;
 int last_plpos = -1, last_song_length = -1;
 int good_length = 0, song_length = 0, busy = 0, just_enqueued = 0, ending = 0;
-bool shuffle = false;
+bool shuffle = false, select_pending = false;
 
 string cur_path = "", last_path = "";
 
@@ -62,15 +62,23 @@ public:
         }
         if (message.get_type() == MTSignal)
         {
-            g_print("Received signal %s %s\n",
-                    message.get_interface().c_str(),
-                    message.get_member().c_str());
-
             if (message.get_member() == "ResetSelection")
             {
                 reset_selection();
                 return true;
             }
+            if (message.get_member() == "EnqueueNext")
+            {
+                message >> next_plpos;
+                xmms_remote_playqueue_add(session, next_plpos);
+                select_pending = false;
+                just_enqueued = 2;
+                return true;
+            }
+
+            g_print("Received signal %s %s\n",
+                    message.get_interface().c_str(),
+                    message.get_member().c_str());
         }
         else if (message.get_type() == MTMethod)
         {
@@ -160,10 +168,8 @@ static void enqueue_next()
     }
 
     // have imms select the next song for us
-    next_plpos = imms->select_next();
-    xmms_remote_playqueue_add(session, next_plpos);
-
-    just_enqueued = 2;
+    imms->select_next();
+    select_pending = true;
 }
 
 static void check_playlist()
@@ -230,7 +236,7 @@ void do_checks()
     int qlength = xmms_remote_get_playqueue_length(session);
     if (qlength > 1)
         reset_selection();
-    else if (!qlength)
+    else if (!qlength && !select_pending)
         enqueue_next();
 }
 
