@@ -9,7 +9,7 @@ template <typename Filter>
 class IMMSClient
 {
 public:
-    IMMSClient() : client(get_imms_root("socket"), &filter) {}
+    IMMSClient() : filter(this), client(get_imms_root("socket"), &filter) {}
 
     void setup(bool use_xidle)
     {
@@ -83,7 +83,9 @@ private:
 template <typename Ops>
 class ClientFilter : public IDBusFilter
 {
+    typedef IMMSClient< ClientFilter<Ops> > MyClient;
 public:
+    ClientFilter(MyClient *client) : client(client) {}
     virtual bool dispatch(IDBusConnection &con, IDBusIMessage &message)
     {
         if (message.get_type() == MTError)
@@ -97,7 +99,7 @@ public:
             {
                 if (message.get_member() == "Disconnected")
                 {
-                    Ops::disconnected();
+                    client->connection_lost();
                     return true;
                 }
             }
@@ -119,6 +121,24 @@ public:
                 Ops::set_next(next);
                 return true;
             }
+            if (message.get_member() == "RequestPlaylistChange")
+            {
+                client->playlist_changed(Ops::get_length());
+                return true;
+            }
+            if (message.get_member() == "GetPlaylistItem")
+            {
+                int i;
+                message >> i;
+                send_item(con, i);
+                return true;
+            }
+            if (message.get_member() == "GetEntirePlaylist")
+            {
+                for (int i = 0; i < Ops::get_length(); ++i)
+                    send_item(con, i);
+                return true;
+            }
 
             g_print("Received signal %s %s\n",
                     message.get_interface().c_str(),
@@ -126,23 +146,6 @@ public:
         }
         else if (message.get_type() == MTMethod)
         {
-            if (message.get_member() == "GetPlaylistItem")
-            {
-                int index;
-                message >> index;
-                IDBusOMessage reply(message.reply());
-                reply << Ops::get_item(index);
-                con.send(reply);
-                return true;
-            }
-            if (message.get_member() == "GetPlaylistLength")
-            {
-                IDBusOMessage reply(message.reply());
-                reply << Ops::get_length();
-                con.send(reply);
-                return true;
-            }
-
             g_print("Received method call %s %s\n",
                     message.get_interface().c_str(),
                     message.get_member().c_str());
@@ -153,6 +156,15 @@ public:
 
         return false;
     }
+private:
+    void send_item(IDBusConnection &con, int i)
+    {
+        IDBusOMessage m(IMMSDBUSID, "PlaylistItem");
+        m << i << Ops::get_item(i);
+        con.send(m);
+    }
+
+    MyClient *client;
 };
 
 #endif

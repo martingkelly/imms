@@ -3,22 +3,18 @@
 
 #include <string>
 
-#include "dbuscore.h"
-
 using std::string;
 
 class IMMSServer
 {
 public:
-    IMMSServer(IDBusConnection con_) : con(con_) {};
-protected:
-    int get_playlist_length();
-    string get_playlist_item(int index);
+    void request_playlist_change();
+    void request_playlist_item(int index);
+    void request_entire_playlist();
     void reset_selection();
+protected:
+    virtual void write_command(const string &line) = 0;
 
-    bool isok() { return con.isok(); }
-private:
-    IDBusConnection con;
 };
 
 #endif

@@ -12,11 +12,10 @@
 // IMMS, UMMS, we all MMS for XMMS?
 
 class Imms : public SongPicker,
-             protected XIdle,
-             protected IMMSServer
+             protected XIdle
 {
 public:
-    Imms(const IDBusConnection &con);
+    Imms(IMMSServer *server);
     ~Imms();
 
     // Important inherited public methods
@@ -30,13 +29,16 @@ public:
     // get the last song played
     int  get_previous();
 
-    virtual void playlist_changed(int length);
+    virtual void request_playlist_item(int index);
+    void playlist_changed(int length);
 
     // process internal events - call this periodically
     void do_events();
 
     // configure imms
     void setup(bool use_xidle);
+
+    friend class ImmsDFilter;
 
 protected:
     struct LastInfo {
@@ -53,8 +55,6 @@ protected:
     void set_lastinfo(LastInfo &last);
     void evaluate_transition(SongData &data, LastInfo &last, float weight);
 
-    virtual string get_playlist_item(int index);
-
     // State variables
     bool last_skipped, last_jumped;
     int local_max;
@@ -62,6 +62,7 @@ protected:
     std::ofstream fout;
 
     LastInfo handpicked, last;
+    IMMSServer *server;
 };
 
 #endif

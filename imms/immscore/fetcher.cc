@@ -12,7 +12,6 @@
 using std::endl;
 using std::cerr;
 
-
 InfoFetcher::SongData::SongData(int _position, const string &_path)
     : Song(_path), position(_position)
 {
@@ -41,28 +40,6 @@ bool InfoFetcher::identify_playlist_item(int pos)
 
     PlaylistDb::playlist_update_identity(pos, song.get_uid());
     return true;
-}
-
-void InfoFetcher::playlist_changed(int length)
-{
-    StackTimer t;
-    ImmsDb::playlist_clear();
-
-#ifdef DEBUG
-    cerr << "playlist changed. new length = " << length << endl;
-#endif
-
-    AutoTransaction at;
-
-    for (int i = 0; i < pl_length; ++i)
-    {
-        string path = path_normalize(get_playlist_item(i));
-        if (path == "")
-            cerr << "IMMS: Error: Playlist item " << i << " is empty!" << endl;
-        ImmsDb::playlist_insert_item(i, path);
-    }
-    
-    at.commit();
 }
 
 bool InfoFetcher::fetch_song_info(SongData &data)
