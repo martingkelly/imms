@@ -89,7 +89,7 @@ public:
             return (write_tag = 0);
 
         unsigned len = strlen(outp);
-        unsigned n = 0;
+        gsize n = 0;
         GIOError e = g_io_channel_write(con, (char*)outp, len, &n);
         if (e == G_IO_ERROR_NONE)
         {
@@ -122,7 +122,7 @@ public:
 
         if (condition & G_IO_IN)
         {
-            unsigned n = 0;
+            gsize n = 0;
             GIOError e = g_io_channel_read(con, buf, sizeof(buf) - 1, &n);
             if (e == G_IO_ERROR_NONE)
             {

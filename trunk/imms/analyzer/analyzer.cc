@@ -45,7 +45,7 @@ int analyze(const string &path)
     }
 
     ostringstream command;
-    command << "nice -n 15 sox \"" << path << "\" -t .raw -w -u -c 1 -r "
+    command << "nice -n 15 sox \'" << path << "\' -t .raw -w -u -c 1 -r "
         << SAMPLERATE << " -";
 #ifdef DEBUG
     cout << "analyzer: Executing: " << command.str() << endl;
