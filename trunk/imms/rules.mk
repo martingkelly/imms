@@ -5,6 +5,8 @@ libimms.so: $(XMMS_OBJ) immsconf.h
 		$(LDFLAGS) \
 	       	-shared -Wl,-z,defs,-soname,$@ -o $@
 
+immstool: libimmscore.a
+
 libimmscore.a: $(CORE_OBJ) immsconf.h
 	$(AR) $(ARFLAGS) $@ $(CORE_OBJ)
 
@@ -20,7 +22,7 @@ libimmscore.a: $(CORE_OBJ) immsconf.h
 
 clean:
 	rm -f $(wildcard $(XMMS_OBJ) $(CORE_OBJ) \
-		libimms.so libimmscore.a imms-*.tar.* core* .*.d)
+		libimms.so libimmscore.a immstool imms-*.tar.* core* .*.d)
 
 distclean: clean
 	rm -f $(wildcard .\#* config.* configure immsconf.h* vars.mk)
@@ -55,12 +57,12 @@ system-message:
 	$(warning Use 'make install-user' to install for the current user only.)
 
 install-system: libimms.so
-	${INSTALL_PROGRAM} libimms.so ${DESTDIR}`xmms-config --general-plugin-dir`
+	${INSTALL_PROGRAM} libimms.so ${DESTDIR}`xmms-config --visualization-plugin-dir`
 
 user-message:
 	$(warning Defaulting to installing for current user only.)
 	$(warning Use 'make install-system' to install for all users.)
 
 install-user: libimms.so
-	mkdir -p ${HOME}/.xmms/Plugins/General/
-	${INSTALL_PROGRAM} libimms.so ${HOME}/.xmms/Plugins/General/
+	mkdir -p ${HOME}/.xmms/Plugins/Visualization/
+	${INSTALL_PROGRAM} libimms.so ${HOME}/.xmms/Plugins/Visualization/

@@ -1,4 +1,3 @@
-#include <iomanip>
 #include <time.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -9,6 +8,7 @@
 
 #include <list>
 #include <iostream>
+#include <iomanip>
 #include <algorithm>
 
 #include "imms.h"
@@ -36,9 +36,9 @@ using std::list;
 
 #define     SAMPLE_SIZE             40
 #define     MIN_SAMPLE_SIZE         15
-#define     MAX_ATTEMPTS            (SAMPLE_SIZE+MIN_SAMPLE_SIZE)
+#define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
 #define     BASE_BIAS               10
-#define     DISPERSION_FACTOR       4.2
+#define     DISPERSION_FACTOR       4.0
 #define     MAX_TIME                20*DAY
 #define     MAX_RATING              150
 #define     MIN_RATING              75
@@ -83,6 +83,7 @@ Imms::Imms() : last_handpicked(-1)
     winner_valid = last_skipped = last_jumped = false;
     have_candidates = attempts = 0;
     local_max = MAX_TIME;
+    last_spectrum = "";
 
     string dotimms = getenv("HOME");
     mkdir(dotimms.append("/.imms").c_str(), 0700);
@@ -107,13 +108,64 @@ void Imms::pump()
     xidle.query();
 }
 
+void Imms::integrate_spectrum(uint16_t _long_spectrum[long_spectrum_size])
+{
+    for (int i = 0; i < long_spectrum_size; ++i)
+        long_spectrum[i] =
+            long_spectrum[i] * have_spectrums / (have_spectrums + 1) 
+            + _long_spectrum[i] / (have_spectrums + 1);
+    ++have_spectrums;
+}
+
+void Imms::finalize_spectrum()
+{
+    if (!have_spectrums)
+        return;
+
+    static int bounds[] =
+        { -1, 1, 2, 3, 5, 7, 10, 14, 20, 28, 40, 54, 74, 101, 137, 187, 255 };
+
+    static int scales[] = 
+        { 11000, 4100, 3600, 3000, 2400, 2000, 1700, 2000, 1500, 1000, 750,
+            650, 550, 450, 200, 80 };
+
+    string short_spectrum = "";
+
+    for (int i = 0; i < short_spectrum_size; ++i)
+    {
+        int sum = 0;
+        for (int j = bounds[i] + 1; j <= bounds[i + 1]; ++j)
+            sum += 'a' + ROUND(('z' - 'a') * long_spectrum[j] / scales[i]);
+        short_spectrum += ROUND(sum / (bounds[i + 1] - bounds[i]));
+    }
+
+#ifdef DEBUG
+    cerr << "spectrum [" << short_spectrum << "]" << endl;
+#endif
+
+    if (have_spectrums > 100)
+        immsdb->set_spectrum(short_spectrum);
+
+    int distance = 0;
+
+    if (last_spectrum.length() == short_spectrum.length()
+            && (int)last_spectrum.length() == short_spectrum_size)
+        for (int i = 0; i < short_spectrum_size; ++i)
+            distance += ROUND(pow(short_spectrum[i] - last_spectrum[i], 2));
+
+    last_spectrum = short_spectrum;
+#ifdef DEBUG
+    cerr << "difference from last: " << distance << endl;
+#endif
+}
+
 void Imms::playlist_changed(int _playlist_size)
 {
     playlist_size = _playlist_size;
     local_max = playlist_size * 7;
 #ifdef DEBUG
     cerr << " *** playlist changed!" << endl;
-    cerr << "local_max is now " << local_max / (24 * 60) << endl;
+    cerr << "local_max is now " << strtime(local_max) << endl;
 #endif
 }
 
@@ -242,6 +294,9 @@ void Imms::start_song(const string &path)
     immsdb->set_id(winner.id);
     immsdb->set_last(time(0));
 
+    have_spectrums = 0;
+    memset(long_spectrum, 0, sizeof(long_spectrum));
+
     print_song_info();
 }
 
@@ -315,6 +370,8 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
         mod = 0;
 
     immsdb->set_id(winner.id);
+
+    finalize_spectrum();
 
     if (mod > CONS_NON_SKIP_RATE + INTERACTIVE_BONUS)
         last_handpicked = winner.id.second;
