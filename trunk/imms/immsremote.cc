@@ -26,7 +26,7 @@ void linehandler(char *line)
     free(line);
 }
 
-int main()
+int main(int argc, char **argv)
 {
     string name = string(getenv("HOME")).append("/.imms/socket");
     SocketClient socket(name);
