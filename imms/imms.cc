@@ -4,10 +4,8 @@
 #include <math.h>
 #include <stdlib.h>     // for (s)random
 
-#include <list>
 #include <iostream>
 #include <iomanip>
-#include <algorithm>
 
 #include "imms.h"
 #include "strmanip.h"
@@ -15,7 +13,6 @@
 using std::endl;
 using std::cerr;
 using std::setprecision;
-using std::list;
 
 
 //////////////////////////////////////////////
@@ -30,15 +27,6 @@ using std::list;
 #define     INTERACTIVE_BONUS       2
 #define     JUMPED_FROM             -1
 #define     JUMPED_TO_SKIPPED       1
-
-#define     SAMPLE_SIZE             40
-#define     MIN_SAMPLE_SIZE         15
-#define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
-#define     BASE_BIAS               10
-#define     DISPERSION_FACTOR       4.0
-#define     MAX_RATING              150
-#define     MIN_RATING              75
-#define     CORRELATION_FACTOR      3
 
 #define     MAX_TIME                20*DAY
 #define     HOUR                    (60*60)
@@ -111,7 +99,7 @@ int BeatKeeper::get_BPM(time_t seconds)
 // Imms
 Imms::Imms() : last_handpicked(-1)
 {
-    winner_valid = last_skipped = last_jumped = false;
+    last_skipped = last_jumped = false;
     have_candidates = attempts = 0;
     local_max = MAX_TIME;
     last_spectrum = "";
@@ -227,123 +215,13 @@ void Imms::playlist_changed(int _playlist_size)
 #endif
 }
 
-bool Imms::add_candidate(int playlist_num, string path, bool urgent)
-{
-    ++attempts;
-    if (attempts > MAX_ATTEMPTS)
-        return false;
-
-    SongData data(playlist_num, path);
-
-    if (find(candidates.begin(), candidates.end(), data)
-            != candidates.end())
-        return true;
-
-    if (!fetch_song_info(data))
-    {
-        // In case the playlist just a has a lot of songs that are not
-        // currently accessible, don't count a failure to fetch info about
-        // it as an attempt, unless we need to select the next song quickly
-        attempts -= !urgent;
-        return true;
-    }
-
-    ++have_candidates;
-    candidates.push_back(data);
-
-    return have_candidates < (urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE);
-}
-
-int Imms::select_next()
-{
-    if (candidates.empty())
-        return 0;
-
-    Candidates::iterator i;
-    unsigned int total = 0;
-    time_t max_last_played = 0;
-    int max_composite = -INT_MAX, min_composite = INT_MAX;
-
-    for (i = candidates.begin(); i != candidates.end(); ++i)
-        if (i->last_played > max_last_played)
-            max_last_played = i->last_played;
-
-    for (i = candidates.begin(); i != candidates.end(); ++i)
-    {
-        i->composite_rating =
-            ROUND((i->rating + i->relation * CORRELATION_FACTOR)
-                    * i->last_played / (double)max_last_played);
-
-        if (i->composite_rating > max_composite)
-            max_composite = i->composite_rating;
-        if (i->composite_rating < min_composite)
-            min_composite = i->composite_rating;
-    }
-
-    bool have_good = (max_composite > MIN_RATING);
-    if (have_good && min_composite < MIN_RATING)
-        min_composite = MIN_RATING;
-
-    for (i = candidates.begin(); i != candidates.end(); ++i)
-    {
-        if (have_good && i->composite_rating < MIN_RATING)
-        {
-            i->composite_rating = 0;
-            continue;
-        }
-
-        i->composite_rating =
-            ROUND(pow(((double)(i->composite_rating - min_composite))
-                        / DISPERSION_FACTOR, DISPERSION_FACTOR));
-        i->composite_rating += BASE_BIAS;
-        total += i->composite_rating;
-    }
-
-#ifdef DEBUG
-    cerr << string(TERM_WIDTH - 15, '-') << endl;
-    cerr << " >> [" << min_composite << "-" << max_composite << "] ";
-#endif
-
-    int weight_index = imms_random(total);
-
-    for (i = candidates.begin(); i != candidates.end(); ++i)
-    { 
-        weight_index -= i->composite_rating;
-        if (weight_index < 0)
-        {
-            winner = *i;
-            winner_valid = true;
-#ifdef DEBUG
-            weight_index = INT_MAX;
-            cerr << "{" << i->composite_rating << "} ";
-#else
-            break;
-#endif
-        }
-#ifdef DEBUG
-        else if (i->composite_rating)
-            cerr << i->composite_rating << " ";
-#endif
-    }
-
-#ifdef DEBUG
-    cerr << endl;
-#endif
-
-    return winner.position;
-}
-
 void Imms::start_song(const string &path)
 {
     xidle.reset();
     candidates.clear();
     have_candidates = attempts = 0;
 
-    if (!winner_valid)
-    {
-        winner.path = path_simplifyer(path);
-        fetch_song_info(winner);
-    }
+    revalidate_winner(path);
 
     immsdb.set_id(winner.id);
     immsdb.set_last(time(0));
@@ -437,7 +315,6 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     fout << endl;
 
     last_jumped = jumped;
-    winner_valid = false;
 
     if (abs(mod) > CONS_NON_SKIP_RATE)
         immsdb.add_recent(mod);
