@@ -44,93 +44,38 @@ string imms_get_playlist_item(int at)
     return result;
 }
 
-static void reset_selection()
+static void xmms_reset_selection()
 {
     xmms_remote_playqueue_remove(session, next_plpos);
     next_plpos = -1;
 }
 
-class XMMSFilter : public IDBusFilter
+struct FilterOps
 {
-public:
-    XMMSFilter(IMMSClient<XMMSFilter> *_client) : client(_client) {}
-    virtual bool dispatch(IDBusConnection &con, IDBusIMessage &message)
+    static void set_next(int next)
     {
-        if (message.get_type() == MTError)
-        {
-            cerr << "Error: " << message.get_error() << endl;
-            return true;
-        }
-        if (message.get_type() == MTSignal)
-        {
-            if (message.get_interface() == "org.freedesktop.Local")
-            {
-                if (message.get_member() == "Disconnected")
-                {
-                    client->connection_lost();
-                    return true;
-                }
-            }
-
-            if (message.get_interface() != "org.luminal.IMMSClient")
-            {
-                cerr << "Received message on unknown interface: "
-                    << message.get_interface() << endl;
-                return false;
-            }
-
-            if (message.get_member() == "ResetSelection")
-            {
-                reset_selection();
-                return true;
-            }
-            if (message.get_member() == "EnqueueNext")
-            {
-                message >> next_plpos;
-                xmms_remote_playqueue_add(session, next_plpos);
-                select_pending = false;
-                just_enqueued = 2;
-                return true;
-            }
-
-            g_print("Received signal %s %s\n",
-                    message.get_interface().c_str(),
-                    message.get_member().c_str());
-        }
-        else if (message.get_type() == MTMethod)
-        {
-            if (message.get_member() == "GetPlaylistItem")
-            {
-                int index;
-                message >> index;
-                IDBusOMessage reply(message.reply());
-                reply << imms_get_playlist_item(index);
-                con.send(reply);
-                return true;
-            }
-            if (message.get_member() == "GetPlaylistLength")
-            {
-                IDBusOMessage reply(message.reply());
-                reply << (int)xmms_remote_get_playlist_length(session);
-                con.send(reply);
-                return true;
-            }
-
-            g_print("Received method call %s %s\n",
-                    message.get_interface().c_str(),
-                    message.get_member().c_str());
-
-        }
-
-        cerr << "Unhandled message!" << endl;
-
-        return false;
+        next_plpos = next;
+        xmms_remote_playqueue_add(session, next_plpos);
+        select_pending = false;
+        just_enqueued = 2;
     }
-private:
-    IMMSClient<XMMSFilter> *client;
-};
+    static void reset_selection()
+    {
+        xmms_reset_selection();
+    }
+    static string get_item(int index)
+    {
+        return imms_get_playlist_item(index);
+    }
+    static int get_length()
+    {
+        return (int)xmms_remote_get_playlist_length(session);
+    }
+}; 
 
-IMMSClient<XMMSFilter> *imms = 0;
+typedef IMMSServer< ClientFilter<FilterOps> > XMMSServer;
+
+XMMSServer *imms = 0;
 
 void imms_setup(int use_xidle)
 {
@@ -143,7 +88,7 @@ void imms_init()
     if (!imms)
     {
         try {
-            imms = new IMMSClient<XMMSFilter>();
+            imms = new XMMSServer();
         } catch (IDBusException &e) {
             cerr << "Error: " << e.what() << endl;
         }
@@ -198,7 +143,7 @@ static void check_playlist()
     if (new_pl_length != pl_length)
     {
         pl_length = new_pl_length;
-        reset_selection();
+        xmms_reset_selection();
         imms->playlist_changed(pl_length);
     }
 }
@@ -248,7 +193,7 @@ void do_checks()
 
     bool newshuffle = xmms_remote_is_shuffle(session);
     if (!newshuffle && shuffle)
-        reset_selection();
+        xmms_reset_selection();
     shuffle = newshuffle;
 
     if (!shuffle)
@@ -256,7 +201,7 @@ void do_checks()
 
     int qlength = xmms_remote_get_playqueue_length(session);
     if (qlength > 1)
-        reset_selection();
+        xmms_reset_selection();
     else if (!qlength && !select_pending)
         enqueue_next();
 }
