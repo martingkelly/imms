@@ -44,4 +44,3 @@ do_install: all plugins_install programs_install
 
 programs_install:
 	${INSTALL_PROGRAM} immsd analyzer immstool ${PREFIX}/bin
-
