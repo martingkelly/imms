@@ -1,11 +1,11 @@
-#include "strmanip.h"
-
 #include <sys/types.h>
 #include <stdlib.h>
-#include <dirent.h>
 #include <string.h>
 
 #include <iostream>
+
+#include "strmanip.h"
+#include "utils.h"
 
 using std::list;
 
@@ -98,15 +98,15 @@ void imms_magic_parse_path(list<string> &store, string path)
 {
     path = rex.replace(path, "/+$", "", Regexx::global);
 
-	string lastdir = path_get_filename(path);
-	path = path_get_dirname(path);
+    string lastdir = path_get_filename(path);
+    path = path_get_dirname(path);
 
-	imms_magic_preprocess_path(path);
+    imms_magic_preprocess_path(path);
     string_split(store, path, "/");
 
-	imms_magic_preprocess_filename(lastdir);
-	imms_magic_preprocess_path(lastdir);
-	string_split(store, lastdir, "/");
+    imms_magic_preprocess_filename(lastdir);
+    imms_magic_preprocess_path(lastdir);
+    string_split(store, lastdir, "/");
 }
 
 string string_normalize(string s)
@@ -152,26 +152,23 @@ string get_filename_mask(const string& path)
     string filename = filename_cleanup(path_get_filename(path));
     string extension = path_get_extension(path);
 
-    list<string> files;
-
-    DIR *dir = opendir(dirname.c_str());
-    struct dirent *de;
-    while ((de = readdir(dir)))
-    {
-        if (de->d_name[0] != '.' && path_get_extension(de->d_name) == extension)
-            files.push_back(filename_cleanup(path_get_filename(de->d_name)));
-    }
-    closedir(dir);
+    vector<string> files;
+    if (listdir(dirname, files))
+        return "";
 
     char *mask = new char[filename.length() + 1];
     memset(mask, 0, filename.length() + 1);
 
     int count = 0;
-    for (list<string>::iterator i = files.begin(); i != files.end(); i++)
+    for (vector<string>::iterator i = files.begin(); i != files.end(); i++)
     {
+        if ((*i)[0] == '.' || path_get_extension(*i) == extension)
+            continue;
+
         count++;
         size_t num_blocks;
-        LevMatchingBlock *blocks = get_matching_blocks(filename, *i, num_blocks);
+        LevMatchingBlock *blocks = get_matching_blocks(filename,
+                filename_cleanup(path_get_filename(*i)), num_blocks);
 
         for (size_t j = 0; j < num_blocks; j++)
         {

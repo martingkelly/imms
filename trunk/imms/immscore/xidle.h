@@ -1,10 +1,12 @@
 #ifndef __XIDLE_H
 #define __XIDLE_H
 
-#include <time.h>
-#include <X11/Xlib.h>
-
 #include "immsconf.h"
+
+#include <time.h>
+#ifdef WITH_XSCREENSAVER
+# include <X11/Xlib.h>
+#endif
 
 class XIdle
 {
@@ -25,9 +27,11 @@ private:
     int active;
     time_t last_checked;
 
+#ifdef WITH_XSCREENSAVER
     Display *display;
     Screen *screen;
     Window root;
+#endif
 
     unsigned int prev_mask;
     int prev_rootX, prev_rootY;

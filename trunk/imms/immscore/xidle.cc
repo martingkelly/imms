@@ -3,7 +3,7 @@
 #include <iostream>
 
 #ifdef WITH_XSCREENSAVER
-#include <X11/extensions/scrnsaver.h>
+# include <X11/extensions/scrnsaver.h>
 #endif
 
 using std::cerr;
@@ -15,6 +15,7 @@ using std::endl;
 XIdle::XIdle() : xidle_enabled(true), prev_mask(0),
                      prev_rootX(-1), prev_rootY(-1)
 {
+#ifdef WITH_XSCREENSAVER
     if ((display = XOpenDisplay(0)))
     {
         root = DefaultRootWindow(display);
@@ -25,6 +26,7 @@ XIdle::XIdle() : xidle_enabled(true), prev_mask(0),
         cerr << "IMMS: Could not open X display." << endl;
         cerr << "IMMS: Disabling idleness detector." << endl;
     }
+#endif
 
     reset();
 }
@@ -79,8 +81,9 @@ bool XIdle::query_pointer()
 {
     Window dummyWin;
     unsigned int mask;
-    int rootX, rootY, dummyInt;
+    int rootX = 0, rootY = 0, dummyInt;
 
+#ifdef WITH_XSCREENSAVER
     if (!XQueryPointer(display, root, &root, &dummyWin, &rootX, &rootY,
                 &dummyInt, &dummyInt, &mask))
     {
@@ -95,6 +98,7 @@ bool XIdle::query_pointer()
             }
         }
     }
+#endif
 
     if (rootX != prev_rootX || rootY != prev_rootY || mask != prev_mask)
     {
