@@ -85,16 +85,16 @@ if test "$with_pcre" = "no"; then
     AC_MSG_ERROR([PCRE required and missing.])
 fi
 
-PKG_CHECK_MODULES([REQUIRED], [fftw3f >= 3.0 glib-2.0 >= 2.0],
+PKG_CHECK_MODULES([REQUIRED], [fftw3 >= 3.0 glib-2.0 >= 2.0],
               [], [AC_MSG_ERROR([Required packages missing.])])
 
 saved_cppflags="$CPPFLAGS"
 saved_libs="$LIBS"
 
-CPPFLAGS="`pkg-config fftw3f --cflags`"
-LIBS="`pkg-config fftw3f --libs`"
+CPPFLAGS="`pkg-config fftw3 --cflags`"
+LIBS="`pkg-config fftw3 --libs`"
 AC_CHECK_HEADERS(fftw3.h,, [with_fftw=no])
-AC_CHECK_LIB(fftw3f, fftwf_plan_dft_r2c_1d,, [with_fftw=no])
+AC_CHECK_LIB(fftw3, fftw_plan_dft_r2c_1d,, [with_fftw=no])
 if test "$with_fftw" = "no"; then
     AC_MSG_ERROR([FFTW 3.0 required and missing.])
 fi

@@ -42,7 +42,7 @@ static string encode_spectrum(float spectrum[BARKSIZE])
     return spec;
 }
 
-static void freq2bark(float freqs[NFREQS], float bark[BARKSIZE])
+static void freq2bark(double freqs[NFREQS], float bark[BARKSIZE])
 {
     for (int i = 0; i < NFREQS; )
     {
@@ -353,7 +353,7 @@ pair<float, float> spectrum_analyze(const string &spectstr)
     return pair<float, float>(mean, deviation);
 }
 
-void SpectrumAnalyzer::integrate_spectrum(float long_spectrum[LONGSPECTRUM])
+void SpectrumAnalyzer::integrate_spectrum(double long_spectrum[LONGSPECTRUM])
 {
     float bark[BARKSIZE];
     freq2bark(long_spectrum, bark);

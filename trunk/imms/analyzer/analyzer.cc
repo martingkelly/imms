@@ -32,9 +32,9 @@ int usage()
     return -1;
 }
 
-float infftdata[WINDOWSIZE];
-fftwf_complex outfftdata[NFREQS];
-fftwf_plan plan;
+double infftdata[WINDOWSIZE];
+fftw_complex outfftdata[NFREQS];
+fftw_plan plan;
 
 int analyze(const string &path)
 {
@@ -59,9 +59,9 @@ int analyze(const string &path)
     }
 
     sample_t indata[WINDOWSIZE];
-    float outdata[NFREQS];
+    double outdata[NFREQS];
 
-    float maxes[NFREQS];
+    double maxes[NFREQS];
     memset(maxes, 0, sizeof(maxes));
 
 #ifdef DEBUG
@@ -86,9 +86,9 @@ int analyze(const string &path)
                 == READSIZE)
         {
             for (int i = 0; i < WINDOWSIZE; ++i)
-                infftdata[i] = (float)indata[i];
+                infftdata[i] = (double)indata[i];
 
-            fftwf_execute(plan);
+            fftw_execute(plan);
 
             for (int i = 0; i < NFREQS; ++i)
             {
@@ -131,13 +131,13 @@ int main(int argc, char *argv[])
     FILE *wisdom = fopen(get_imms_root(".fftw_wisdom").c_str(), "r");
     if (wisdom)
     {
-        fftwf_import_wisdom_from_file(wisdom);
+        fftw_import_wisdom_from_file(wisdom);
         fclose(wisdom);
     }
     else
         cerr << "analyzer: Growing wiser. This may take a while." << endl;
 
-    plan = fftwf_plan_dft_r2c_1d(WINDOWSIZE, infftdata, outfftdata,
+    plan = fftw_plan_dft_r2c_1d(WINDOWSIZE, infftdata, outfftdata,
             FFTW_MEASURE | FFTW_PATIENT | FFTW_EXHAUSTIVE);
 
     if (shouldexport)
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
         FILE *wisdom = fopen(get_imms_root(".fftw_wisdom").c_str(), "w");
         if (wisdom)
         {
-            fftwf_export_wisdom_to_file(wisdom);
+            fftw_export_wisdom_to_file(wisdom);
             fclose(wisdom);
         }
         else
@@ -156,5 +156,5 @@ int main(int argc, char *argv[])
     for (int i = 1; i < argc; ++i)
         analyze(path_normalize(argv[i]));
 
-    fftwf_destroy_plan(plan);
+    fftw_destroy_plan(plan);
 }
