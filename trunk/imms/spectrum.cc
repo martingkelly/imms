@@ -65,8 +65,6 @@ static inline int bpm2offset(int bpm)
 
 static inline bool roughly_double(int a, int b)
 {
-    bool res = abs(a - 2 * b) < 6;
-    cerr << a << " roughly double " << b << (res ? ": yes" : ": no") << endl;
     return abs(a - 2 * b) < 6;
 }
 
@@ -112,7 +110,9 @@ int BeatKeeper::peak_finder_helper(vector<int> &peaks, int min,
         if (local_max && check_peak(index) > range * 0.2)
         {
             ++count;
+#ifdef DEBUG
             cerr << " >> found peak @ " << offset2bpm(index) << endl;
+#endif
             peaks.push_back(offset2bpm(index));
         }
     }
@@ -180,7 +180,7 @@ int BeatKeeper::getBPM()
         return maybe_double(slow, min, range);
     }
 
-    int peak, count = 0;
+    int peak = 0, count = 0;
     // see if only one of the slow peaks doubles well
     if (fastpeaks.empty())
     {
@@ -404,14 +404,15 @@ float SpectrumAnalyzer::bpm_transition(int from, int to)
     if (avg < 100 || avg > 160)
         distance *= 2;
 
-    cerr << "from = " << from << " to = " << to
-        << " target distance = " << distance << endl;
-
     int diff = 2 - abs(from - to) / distance;
     if (diff < -2)
         diff = -2;
 
-    cerr << "diff = " << diff / 2.0 << endl;
+#ifdef DEBUG
+    cerr << "from = " << from << " to = " << to << endl;
+    cerr << "target distance = " << distance
+        << " diff = " << diff / 2.0 << endl;
+#endif
 
     return diff / 2.0;
 }

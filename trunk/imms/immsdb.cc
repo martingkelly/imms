@@ -14,7 +14,7 @@ using std::cerr;
 #define CORRELATION_TIME    (15*30)   // n * 30 ==> n minutes
 #define MAX_CORR_STR        "15"
 #define MAX_CORRELATION     15
-#define SECOND_DEGREE       0.6
+#define SECOND_DEGREE       0.5
 
 #define MAX(x,y) (x > y ? x : y)
 #define MIN(x,y) (x < y ? x : y)
@@ -506,6 +506,8 @@ void ImmsDb::set_spectrum(const string &spectrum)
     if (uid == -1)
         return;
 
+    run_query("INSERT INTO 'Acoustic' ('uid') VALUES ('" + itos(uid) + "');");
+
     run_query(
             "UPDATE 'Acoustic' SET spectrum = '" + spectrum +  "' "
             "WHERE uid = '" + itos(uid) + "';");
@@ -594,10 +596,6 @@ void ImmsDb::sql_schema_upgrade()
         sql_create_tables();
 
         // Copy the data into new tables, and drop the backups
-        run_query(
-                "INSERT INTO Acoustic (uid, spectrum) "
-                "SELECT uid, spectrum FROM Library_backup "
-                "WHERE spectrum NOT NULL;");
         run_query(
                 "INSERT INTO Library (uid, sid, path, modtime, checksum) "
                 "SELECT uid, sid, path, modtime, checksum "
