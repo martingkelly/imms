@@ -11,7 +11,7 @@ using std::cerr;
 
 #define SCHEMA_VERSION 2
 
-#define CORRELATION_TIME    (20*30)   // n * 30 ==> n minutes
+#define CORRELATION_TIME    (15*30)   // n * 30 ==> n minutes
 #define MAX_CORR_STR        "15"
 #define MAX_CORRELATION     15
 #define SECOND_DEGREE       0.5
@@ -84,7 +84,7 @@ void ImmsDb::add_recent(int weight)
 void ImmsDb::expire_recent(const string &where_clause)
 {
     select_query(
-            "SELECT sid, weight FROM 'Recent' " + where_clause + ";",
+            "SELECT sid, weight FROM 'Recent' " + where_clause + " LIMIT 5;",
             (SqlCallback)&ImmsDb::expire_recent_callback_1, 2);
 }
 
@@ -130,58 +130,21 @@ int ImmsDb::expire_recent_callback_2(int argc, char **argv)
     // Update the primary link
     update_correlation(from, to, weight);
 
-#if 1
+    if (fabs(weight) <= 3)
+        return 0;
+
     // Update secondary links
     select_query(
             "SELECT * FROM 'Correlations' "
             "WHERE ("
-                "origin = '" + itos(to) + "' "
+                    "origin = '" + itos(to) + "' "
                     "OR origin = '" + itos(from) + "' "
                     "OR destination = '" + itos(to) + "' "
                     "OR destination = '" + itos(from) + "'"
-                ") AND " + (weight > 0 ? "abs" : "") + " (weight) > 0;",
-                (SqlCallback)&ImmsDb::update_secondaty_correlations, 3);
-#else
-    update_secondaty_correlations_2(from, to);
-    update_secondaty_correlations_2(to, from);
-#endif
-
+                ") AND " + (weight > 0 ? "abs" : "") + " (weight) > 1 "
+            "LIMIT 15;",
+            (SqlCallback)&ImmsDb::update_secondaty_correlations, 3);
     return 0;
-}
-
-void ImmsDb::update_secondaty_correlations_2(int p, int q)
-{
-    static const float scale = SECOND_DEGREE / MAX_CORRELATION;
-
-    run_query("CREATE TABLE 'Outgraph' "
-            "('node' INTEGER UNIQUE NOT NULL, "
-            "'weight' FLOAT NOT NULL);");
-
-    run_query("INSERT INTO 'Outgraph' "
-        "SELECT destination, weight * " + itos(scale) + 
-            " FROM 'Correlations' " "WHERE origin = '" + itos(q) + "' "
-        "UNION SELECT origin, weight * " + itos(scale) + 
-            " FROM 'Correlations' WHERE destination = '" + itos(q) + "';");
-
-    run_query("DELETE FROM 'Outgraph' WHERE node = '" + itos(p) + "';");
-
-    run_query("UPDATE 'Outgraph' SET weight = weight + ifnull( "
-        "(SELECT weight FROM 'Correlations' AS c "
-             "WHERE c.origin = '" + itos(p) + "' AND c.destination = Outgraph.node "
-             "OR c.destination = '" + itos(p) + "' AND c.origin = Outgraph.node), "
-             "0);");
-
-    run_query("DELETE FROM 'Correlations' "
-        "WHERE (origin = '" + itos(p) + "' AND destination IN "
-            "(SELECT node FROM 'Outgraph' WHERE node > '" + itos(p) + "')) "
-        "OR (destination = '" + itos(p) + "' AND origin IN "
-            "(SELECT node FROM 'Outgraph' WHERE node < '" + itos(p) + "'));");
-
-    run_query("INSERT INTO 'Correlations' "
-        "SELECT min('" + itos(p) + "', node), "
-            "max('" + itos(p) + "', node), weight FROM 'Outgraph';");
-
-    run_query("DROP TABLE 'Outgraph';");
 }
 
 int ImmsDb::update_secondaty_correlations(int argc, char **argv)
@@ -430,16 +393,6 @@ void ImmsDb::set_title(const string &_title)
         return;
 
     title = _title;
-
-    /* I don't think we want to do this. We'll loose correlation info
-    // clean up the old info
-    if (sid != -1)
-    {
-        string where_clause = "WHERE sid = '" + itos(sid) + "'";
-        run_query("DELETE FROM 'Info' " + where_clause + ";");
-        run_query("DELETE FROM 'Last' " + where_clause + ";");
-    }
-    */
 
     select_query(
             "SELECT sid FROM 'Info' "
