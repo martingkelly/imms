@@ -23,7 +23,7 @@ class SongData
 {
 public:
     SongData(int _position = -1, const string &_path = "");
-    bool operator ==(const SongData &other)
+    bool operator ==(const SongData &other) const
         { return position == other.position; }
 
     IntPair id;
