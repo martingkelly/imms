@@ -10,12 +10,14 @@
 
 char *ch_email = NULL;
 int use_xidle = 1;
+int use_autooff = 1;
 int use_queue = 0;
 int use_sloppy = 0;
 int poll_tag = 0;
 
 GtkWidget *configure_win = NULL, *about_win = NULL,
-    *xidle_button = NULL, *sloppy_button = NULL, *queue_button = NULL;
+    *xidle_button = NULL, *sloppy_button = NULL, *queue_button = NULL,
+    *autooff_button = NULL;
 
 gint poll_func(gpointer unused)
 {
@@ -35,6 +37,7 @@ void read_config(void)
         xmms_cfg_read_string(cfgfile, "imms", "email", &ch_email);
         xmms_cfg_read_int(cfgfile, "imms", "xidle", &use_xidle);
         xmms_cfg_read_int(cfgfile, "imms", "sloppy", &use_sloppy);
+        xmms_cfg_read_int(cfgfile, "imms", "autooff", &use_autooff);
         xmms_cfg_read_int(cfgfile, "imms", "queue", &use_queue);
         xmms_cfg_free(cfgfile);
     }
@@ -44,7 +47,7 @@ void init(void)
 {
     imms_init();
     read_config();
-    imms_setup(ch_email, use_xidle, use_sloppy);
+    imms_setup(ch_email, use_xidle, use_sloppy, use_autooff);
     poll_tag = gtk_timeout_add(100, poll_func, NULL);
 }
 
@@ -65,29 +68,54 @@ void configure_ok_cb(gpointer data)
     use_xidle = !!GTK_TOGGLE_BUTTON(xidle_button)->active;
     use_sloppy = !!GTK_TOGGLE_BUTTON(sloppy_button)->active;
     use_queue = !!GTK_TOGGLE_BUTTON(queue_button)->active;
+    use_autooff = !!GTK_TOGGLE_BUTTON(autooff_button)->active;
 
     xmms_cfg_write_int(cfgfile, "imms", "xidle", use_xidle);
     xmms_cfg_write_int(cfgfile, "imms", "sloppy", use_sloppy);
     xmms_cfg_write_int(cfgfile, "imms", "queue", use_queue);
+    xmms_cfg_write_int(cfgfile, "imms", "autooff", use_autooff);
     xmms_cfg_write_default_file(cfgfile);
 
     xmms_cfg_free(cfgfile);
 
-    imms_setup(ch_email, use_xidle, use_sloppy);
+    imms_setup(ch_email, use_xidle, use_sloppy, use_autooff);
     gtk_widget_destroy(configure_win);
 }  
 
+#define ADD_CONFIG_CHECKBOX(pref, title, label, descr)                          \
+    pref##_frame = gtk_frame_new(title);                                        \
+    gtk_box_pack_start(GTK_BOX(configure_vbox), pref##_frame, FALSE, FALSE, 0); \
+    pref##_vbox = gtk_vbox_new(FALSE, 10);                                      \
+    gtk_container_set_border_width(GTK_CONTAINER(pref##_vbox), 5);              \
+    gtk_container_add(GTK_CONTAINER(pref##_frame), pref##_vbox);                \
+                                                                                \
+    pref##_desc = gtk_label_new(label);                                         \
+                                                                                \
+    gtk_label_set_line_wrap(GTK_LABEL(pref##_desc), TRUE);                      \
+    gtk_label_set_justify(GTK_LABEL(pref##_desc), GTK_JUSTIFY_LEFT);            \
+    gtk_misc_set_alignment(GTK_MISC(pref##_desc), 0, 0.5);                      \
+    gtk_box_pack_start(GTK_BOX(pref##_vbox), pref##_desc, FALSE, FALSE, 0);     \
+    gtk_widget_show(pref##_desc);                                               \
+                                                                                \
+    pref##_hbox = gtk_hbox_new(FALSE, 5);                                       \
+    gtk_box_pack_start(GTK_BOX(pref##_vbox), pref##_hbox, FALSE, FALSE, 0);     \
+                                                                                \
+    pref##_button = gtk_check_button_new_with_label(descr);                     \
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref##_button), use_##pref); \
+    gtk_box_pack_start(GTK_BOX(pref##_hbox), pref##_button, FALSE, FALSE, 0);   \
+                                                                                \
+    gtk_widget_show(pref##_frame);                                              \
+    gtk_widget_show(pref##_vbox);                                               \
+    gtk_widget_show(pref##_button);                                             \
+    gtk_widget_show(pref##_hbox);
+
 void configure(void)
 {
-    /* Main */
     GtkWidget *configure_vbox;
-    /* XIdle */
     GtkWidget *xidle_hbox, *xidle_vbox, *xidle_frame, *xidle_desc; 
-    /* Crossfade */
     GtkWidget *sloppy_hbox, *sloppy_vbox, *sloppy_frame, *sloppy_desc; 
-    /* Queue */
     GtkWidget *queue_hbox, *queue_vbox, *queue_frame, *queue_desc; 
-    /* Buttons */
+    GtkWidget *autooff_hbox, *autooff_vbox, *autooff_frame, *autooff_desc; 
     GtkWidget *configure_bbox, *configure_ok, *configure_cancel;
 
     if (configure_win)
@@ -105,94 +133,24 @@ void configure(void)
     configure_vbox = gtk_vbox_new(FALSE, 10);
     gtk_container_add(GTK_CONTAINER(configure_win), configure_vbox);
 
-    /* Xidle */
-    xidle_frame = gtk_frame_new("Idleness");
-    gtk_box_pack_start(GTK_BOX(configure_vbox), xidle_frame, FALSE, FALSE, 0);
-    xidle_vbox = gtk_vbox_new(FALSE, 10);
-    gtk_container_set_border_width(GTK_CONTAINER(xidle_vbox), 5);
-    gtk_container_add(GTK_CONTAINER(xidle_frame), xidle_vbox);
+    ADD_CONFIG_CHECKBOX(xidle, "Idleness", 
+            "Disable this option if you use XMMS on a dedicated machine",
+            "Use X idleness statistics");
 
-    xidle_desc = gtk_label_new(
-            "Disable this option if you use XMMS on a dedicated machine");
-
-    gtk_label_set_line_wrap(GTK_LABEL(xidle_desc), TRUE);
-    gtk_label_set_justify(GTK_LABEL(xidle_desc), GTK_JUSTIFY_LEFT);
-    gtk_misc_set_alignment(GTK_MISC(xidle_desc), 0, 0.5);
-    gtk_box_pack_start(GTK_BOX(xidle_vbox), xidle_desc, FALSE, FALSE, 0);
-    gtk_widget_show(xidle_desc);
-
-    xidle_hbox = gtk_hbox_new(FALSE, 5);
-    gtk_box_pack_start(GTK_BOX(xidle_vbox), xidle_hbox, FALSE, FALSE, 0);
-
-    xidle_button =
-        gtk_check_button_new_with_label("Use X idleness statistics");
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(xidle_button), use_xidle);
-    gtk_box_pack_start(GTK_BOX(xidle_hbox), xidle_button, FALSE, FALSE, 0);
-
-    gtk_widget_show(xidle_frame);
-    gtk_widget_show(xidle_vbox);
-    gtk_widget_show(xidle_button);
-    gtk_widget_show(xidle_hbox);
-
-    /* Queue */
-    queue_frame = gtk_frame_new("XMMS Queue");
-    gtk_box_pack_start(GTK_BOX(configure_vbox), queue_frame, FALSE, FALSE, 0);
-    queue_vbox = gtk_vbox_new(FALSE, 10);
-    gtk_container_set_border_width(GTK_CONTAINER(queue_vbox), 5);
-    gtk_container_add(GTK_CONTAINER(queue_frame), queue_vbox);
-
-    queue_desc = gtk_label_new(
+    ADD_CONFIG_CHECKBOX(queue, "XMMS Queue", 
             "Enabling this option will cause spurious song change reports "
-            "from XOSD, Song Change, and other similar plugins.");
+            "from XOSD, Song Change, and other similar plugins.",
+            "Honour XMMS Queue");
 
-    gtk_label_set_line_wrap(GTK_LABEL(queue_desc), TRUE);
-    gtk_label_set_justify(GTK_LABEL(queue_desc), GTK_JUSTIFY_LEFT);
-    gtk_misc_set_alignment(GTK_MISC(queue_desc), 0, 0.5);
-    gtk_box_pack_start(GTK_BOX(queue_vbox), queue_desc, FALSE, FALSE, 0);
-    gtk_widget_show(queue_desc);
+    ADD_CONFIG_CHECKBOX(autooff, "Suspend IMMS", 
+            "Automatically temporarily disable IMMS "
+            "when playing CD tracks or http streams.",
+            "Ignore CD tracks and streams");
 
-    queue_hbox = gtk_hbox_new(FALSE, 5);
-    gtk_box_pack_start(GTK_BOX(queue_vbox), queue_hbox, FALSE, FALSE, 0);
-
-    queue_button = gtk_check_button_new_with_label(
-                "Honour XMMS Queue");
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(queue_button), use_queue);
-    gtk_box_pack_start(GTK_BOX(queue_hbox), queue_button, FALSE, FALSE, 0);
-
-    gtk_widget_show(queue_frame);
-    gtk_widget_show(queue_vbox);
-    gtk_widget_show(queue_button);
-    gtk_widget_show(queue_hbox);
-
-    /* Crossfade */
-    sloppy_frame = gtk_frame_new("Skip detection");
-    gtk_box_pack_start(GTK_BOX(configure_vbox), sloppy_frame, FALSE, FALSE, 0);
-    sloppy_vbox = gtk_vbox_new(FALSE, 10);
-    gtk_container_set_border_width(GTK_CONTAINER(sloppy_vbox), 5);
-    gtk_container_add(GTK_CONTAINER(sloppy_frame), sloppy_vbox);
-
-    sloppy_desc = gtk_label_new(
+    ADD_CONFIG_CHECKBOX(sloppy, "Skip Detection", 
             "Enable this if you use XMMS Crossfade plugin, "
-            "or experience misdetected song skips.");
-
-    gtk_label_set_line_wrap(GTK_LABEL(sloppy_desc), TRUE);
-    gtk_label_set_justify(GTK_LABEL(sloppy_desc), GTK_JUSTIFY_LEFT);
-    gtk_misc_set_alignment(GTK_MISC(sloppy_desc), 0, 0.5);
-    gtk_box_pack_start(GTK_BOX(sloppy_vbox), sloppy_desc, FALSE, FALSE, 0);
-    gtk_widget_show(sloppy_desc);
-
-    sloppy_hbox = gtk_hbox_new(FALSE, 5);
-    gtk_box_pack_start(GTK_BOX(sloppy_vbox), sloppy_hbox, FALSE, FALSE, 0);
-
-    sloppy_button =
-        gtk_check_button_new_with_label("Use sloppy skip detection");
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(sloppy_button), use_sloppy);
-    gtk_box_pack_start(GTK_BOX(sloppy_hbox), sloppy_button, FALSE, FALSE, 0);
-
-    gtk_widget_show(sloppy_frame);
-    gtk_widget_show(sloppy_vbox);
-    gtk_widget_show(sloppy_button);
-    gtk_widget_show(sloppy_hbox);
+            "or experience misdetected song skips.",
+            "Use sloppy skip detection");
 
     /* Buttons */
     configure_bbox = gtk_hbutton_box_new();

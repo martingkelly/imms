@@ -78,10 +78,11 @@ Imms::Imms()
     fout << endl << endl << ctime(&t) << setprecision(3);
 }
 
-void Imms::setup(const char* _email, bool use_xidle)
+void Imms::setup(const char* _email, bool use_xidle, bool _use_autooff)
 {
     email = _email;
     xidle_enabled = use_xidle;
+    use_autooff = _use_autooff;
 }
 
 void Imms::pump()
@@ -114,6 +115,13 @@ void Imms::start_song(int position, const string &path)
     XIdle::reset();
     SongPicker::reset();
     SpectrumAnalyzer::reset();
+
+    state = !use_autooff ||
+        (path.find("CD AUDIO TRACK") && path.find("http://")) ?
+        ON : AUTOOFF;
+
+    if (state != ON)
+        return;
 
     revalidate_winner(path);
 
@@ -156,6 +164,9 @@ void Imms::print_song_info()
 
 void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 {
+    if (state != ON)
+        return;
+
     int mod;
 
     if (at_the_end)

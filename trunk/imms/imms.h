@@ -40,7 +40,9 @@ public:
 
     // configure imms
     //  email is used for getting legacy ratings from id3 tags
-    void setup(const char* _email, bool use_xidle);
+    void setup(const char* _email, bool use_xidle, bool _use_autooff);
+
+    bool is_enabled() { return state == ON; }
 
 protected:
     // Helper functions
@@ -48,7 +50,7 @@ protected:
     void print_song_info();
 
     // State variables
-    bool last_skipped, last_jumped;
+    bool last_skipped, last_jumped, use_autooff;
     int local_max;
 
     std::vector<int> history;
