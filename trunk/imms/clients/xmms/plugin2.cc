@@ -5,7 +5,6 @@
 #include <string>
 #include <iostream>
 #include <time.h>
-#include <glib.h>
 
 #include <xmms/plugin.h>
 #include <xmms/xmmsctrl.h> 
@@ -13,7 +12,7 @@
 #include "immsconf.h"
 #include "plugin.h"
 #include "utils.h"
-#include "players/clientstub.h"
+#include "clientstub.h"
 
 using std::string;
 using std::cerr;
