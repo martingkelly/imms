@@ -9,6 +9,9 @@
 using std::cerr;
 using std::endl;
 
+#define SAMPLE_RATE     10
+#define MIN_ACTIVE      1
+
 XIdle::XIdle() : prev_mask(0), prev_rootX(-1), prev_rootY(-1)
 {
     if ((display = XOpenDisplay(0)))
@@ -31,8 +34,16 @@ void XIdle::reset()
     active = 0;
 }
 
+bool XIdle::is_active()
+{
+    return active > MIN_ACTIVE;
+}
+
 void XIdle::query()
 {
+    if (!xidle_enabled)
+        return;
+
     if (active > MIN_ACTIVE || !display)
         return;
 

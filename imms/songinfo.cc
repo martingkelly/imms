@@ -14,6 +14,9 @@ SongInfo::SongInfo() : filename(""), myslave(0) { }
 
 void SongInfo::link(string _filename)
 {
+    if (filename == _filename)
+        return;
+
     filename = _filename;
 
     delete myslave;

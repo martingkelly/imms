@@ -1,21 +1,22 @@
 #ifndef __XIDLE_H
 #define __XIDLE_H
 
-#include "immsconf.h"
-
 #include <time.h>
 #include <X11/Xlib.h>
 
-#define SAMPLE_RATE     10
-#define MIN_ACTIVE      1
+#include "immsconf.h"
 
 class XIdle
 {
 public:
     XIdle();
-    bool is_active() { return active > MIN_ACTIVE; }
+
+protected:
+    bool is_active();
     void reset();
     void query();
+
+    bool xidle_enabled;
 
 private:
     bool query_idle_time();
