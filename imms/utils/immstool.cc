@@ -16,6 +16,8 @@
 #include "player.h"
 #include "strmanip.h"
 
+#define SHORTSPECTRUM   16
+
 using std::string;
 using std::cout;
 using std::endl;
