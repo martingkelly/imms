@@ -47,7 +47,7 @@ bool SongPicker::add_candidate(int position, string path, bool urgent)
 void SongPicker::revalidate_current(const string &path)
 {
     string simple = path_simplifyer(path);
-    if (current.path == winner.path)
+    if (simple == winner.path)
     {
         std::cerr << "reusing winner!" << std::endl;
         current = winner;

@@ -96,10 +96,36 @@ void ImmsDb::sql_create_tables()
                 "'weight' INTEGER DEFAULT '0');");
 
     run_query(
+            "CREATE TEMPORARY TABLE 'Playlist' ("
+                "'index' INTEGER PRIMARY KEY, "
+                "'path' VARCHAR(4096) NOT NULL, "
+                "'uid' INTEGER DEFAULT '-1');");
+
+    run_query(
             "CREATE TEMPORARY TABLE 'Recent' ("
                 "'sid' INTEGER NOT NULL, "
                 "'weight' INTEGER NOT NULL, "
                 "'time' TIMESTAMP);");
+}
+
+void ImmsDb::insert_playlist_item(int index, const string &path)
+{
+    run_query("INSERT INTO 'Playlist' ('index', 'path') "
+            "VALUES ('" + itos(index) + "', '"
+            + escape_string(path) + "');");
+}
+
+bool ImmsDb::check_playlist_item(int index, const string &path)
+{
+    select_query("SELECT path FROM 'Playlist' "
+            "WHERE index = '" + itos(index) + "';");
+
+    return nrow && resultp[1] && path == resultp[1];
+}
+
+void ImmsDb::clear_playlist()
+{
+    run_query("DELETE FROM 'Playlist';");
 }
 
 void ImmsDb::add_recent(int weight)
@@ -110,7 +136,7 @@ void ImmsDb::add_recent(int weight)
         run_query("INSERT INTO 'Recent' "
                 "VALUES ('" + itos(sid) + "', '"
                 + itos(weight) + "', '"
-                + itos(time(0)) + "')");
+                + itos(time(0)) + "');");
 }
 
 void ImmsDb::expire_recent(const string &where_clause)

@@ -46,6 +46,10 @@ public:
 
     int avg_rating();
 
+    void insert_playlist_item(int index, const string &path);
+    bool check_playlist_item(int index, const string &path);
+    void clear_playlist();
+
     void clear_recent() { expire_recent(""); }
 
 protected:

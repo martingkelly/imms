@@ -90,7 +90,7 @@ void do_more_checks()
     if (new_pl_length != pl_length)
     {
         pl_length = new_pl_length;
-        imms->playlist_changed(pl_length);
+        imms->playlist_changed();
     }
 
     // check if xmms is reporting the song length correctly
