@@ -15,7 +15,7 @@ using std::string;
 using std::vector;
 
 #define MINBPM          50
-#define MAXBPM          200
+#define MAXBPM          225
 #define SAMPLES         100
 #define MINBEATLENGTH   (SAMPLES*60/MAXBPM)
 #define MAXBEATLENGTH   (SAMPLES*60/MINBPM)
@@ -57,13 +57,14 @@ public:
     void finalize();
 
 protected:
-    float evaluate_transition(const string &from, const string &to);
+    float color_transition(const string &from, const string &to);
+    float bpm_transition(int from, int to);
     const string& get_last_spectrum() { return last_spectrum; }
     int get_last_bpm() { return last_bpm; }
     void reset();
 
 private:
-    BeatKeeper bpm_l3, bpm_h3;
+    BeatKeeper bpm_low, bpm_hi;
     int have_spectrums;
     double spectrum[SHORTSPECTRUM];
     string last_spectrum;

@@ -49,11 +49,15 @@ protected:
 
     // State variables
     bool last_skipped, last_jumped;
-    int local_max, last_handpicked;
+    int local_max;
 
     std::vector<int> history;
     std::ofstream fout;
-    std::string last_hp_spectrum;
+
+    struct {
+        std::string spectrum;
+        int bpm, sid;
+    } last_hp;
 };
 
 #endif

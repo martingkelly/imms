@@ -16,10 +16,11 @@ protected:
             { return position == other.position; }
 
             IntPair id;
-            int position, rating, relation, extra, composite_rating;
+            int position, rating, relation;
+            int composite_rating, color, bpm;
             bool identified, unrated;
             time_t last_played;
-            string path;
+            string path, spectrum;
     };
 
     virtual int fetch_song_info(SongData &data);
