@@ -255,7 +255,7 @@ bool InfoFetcher::parse_song_info(const string &path, StringPair &info)
             title = album;
             return true;
         }
-        else if (Regexx(*i, string("^") + title))
+        else if (title != "" && Regexx(*i, string("^") + title))
             return true;
     }
 
