@@ -9,6 +9,7 @@
 class PlaylistDb
 {
 public:
+    PlaylistDb() : filtercount(-1) {}
     void playlist_insert_item(int pos, const string &path);
     void playlist_update_identity(int pos, int uid);
     void playlist_mass_identify();

@@ -512,6 +512,9 @@ int do_rate(const string &path, char *rating)
 
     int r = s.get_rating();
 
+    if (r < 0)
+        r = 100;
+
     if (rating[0] == '-' || rating[0] == '+')
     {
         int mod = atoi(rating + 1);

@@ -17,7 +17,8 @@
 using std::endl;
 using std::cerr;
 
-SongPicker::SongPicker() : current(0, "current"), winner(0, "winner")
+SongPicker::SongPicker()
+    : current(0, "current"), acquired(0), winner(0, "winner")
 {
     reset();
 }
@@ -36,7 +37,7 @@ bool SongPicker::add_candidate(bool urgent)
     ++attempts;
 
     int want = urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE;
-    if (acquired >= std::min(want, pl_length - 2))
+    if (acquired >= std::min(want, pl_length))
         return false;
 
     int position = 0;
@@ -115,7 +116,7 @@ void SongPicker::revalidate_current(int pos, const string &path)
 
 int SongPicker::select_next()
 {
-    if (PlaylistDb::get_effective_playlist_length(true) < pl_length - 2)
+    if (PlaylistDb::get_effective_playlist_length(true) < pl_length)
         return -1;
 
     if (candidates.size() < MIN_SAMPLE_SIZE)

@@ -8,6 +8,8 @@
 
 class InfoFetcher : virtual protected ImmsDb, private SongInfo
 {
+public:
+    InfoFetcher() : next_sid(-1) {}
 protected:
     class SongData : public Song
     {
