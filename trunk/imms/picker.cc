@@ -5,7 +5,6 @@
 
 #include "picker.h"
 #include "strmanip.h"
-#include "player.h"
 #include "utils.h"
 
 #define     SAMPLE_SIZE             100

@@ -9,17 +9,16 @@
 #include "picker.h"
 #include "xidle.h"
 #include "server.h"
-#include "player.h"
+#include "clientstub.h"
 
 // IMMS, UMMS, we all MMS for XMMS?
 
 class Imms : public SongPicker,
              protected XIdle,
              protected ImmsServer,
-             protected IDBusPlayerControl
+             protected IMMSClient
 {
 public:
-    Imms() : IDBusPlayerControl(IDBusConnection(0)) {}
     Imms(const IDBusConnection &con);
     ~Imms();
 
