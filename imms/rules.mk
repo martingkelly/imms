@@ -37,7 +37,7 @@ immsconf.h: configure
 
 dist: immsconf.h distclean 
 	cp -r . /tmp/imms-$(VERSION)
-	rm -rf /tmp/imms-$(VERSION)/CVS /tmp/imms-$(VERSION)/.cvsignore
+	rm -rf /tmp/imms-$(VERSION)/.svn
 	tar -C /tmp/ -cj imms-$(VERSION)/ -f imms-$(VERSION).tar.bz2
 	tar -C /tmp/ -cz imms-$(VERSION)/ -f imms-$(VERSION).tar.gz
 	rm -rf /tmp/imms-$(VERSION)/
