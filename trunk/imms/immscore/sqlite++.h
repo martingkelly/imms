@@ -66,7 +66,7 @@ typedef struct sqlite3_stmt sqlite3_stmt;
 class SQLQueryManager
 {
 public:
-    SQLQueryManager() : cache(true) {}
+    SQLQueryManager() : cache(true), block(false) {}
     sqlite3_stmt *get(const string &query);
     ~SQLQueryManager();
 

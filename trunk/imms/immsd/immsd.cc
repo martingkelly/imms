@@ -154,6 +154,7 @@ int main(int argc, char **argv)
 
     signal(SIGINT,  quit);
     signal(SIGTERM, quit);
+    signal(SIGPIPE, SIG_IGN);
 
     GSource* ts = g_timeout_source_new(500);
     g_source_attach(ts, NULL);

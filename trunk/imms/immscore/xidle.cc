@@ -12,7 +12,8 @@ using std::endl;
 #define SAMPLE_RATE     10
 #define MIN_ACTIVE      1
 
-XIdle::XIdle() : prev_mask(0), prev_rootX(-1), prev_rootY(-1)
+XIdle::XIdle() : xidle_enabled(true), prev_mask(0),
+                     prev_rootX(-1), prev_rootY(-1)
 {
     if ((display = XOpenDisplay(0)))
     {
