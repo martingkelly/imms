@@ -7,12 +7,10 @@
 #include "players/dbusclient.h"
 
 template <typename Filter>
-class IMMSClient
+class IMMSServer
 {
 public:
-    IMMSClient() :
-        filter(this),
-        client(get_imms_root("socket"), &filter) {}
+    IMMSServer() : filter(this), client(get_imms_root("socket"), &filter) {}
 
     void setup(bool use_xidle)
     {
@@ -74,6 +72,87 @@ public:
 private:
     Filter filter;
     IDBusClient client;
+};
+
+
+template <typename Ops>
+class ClientFilter : public IDBusFilter
+{
+public:
+    ClientFilter(IMMSServer< ClientFilter<Ops> > *_client) : client(_client) {}
+    virtual bool dispatch(IDBusConnection &con, IDBusIMessage &message)
+    {
+        if (message.get_type() == MTError)
+        {
+            cerr << "Error: " << message.get_error() << endl;
+            return true;
+        }
+        if (message.get_type() == MTSignal)
+        {
+            if (message.get_interface() == "org.freedesktop.Local")
+            {
+                if (message.get_member() == "Disconnected")
+                {
+                    client->connection_lost();
+                    return true;
+                }
+            }
+
+            if (message.get_interface() != "org.luminal.IMMSClient")
+            {
+                cerr << "Received message on unknown interface: "
+                    << message.get_interface() << endl;
+                return false;
+            }
+
+            if (message.get_member() == "ResetSelection")
+            {
+                Ops::reset_selection();
+                return true;
+            }
+            if (message.get_member() == "EnqueueNext")
+            {
+                int next;
+                message >> next;
+                Ops::set_next(next);
+                return true;
+            }
+
+            g_print("Received signal %s %s\n",
+                    message.get_interface().c_str(),
+                    message.get_member().c_str());
+        }
+        else if (message.get_type() == MTMethod)
+        {
+            if (message.get_member() == "GetPlaylistItem")
+            {
+                int index;
+                message >> index;
+                IDBusOMessage reply(message.reply());
+                reply << Ops::get_item(index);
+                con.send(reply);
+                return true;
+            }
+            if (message.get_member() == "GetPlaylistLength")
+            {
+                IDBusOMessage reply(message.reply());
+                reply << Ops::get_length();
+                con.send(reply);
+                return true;
+            }
+
+            g_print("Received method call %s %s\n",
+                    message.get_interface().c_str(),
+                    message.get_member().c_str());
+
+        }
+
+        cerr << "Unhandled message!" << endl;
+
+        return false;
+    }
+private:
+    IMMSServer< ClientFilter<Ops> > *client;
 };
 
 #endif
