@@ -13,9 +13,6 @@
 #include "immsconf.h"
 
 using std::string;
-using std::list;
-using std::cerr;
-using std::endl;
 
 class GIOSocket
 {
@@ -45,7 +42,6 @@ public:
 
     void close()
     {
-        cerr << "close called!" << endl;
         if (con)
         {
             g_io_channel_close(con);
@@ -114,17 +110,12 @@ public:
         if (!con)
             return false;
 
-        if (condition & G_IO_NVAL)
-            cerr << " **** INVALID OPERATION ***** " << endl;
-        if (condition & G_IO_ERR)
-            cerr << " **** SOCKET ERROR ***** " << endl;
-
         if (condition & G_IO_HUP)
         {
             connection_lost();
             close();
 #ifdef DEBUG
-            cerr << "Connection terminated." << endl;
+            std::cerr << "Connection terminated." << std::endl;
 #endif
             return false;
         }
