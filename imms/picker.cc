@@ -43,11 +43,11 @@ bool SongPicker::add_candidate(bool urgent)
     if (position < 0)
         position = imms_random(Player::get_playlist_length());
     string path = ImmsDb::get_playlist_item(position);
-    string realpath = path_simplifyer(Player::get_playlist_item(position));
+    string realpath = path_normalize(Player::get_playlist_item(position));
 
     if (path != realpath)
     {
-        cerr << "path triggered playlist refresh" << endl;
+        cerr << "IMMS: path triggered playlist refresh" << endl;
         cerr << path << " != " << realpath << endl;
         playlist_changed();
         return true;
@@ -94,7 +94,9 @@ void SongPicker::do_events()
 void SongPicker::revalidate_current(int pos, const string &path)
 {
     if (winner.position == pos && winner.get_path() == path)
+    {
         current = winner;
+    }
     else if (current.get_path() != path || current.position != pos)
     {
         current = SongData(pos, path);
@@ -109,7 +111,7 @@ int SongPicker::select_next()
 
     if (candidates.empty())
     {
-        cerr << "warning: no candidates!" << endl;
+        cerr << "IMMS: warning: no candidates!" << endl;
         return 0;
     }
 
@@ -124,7 +126,8 @@ int SongPicker::select_next()
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
-        i->composite_rating = ROUND((i->rating + i->relation)
+        i->composite_rating =
+            ROUND((i->rating + i->relation + i->specrating + i->bpmrating)
                 * i->last_played / (double)max_last_played);
         
         if (i->composite_rating > max_composite)

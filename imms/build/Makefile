@@ -3,7 +3,7 @@
 
 .PHONY: first
 
-first: configure
+first: ../configure
 	 $(warning Please run the "configure" script)
 
 include ../rules.mk

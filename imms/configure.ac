@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[1.2-pre3],[mag@luminal.org])
+AC_INIT([IMMS],[1.2-rc1],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -73,6 +73,17 @@ if test "$with_zlib" = "no"; then
     AC_MSG_ERROR([zlib required and missing.])
 fi
 
+AC_CHECK_PROG(have_sqlites, sqlite, "yes", "no")
+if test "$have_sqlites" = "yes"; then
+    AC_CHECK_PROG(have_sqlites, sqlite3, "yes", "no")
+fi
+if test "$have_sqlites" = "no"; then
+    AC_MSG_WARN([******************************************************]);
+    AC_MSG_WARN([If you are upgrading from IMMS version <= 1.1]);
+    AC_MSG_WARN([You need both sqlite and sqlite3 executables installed]);
+    AC_MSG_WARN([******************************************************]);
+fi
+
 AC_CHECK_LIB(sqlite3, sqlite3_open,, [with_sqlite=no])
 AC_CHECK_HEADERS(sqlite3.h,, [with_sqlite=no])
 if test "$with_sqlite" = "no"; then
@@ -131,6 +142,15 @@ else
         AC_DEFINE(WITH_VORBIS,, [Native Vorbis tag support])
     fi
 fi
+
+AC_CHECK_PROG(have_sox, sox, "yes", "no")
+if test "$have_sox" = "no"; then
+    AC_MSG_WARN([******************************************************]);
+    AC_MSG_WARN([To benefit from acoustic analysis features of IMMS],);
+    AC_MSG_WARN([you need to install sox [http://sox.sourceforge.net/]]);
+    AC_MSG_WARN([******************************************************]);
+fi
+
 
 if test "$with_screensaver" != "no"; then
     LDFLAGS="-shared -L/usr/X11R6/lib"

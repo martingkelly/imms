@@ -35,6 +35,8 @@ private:
 
 string get_imms_root(const string &file = "");
 
+string path_normalize(const string &path);
+
 float rms_string_distance(const string &s1, const string &s2, int max = INT_MAX);
 string rescale_bpmgraph(const string &graph);
 

@@ -47,7 +47,9 @@ int analyze(const string &path)
     ostringstream command;
     command << "nice -n 15 sox \"" << path << "\" -t .raw -w -u -c 1 -r "
         << SAMPLERATE << " -";
+#ifdef DEBUG
     cout << "analyzer: Executing: " << command.str() << endl;
+#endif
     FILE *p = popen(command.str().c_str(), "r");
 
     if (!p)
@@ -61,8 +63,10 @@ int analyze(const string &path)
 
     float maxes[NFREQS];
     memset(maxes, 0, sizeof(maxes));
-    
+
+#ifdef DEBUG
     StackTimer t;
+#endif
 
     int r = fread(indata, sizeof(sample_t), OVERLAP, p);
 
@@ -150,7 +154,7 @@ int main(int argc, char *argv[])
     }
 
     for (int i = 1; i < argc; ++i)
-        analyze(argv[i]);
+        analyze(path_normalize(argv[i]));
 
     fftwf_destroy_plan(plan);
 }

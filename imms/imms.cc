@@ -32,8 +32,12 @@ using std::ofstream;
 #define     MAX_TIME                20*DAY
 
 #define     MAX_CORRELATION         12.0
-#define     PRIMARY                 0.80
+#define     PRIMARY                 0.75
 #define     CORRELATION_IMPACT      40
+#define     BPM_IMPACT              25
+#define     SPECTRUM_IMPACT         10
+#define     SPECTRUM_RADIUS         3.75
+#define     BPM_RADIUS              2.5
 #define     LAST_EXPIRE             2*HOUR
 
 #define     TERM_WIDTH              80
@@ -149,6 +153,10 @@ void Imms::print_song_info()
     fout << setiosflags(std::ios::showpos);
     if (current.relation)
         fout << current.relation << "r";
+    if (current.bpmrating)
+        fout << current.bpmrating << "b";
+    if (current.specrating)
+        fout << current.specrating << "s";
     fout << resetiosflags(std::ios::showpos);
 
     fout << "] [Last: " << strtime(current.last_played) <<
@@ -257,7 +265,24 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     rel = std::max(std::min(rel, (float)1), (float)-1);
     data.relation += ROUND(rel * weight * CORRELATION_IMPACT);
 
-    //if (last.acoustic.first != "" && )
+    StringPair acoustic = data.get_acoustic();
+    if (last.acoustic.first != "" && acoustic.first != "")
+    {
+        float d = rms_string_distance(last.acoustic.first, acoustic.first, 15);
+        float rel =  (SPECTRUM_RADIUS - d) / SPECTRUM_RADIUS;
+        rel = std::max(std::min(rel, (float)1), (float)-1);
+        data.specrating += ROUND(rel * weight * SPECTRUM_IMPACT);
+    }
+
+    if (last.acoustic.second != "" && acoustic.second != "")
+    {
+        float d = rms_string_distance(
+                rescale_bpmgraph(last.acoustic.second),
+                rescale_bpmgraph(acoustic.second));
+        float rel =  (BPM_RADIUS - d) / BPM_RADIUS;
+        rel = std::max(std::min(rel, (float)1), (float)-1);
+        data.bpmrating += ROUND(rel * weight * BPM_IMPACT);
+    }
 }
 
 bool Imms::fetch_song_info(SongData &data)

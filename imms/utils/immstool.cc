@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
         do_bpm_distance(argv[2]);
     }
-    if (!strcmp(argv[1], "specdistance"))
+    else if (!strcmp(argv[1], "specdistance"))
     {
         if (argc < 3)
         {
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 
         do_spec_distance(argv[2]);
     }
-    if (!strcmp(argv[1], "identify"))
+    else if (!strcmp(argv[1], "identify"))
     {
         if (argc < 3)
         {
@@ -138,6 +138,8 @@ int main(int argc, char *argv[])
     }
     else
         return usage();
+
+    return 0;
 }
 
 int usage()
@@ -183,7 +185,7 @@ string sid2info(int sid)
 
 void do_identify(const string &path)
 {
-    Song s(path_simplifyer(path));
+    Song s(path_normalize(path));
 
     if (!s.isok())
     {
@@ -240,47 +242,55 @@ void do_purge(const string &path)
 
 void do_lint()
 {
-
     try
     {
-        vector<string> deleteme;
-        vector<string> cleanme;
-
-        Q q("SELECT path FROM Library;");
-        while (q.next())
         {
-            string path;
-            q >> path;
-            string simple = path_simplifyer(path);
+            AutoTransaction at;
+            vector<string> deleteme;
+            vector<string> cleanme;
 
-            if (path == simple)
-                continue;
+            {
+                Q q("SELECT path FROM Library;");
+                while (q.next())
+                {
+                    string path;
+                    q >> path;
+                    string simple = path_normalize(path);
 
-            cout << path << endl;
+                    if (path == simple)
+                        continue;
 
-            Q q("SELECT * FROM Library WHERE path = ?");
-            q << simple;
-            
-            if (q.next())
-                deleteme.push_back(path);
-            else
-                cleanme.push_back(path);
-        }
+                    Q q("SELECT path FROM Library WHERE path = ?");
+                    q << simple;
 
-        for (vector<string>::iterator i = deleteme.begin(); 
-                i != deleteme.end(); ++i)
-        {
-            Q q("DELETE FROM Library WHERE path = ?");
-            q << *i;
-            q.execute();
-        }
+                    if (q.next())
+                        deleteme.push_back(path);
+                    else
+                        cleanme.push_back(path);
+                }
+            }
 
-        for (vector<string>::iterator i = cleanme.begin(); 
-                i != cleanme.end(); ++i)
-        {
-            Q q("UPDATE Library SET path = ? WHERE path = ?");
-            q << path_simplifyer(*i) << *i;
-            q.execute();
+            cout << "Duplicates: " << endl;
+
+            for (vector<string>::iterator i = deleteme.begin(); 
+                    i != deleteme.end(); ++i)
+            {
+                Q q("DELETE FROM Library WHERE path = ?");
+                q << *i;
+                q.execute();
+                cout << *i << endl;
+            }
+
+            cout << "Non-normalized: " << endl;
+
+            for (vector<string>::iterator i = cleanme.begin(); 
+                    i != cleanme.end(); ++i)
+            {
+                Q q("UPDATE Library SET path = ? WHERE path = ?");
+                q << path_normalize(*i) << *i;
+                q.execute();
+                cout << *i << endl;
+            }
         }
 
         Q("DELETE FROM Info "
@@ -299,11 +309,13 @@ void do_lint()
                 "WHERE x NOT IN (SELECT sid FROM Library) "
                 "OR y NOT IN (SELECT sid FROM Library);").execute();
 
+        QueryCacheDisabler qcd;
+
         Q("VACUUM Library;").execute();
         Q("VACUUM Correlations;").execute();
-
     }
     WARNIFFAILED();
+
 }
 
 void do_bpm_distance(const string &to)
