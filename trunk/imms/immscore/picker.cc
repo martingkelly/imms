@@ -71,6 +71,9 @@ int SongPicker::next_candidate()
 
 bool SongPicker::add_candidate(bool urgent)
 {
+    if (candidates.empty() && metacandidates.empty())
+        get_metacandidates();
+
     if (attempts > MAX_ATTEMPTS)
         return false;
     ++attempts;

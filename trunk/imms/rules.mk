@@ -43,4 +43,4 @@ user-message:
 do_install: all plugins_install programs_install
 
 programs_install:
-	${INSTALL_PROGRAM} immsd analyzer immstool ${PREFIX}/bin
+	${INSTALL_PROGRAM} -D immsd analyzer immstool $(bindir)
