@@ -110,7 +110,7 @@ void Imms::pump()
 void Imms::playlist_changed(int _playlist_size)
 {
     playlist_size = _playlist_size;
-    local_max = playlist_size * 7;
+    local_max = playlist_size * 8;
 #ifdef DEBUG
     cerr << " *** playlist changed!" << endl;
     cerr << "local_max is now " << local_max / (24 * 60) << endl;
@@ -133,8 +133,8 @@ bool Imms::add_candidate(int playlist_num, string path, bool urgent)
     if (!fetch_song_info(data))
     {
         // In case the playlist just a has a lot of songs that are not
-        // currently accessible, don't count a failure to fetch info about it
-        // as an attempt, unless we need to select the next song quickly
+        // currently accessible, don't count a failure to fetch info about
+        // it as an attempt, unless we need to select the next song quickly
         attempts -= !urgent;
         return true;
     }
