@@ -22,32 +22,53 @@ struct DBusMessageIter;
 
 class IDBusMessageBase
 {
+    friend class IDBusConnection;
 public:
     IDBusMessageBase();
-    IDBusMessageBase(DBusMessage *message_) : message(message_) {}
+    IDBusMessageBase(DBusMessage *message);
     ~IDBusMessageBase();
 protected:
     DBusMessage *message;
     DBusMessageIter *iter;
 };
 
-class IDBusMessage : protected IDBusMessageBase
+class IDBusOMessage : protected IDBusMessageBase
 {
 public:
-    IDBusMessage(const string &service, const string &interface,
-            const string &method);
-    IDBusMessage(const string &interface, const string &method);
-    IDBusMessage(DBusMessage *message_);
+    IDBusOMessage(const string &path, const string &interface,
+            const string &method, bool reply = false);
 
-    IDBusMessage &operator>>(int i);
-    IDBusMessage &operator>>(string &s);
-    IDBusMessage &operator<<(int i);
-    IDBusMessage &operator<<(const string &s);
+    IDBusOMessage(DBusMessage *message);
+
+    IDBusOMessage &operator<<(int i);
+    IDBusOMessage &operator<<(const string &s);
+};
+
+enum IDBusMessageType
+{
+    MTInvalid,
+    MTSignal,
+    MTMethod,
+    MTReturn,
+    MTError
+};
+
+class IDBusIMessage : protected IDBusMessageBase
+{
+public:
+    IDBusIMessage(DBusMessage *message_);
+
+    IDBusIMessage &operator>>(int i);
+    IDBusIMessage &operator>>(string &s);
 
     string get_interface();
     string get_path();
+    string get_member();
+    string get_error();
 
-    void send();
+    IDBusMessageType get_type();
+
+    DBusMessage *reply();
 
 protected:
     void verify_type(int type);
@@ -56,10 +77,20 @@ protected:
     int last;
 };
 
+class IDBusConnection
+{
+public:
+    IDBusConnection(DBusConnection *con_ = 0) : con(con_) {}
+    void send(IDBusOMessage &message);
+    DBusMessage *send_with_reply(IDBusOMessage &message, int timeout);
+protected:
+    DBusConnection *con;
+};
+
 class IDBusFilter
 {
 public:
-    virtual bool dispatch(DBusConnection *con, DBusMessage *message) = 0;
+    virtual bool dispatch(IDBusConnection &con, IDBusIMessage &message) = 0;
 };
 
 class IDBusServer
@@ -70,13 +101,10 @@ private:
     DBusServer *server;
 };
 
-class IDBusClient
+class IDBusClient : public IDBusConnection
 {
 public:
-    IDBusClient(const string &path);
-    DBusConnection *get_bus() { return con; }
-private:
-    DBusConnection *con;
+    IDBusClient(const string &path, IDBusFilter *filter);
 };
 
 #endif
