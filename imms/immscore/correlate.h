@@ -3,6 +3,7 @@
 
 #include <sys/time.h>
 #include <string>
+#include <vector>
 
 #include "immsconf.h"
 #include "basicdb.h"
@@ -23,6 +24,8 @@ protected:
     void update_correlation(int from, int to, float weight);
     void expire_recent_helper();
     void update_secondary_correlations(int from, int to, float outer);
+
+    void get_related(std::vector<int> &out, int pivot_sid, int limit);
 
     virtual void sql_create_tables();
     virtual void sql_schema_upgrade(int from = 0);

@@ -154,7 +154,9 @@ void BasicDb::sql_create_tables()
 
         Q("CREATE TABLE 'Artists' ("
                 "'aid' INTEGER PRIMARY KEY," 
-                "'artist' TEXT UNIQUE NOT NULL);").execute();
+                "'artist' TEXT UNIQUE NOT NULL, "
+                "'readable' TEXT UNIQUE, "
+                "'trust' INTEGER DEFAULT 0);").execute();
 
         Q("CREATE TABLE 'Last' ("
                 "'sid' INTEGER UNIQUE NOT NULL, " 

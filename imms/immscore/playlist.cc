@@ -127,8 +127,9 @@ time_t PlaylistDb::get_average_first_seen()
 void PlaylistDb::playlist_insert_item(int pos, const string &path)
 {
     try {
-        Q q("INSERT INTO 'Playlist' ('pos', 'path', 'uid') "
-                "VALUES (?, ?, (SELECT uid FROM 'Identify' WHERE path = ?));");
+        Q q("INSERT OR REPLACE INTO 'Playlist' ('pos', 'path', 'uid') "
+                "VALUES (?, ?, "
+                "ifnull((SELECT uid FROM 'Identify' WHERE path = ?), -1));");
         q << pos << path << path;
         q.execute();
     }

@@ -27,6 +27,7 @@ SongPicker::SongPicker()
 void SongPicker::reset()
 {
     candidates.clear();
+    metacandidates.clear();
     acquired = attempts = 0;
 }
 
@@ -34,6 +35,38 @@ void SongPicker::playlist_changed(int length)
 {
     playlist_known = 0;
     reset();
+}
+
+int SongPicker::next_candidate()
+{
+    int pos = -1;
+    if (!metacandidates.empty())
+    {
+        pos = metacandidates.back();
+        metacandidates.pop_back();
+        return pos;
+    }
+
+    while (1)
+    {
+        int pos = ImmsDb::random_playlist_position();
+        if (pos < 0)
+            return -1;
+
+        bool found = false;
+        for (Candidates::iterator i = candidates.begin();
+                !found && i != candidates.end(); ++i)
+        {
+            if (i->position == pos)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+            return pos;
+    }
 }
 
 bool SongPicker::add_candidate(bool urgent)
@@ -46,23 +79,10 @@ bool SongPicker::add_candidate(bool urgent)
     if (acquired >= std::min(want, pl_length))
         return false;
 
-    int position = 0;
-    while (1)
-    {
-        position = ImmsDb::random_playlist_position();
-        if (position < 0)
-            return false;
+    int position = next_candidate();
 
-        bool found = false;
-        for (Candidates::iterator i = candidates.begin();
-              !found && i != candidates.end(); ++i)
-        {
-            if (i->position == position)
-                found = true;
-        }
-        if (!found)
-            break;
-    }
+    if (position == -1)
+        return false;
 
     string path = ImmsDb::get_item_from_playlist(position);
 

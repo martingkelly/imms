@@ -37,6 +37,7 @@ void do_missing();
 void do_purge(const string &path);
 time_t get_last(const string &path);
 void do_lint();
+void do_artistscan();
 void do_dump_bpm();
 void do_spec_distance(const string &to);
 void do_bpm_distance(const string &to);
@@ -95,6 +96,10 @@ int main(int argc, char *argv[])
     else if (!strcmp(argv[1], "deviation"))
     {
         do_deviation();
+    }
+    else if (!strcmp(argv[1], "artistscan"))
+    {
+        do_artistscan();
     }
     else if (!strcmp(argv[1], "missing"))
     {
@@ -533,4 +538,29 @@ int do_rate(const string &path, char *rating)
     cout << "New rating: " << r << endl;
     s.set_rating(r);
     return 0;
+}
+
+void do_artistscan()
+{
+    int aid = -1;
+    while (1)
+    {
+        Q q("SELECT aid, artist, readable, trust FROM Artists WHERE aid > ?;");
+        q << aid;
+
+        int trust;
+        string artist, readable;
+
+        bool done; 
+        while ((done = q.next()))
+        {
+            q >> aid >> artist >> readable >> trust;
+        }
+
+        if (!done)
+        {
+        }
+        else
+            break;
+    }
 }
