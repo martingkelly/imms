@@ -112,14 +112,7 @@ int Imms::get_previous()
 void Imms::start_song(int position, const string &path)
 {
     XIdle::reset();
-    SongPicker::reset();
     SpectrumAnalyzer::reset();
-
-    state = use_autooff && (path.find(".cda") != string::npos
-            || !path.find("http://")) ? AUTOOFF : ON;
-
-    if (state != ON)
-        return;
 
     revalidate_winner(path);
 
@@ -162,9 +155,6 @@ void Imms::print_song_info()
 
 void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 {
-    if (state != ON)
-        return;
-
     int mod;
 
     if (at_the_end)

@@ -22,7 +22,6 @@ protected:
     void revalidate_winner(const std::string &path);
     void reset();
 
-    enum { ON, AUTOOFF, OFF } state;
     SongData winner;
 
 private:

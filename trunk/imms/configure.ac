@@ -61,9 +61,13 @@ if test "$with_xmms" = "no"; then
     AC_MSG_ERROR([xmms required and missing.])
 fi
 
-AC_CHECK_LIB(xmms, xmms_remote_playqueue_add,
-              [AC_DEFINE(HAVE_QUEUE_CONTROL,,
-               [XMMS provides functions to control the play queue])])
+AC_CHECK_LIB(xmms, xmms_remote_playqueue_add,, [with_queue_control=no])
+PLUGIN_OBJ=plugin.o
+if test "$with_queue_control" != "no"; then
+    AC_DEFINE(HAVE_QUEUE_CONTROL,,
+              [XMMS provides functions to control the play queue])
+    PLUGIN_OBJ=plugin2.o
+fi
 
 AC_CHECK_LIB(z, compress,, [with_zlib=no])
 AC_CHECK_HEADERS(zlib.h,, [with_zlib=no])
@@ -125,6 +129,7 @@ AC_SUBST(CC)
 AC_SUBST(INSTALL)
 AC_SUBST(DEBUG_CFLAGS)
 AC_SUBST(LIBS)
+AC_SUBST(PLUGIN_OBJ)
 
 AC_CONFIG_FILES(vars.mk)
 AC_CONFIG_HEADERS(immsconf.h)

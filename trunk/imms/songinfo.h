@@ -12,8 +12,6 @@
 # include <vorbis/vorbisfile.h>
 #endif
 
-#define INITIAL_RATING 100
-
 using std::string;
 
 class InfoSlave
@@ -23,7 +21,7 @@ public:
     virtual string get_title()  { return ""; }
     virtual string get_album()  { return ""; }
     virtual int get_rating(const string &email)
-        { return INITIAL_RATING; }
+        { return -1; }
     virtual ~InfoSlave() {};
 };
 

@@ -10,14 +10,9 @@
 
 char *ch_email = NULL;
 int use_xidle = 1;
-int use_autooff = 1;
-int use_queue = 0;
-int use_sloppy = 0;
 int poll_tag = 0;
 
-GtkWidget *configure_win = NULL, *about_win = NULL,
-    *xidle_button = NULL, *sloppy_button = NULL, *queue_button = NULL,
-    *autooff_button = NULL;
+GtkWidget *configure_win = NULL, *about_win = NULL, *xidle_button = NULL;
 
 gint poll_func(gpointer unused)
 {
@@ -36,9 +31,6 @@ void read_config(void)
     {
         xmms_cfg_read_string(cfgfile, "imms", "email", &ch_email);
         xmms_cfg_read_int(cfgfile, "imms", "xidle", &use_xidle);
-        xmms_cfg_read_int(cfgfile, "imms", "sloppy", &use_sloppy);
-        xmms_cfg_read_int(cfgfile, "imms", "autooff", &use_autooff);
-        xmms_cfg_read_int(cfgfile, "imms", "queue", &use_queue);
         xmms_cfg_free(cfgfile);
     }
 }
@@ -47,8 +39,8 @@ void init(void)
 {
     imms_init();
     read_config();
-    imms_setup(ch_email, use_xidle, use_sloppy, use_autooff);
-    poll_tag = gtk_timeout_add(100, poll_func, NULL);
+    imms_setup(ch_email, use_xidle);
+    poll_tag = gtk_timeout_add(200, poll_func, NULL);
 }
 
 void cleanup(void)
@@ -66,19 +58,13 @@ void configure_ok_cb(gpointer data)
     ConfigFile *cfgfile = xmms_cfg_open_default_file();
 
     use_xidle = !!GTK_TOGGLE_BUTTON(xidle_button)->active;
-    use_sloppy = !!GTK_TOGGLE_BUTTON(sloppy_button)->active;
-    use_queue = !!GTK_TOGGLE_BUTTON(queue_button)->active;
-    use_autooff = !!GTK_TOGGLE_BUTTON(autooff_button)->active;
 
     xmms_cfg_write_int(cfgfile, "imms", "xidle", use_xidle);
-    xmms_cfg_write_int(cfgfile, "imms", "sloppy", use_sloppy);
-    xmms_cfg_write_int(cfgfile, "imms", "queue", use_queue);
-    xmms_cfg_write_int(cfgfile, "imms", "autooff", use_autooff);
     xmms_cfg_write_default_file(cfgfile);
 
     xmms_cfg_free(cfgfile);
 
-    imms_setup(ch_email, use_xidle, use_sloppy, use_autooff);
+    imms_setup(ch_email, use_xidle);
     gtk_widget_destroy(configure_win);
 }  
 
@@ -113,9 +99,6 @@ void configure(void)
 {
     GtkWidget *configure_vbox;
     GtkWidget *xidle_hbox, *xidle_vbox, *xidle_frame, *xidle_desc; 
-    GtkWidget *sloppy_hbox, *sloppy_vbox, *sloppy_frame, *sloppy_desc; 
-    GtkWidget *queue_hbox, *queue_vbox, *queue_frame, *queue_desc; 
-    GtkWidget *autooff_hbox, *autooff_vbox, *autooff_frame, *autooff_desc; 
     GtkWidget *configure_bbox, *configure_ok, *configure_cancel;
 
     if (configure_win)
@@ -136,21 +119,6 @@ void configure(void)
     ADD_CONFIG_CHECKBOX(xidle, "Idleness", 
             "Disable this option if you use XMMS on a dedicated machine",
             "Use X idleness statistics");
-
-    ADD_CONFIG_CHECKBOX(queue, "XMMS Queue", 
-            "Enabling this option will cause spurious song change reports "
-            "from XOSD, Song Change, and other similar plugins.",
-            "Honour XMMS Queue");
-
-    ADD_CONFIG_CHECKBOX(autooff, "Suspend IMMS", 
-            "Automatically temporarily disable IMMS "
-            "when playing CD tracks or http streams.",
-            "Ignore CD tracks and streams");
-
-    ADD_CONFIG_CHECKBOX(sloppy, "Skip Detection", 
-            "Enable this if you use XMMS Crossfade plugin, "
-            "or experience misdetected song skips.",
-            "Use sloppy skip detection");
 
     /* Buttons */
     configure_bbox = gtk_hbutton_box_new();

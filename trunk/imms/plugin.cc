@@ -29,7 +29,6 @@ bool need_more = true, spectrum_ok = false;
 
 // Extern from interface.c
 extern VisPlugin imms_vp;
-extern int use_queue;
 int &session = imms_vp.xmms_session;
 
 static enum
@@ -52,12 +51,10 @@ string imms_get_playlist_item(int at)
     return result;
 }
 
-void imms_setup(char *ch_email, int use_xidle, int use_sloppy, int use_norand)
+void imms_setup(char *ch_email, int use_xidle)
 {
-    sloppy_skips = use_sloppy;
-
     if (imms)
-        imms->setup(ch_email ? ch_email : DEFAULT_EMAIL, use_xidle, use_norand);
+        imms->setup(ch_email ? ch_email : DEFAULT_EMAIL, use_xidle);
 }
 
 void imms_init()
@@ -85,7 +82,7 @@ void do_more_checks()
     delay = 0;
 
     // make sure shuffle is disabled
-    if (imms && imms->is_enabled() && xmms_remote_is_shuffle(session))
+    if (imms && xmms_remote_is_shuffle(session))
         xmms_remote_toggle_shuffle(session);
 
     // update playlist length
@@ -120,7 +117,7 @@ void do_checks()
 
     // do not preemptively end the song if imms is disabled 
     // to allow the built in shuffle/sequential to take effect
-    bool ending = imms->is_enabled() && good_length > 2 && time_left == 0;
+    bool ending = good_length > 2 && time_left == 0;
     cur_plpos = xmms_remote_get_playlist_pos(session);
 
     if (ending || cur_plpos != last_plpos)
@@ -130,9 +127,6 @@ void do_checks()
         if (ending || last_path != cur_path)
         {
             xmms_remote_stop(session);
-            if (use_queue && last_path == cur_path)
-                xmms_remote_playlist_next(session);
-
             state = FIND_NEXT;
             return;
         }
@@ -158,7 +152,7 @@ void do_checks()
 
 void do_find_next()
 {
-    if (time_left < 8 * (sloppy_skips + 1) * 2)
+    if (time_left < 20)
         time_left = 0;
 
     cur_plpos = xmms_remote_get_playlist_pos(session);
@@ -173,7 +167,7 @@ void do_find_next()
 
     if (!forced && pl_length > 2)
     {
-        if (imms->is_enabled() && need_more)
+        if (need_more)
         {
             do { cur_plpos = imms_random(pl_length); }
             while (imms->add_candidate(cur_plpos,
@@ -181,7 +175,7 @@ void do_find_next()
         }
 
         // have imms select the next song for us
-        cur_plpos = imms->is_enabled() ? imms->select_next() : cur_plpos;
+        cur_plpos = imms->select_next();
     }
     else if (back)
     {

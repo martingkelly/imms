@@ -43,20 +43,6 @@ int InfoFetcher::fetch_song_info(SongData &data)
             return -1;
     }
 
-    data.rating = immsdb.get_rating();
-
-    data.unrated = false;
-    if (data.rating < 0)
-    {
-#ifdef LEGACY_RATINGS
-        link(path);
-        ++result;
-#endif
-        data.unrated = true;
-        data.rating = get_rating(email);
-        immsdb.set_rating(data.rating);
-    }
-
     StringPair info = immsdb.get_info();
     string artist = info.first;
     string title = info.second;
@@ -68,6 +54,25 @@ int InfoFetcher::fetch_song_info(SongData &data)
         result += 2;
         if ((data.identified = parse_song_info(path, title)))
             immsdb.set_title(title);
+    }
+
+    data.rating = immsdb.get_rating();
+
+    data.unrated = false;
+    if (data.rating < 1)
+    {
+        data.unrated = true;
+#ifdef LEGACY_RATINGS
+        link(path);
+        ++result;
+        data.rating = SongInfo::get_rating(email);
+#endif
+        if (data.rating < 1)
+            data.rating = immsdb.artist_avg_rating();
+        if (data.rating < 1)
+            data.rating = 100;
+
+        immsdb.set_rating(data.rating);
     }
 
 #ifdef DEBUG
