@@ -2,53 +2,28 @@
 #include "strmanip.h"
 
 #include <stdio.h>
-#include <string.h>
 
-#ifdef WITH_VORBIS
-# include <vorbis/codec.h>
-#endif
+#ifdef WITH_ID3LIB
+# include <id3/tag.h>
 
-// SongInfo
-
-SongInfo::SongInfo() : filename(""), myslave(0) { }
-
-void SongInfo::link(const string &_filename)
+class Mp3Info : public InfoSlave
 {
-    if (filename == _filename)
-        return;
-
-    filename = _filename;
-
-    delete myslave;
-    myslave = 0;
-
-    if (filename.length() > 3)
+public:
+    Mp3Info(const string &filename);
     {
-        string ext = string_tolower(path_get_extension(filename));
-
-        if (false) {}
-#ifdef WITH_ID3LIB
-        else if (ext == "mp3")
-            myslave = new Mp3Info(filename);
-#endif
-#ifdef WITH_VORBIS
-        else if (ext == "ogg")
-            myslave = new OggInfo(filename);
-#endif
+        id3tag.Clear();
+        id3tag.Link(filename.c_str());
     }
-
-    if (!myslave)
-        myslave = new InfoSlave();
-}
-
-#ifdef WITH_ID3LIB
-// Mp3Info
-
-Mp3Info::Mp3Info(const string &filename)
-{
-    id3tag.Clear();
-    id3tag.Link(filename.c_str());
-}
+    virtual string get_artist()
+        { return get_text_frame(ID3FID_LEADARTIST); }
+    virtual string get_title()
+        { return get_text_frame(ID3FID_TITLE); }
+    virtual string get_album()
+        { return get_text_frame(ID3FID_ALBUM); }
+protected:
+    string get_text_frame(ID3_FrameID id);
+    ID3_Tag id3tag;
+};
 
 string Mp3Info::get_text_frame(ID3_FrameID id)
 {
@@ -61,30 +36,33 @@ string Mp3Info::get_text_frame(ID3_FrameID id)
     }
     return "";
 }
-
-#ifdef LEGACY_RATINGS
-int Mp3Info::get_rating(const string &email)
-{
-    ID3_Frame* popmframe = id3tag.Find(ID3FID_POPULARIMETER,
-            ID3FN_EMAIL, email.c_str());
-
-    if (popmframe)
-    {
-        ID3_Field* ratingfield = popmframe->GetField(ID3FN_RATING);
-        if (ratingfield && ratingfield->Get() > 0)
-        {
-            return ratingfield->Get();
-        }
-    }
-    return -1;
-}
-#endif
-
 #endif
 
 #ifdef WITH_VORBIS
-// OggInfo
+# include <vorbis/vorbisfile.h>
+# include <vorbis/codec.h>
 
+class OggInfo : public InfoSlave
+{
+public:
+    OggInfo(const string &filename);
+
+    virtual string get_artist()
+        { return get_comment("artist"); }
+    virtual string get_title()
+        { return get_comment("title"); }
+    virtual string get_album()
+        { return get_comment("album"); }
+
+    ~OggInfo();
+private:
+    string get_comment(const string &id);
+
+    OggVorbis_File vf;
+    vorbis_comment *comment;
+};
+
+// OggInfo
 OggInfo::OggInfo(const string &filename)
 {
     comment = 0;
@@ -113,3 +91,70 @@ string OggInfo::get_comment(const string &id)
             (content = vorbis_comment_query(comment, tag, 0))) ?  content : "";
 }
 #endif
+
+#ifdef WITH_TAGLIB
+
+#include <fileref.h>
+#include <tag.h>
+
+using namespace TagLib;
+
+class TagInfo : public InfoSlave
+{
+    public:
+        TagInfo(const string &filename)
+            : fileref(filename.c_str(), false) {}
+
+        virtual string get_artist()
+        {
+            return !fileref.isNull() && fileref.tag() ? 
+                    fileref.tag()->artist().toCString() : "";
+        }
+        virtual string get_title()
+        {
+            return !fileref.isNull() && fileref.tag() ? 
+                    fileref.tag()->title().toCString() : "";
+        }
+        virtual string get_album()
+        {
+            return !fileref.isNull() && fileref.tag() ? 
+                    fileref.tag()->album().toCString() : "";
+        }
+    private:
+        FileRef fileref;
+};
+#endif
+
+// SongInfo
+void SongInfo::link(const string &_filename)
+{
+    if (filename == _filename)
+        return;
+
+    filename = _filename;
+
+    delete myslave;
+    myslave = 0;
+
+    if (filename.length() > 3)
+    {
+        string ext = string_tolower(path_get_extension(filename));
+
+        if (false) {}
+#ifdef WITH_TAGLIB
+        else if (1)
+            myslave = new TagInfo(filename);
+#endif
+#ifdef WITH_ID3LIB
+        else if (ext == "mp3")
+            myslave = new Mp3Info(filename);
+#endif
+#ifdef WITH_VORBIS
+        else if (ext == "ogg")
+            myslave = new OggInfo(filename);
+#endif
+    }
+
+    if (!myslave)
+        myslave = new InfoSlave();
+}

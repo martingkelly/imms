@@ -8,6 +8,10 @@ AC_CONFIG_SRCDIR(imms.cc)
 
 AC_PREFIX_DEFAULT("/")
 
+AC_ARG_WITH(taglib,
+            AC_HELP_STRING([--with-taglib],
+                           [Tag support using TagLib]))
+
 AC_ARG_WITH(id3lib,
             AC_HELP_STRING([--with-id3lib],
                            [Native MP3 tag support]))
@@ -20,17 +24,11 @@ AC_ARG_WITH(screensaver,
             AC_HELP_STRING([--with-screensaver],
                            [Use MIT ScreenSaver extension]))
 
-AC_ARG_ENABLE(legacy,
-            AC_HELP_STRING([--enable-legacyratings],
-                           [Use ratings from ID3 tags]), 
-             [enable_legacy='yes'],
-             [enable_legacy='no'])
-
 AC_ARG_ENABLE(debug,
             AC_HELP_STRING([--enable-debug],
                            [Extra debug output]),
-            [enable_debug='yes' DEBUG_CFLAGS="-ggdb -O0 -DDEBUG"],
-            [enable_debug='no' DEBUG_CFLAGS="-O3"])
+            [enable_debug='yes' XCPPFLAGS="-ggdb -O0 -DDEBUG"],
+            [enable_debug='no' XCPPFLAGS="-O3"])
 
 AC_PROG_CXX
 AC_PROG_CC
@@ -40,13 +38,6 @@ AC_LANG(C++)
 
 AC_MSG_CHECKING([for --enable-debug])
 AC_MSG_RESULT([$enable_debug])
-
-AC_MSG_CHECKING([for --enable-legacy])
-AC_MSG_RESULT([$enable_legacy])
-
-if test "$enable_legacy" != "no"; then
-    AC_DEFINE(LEGACY_RATINGS,, [Legacy ratings in ID3 tags support])
-fi
 
 AC_CHECK_PROG(have_xmms_config, xmms-config, "yes", "no")
 if test "$have_xmms_config" = "no"; then
@@ -90,25 +81,48 @@ if test "$with_pcre" = "no"; then
     AC_MSG_ERROR([PCRE required and missing.])
 fi
 
-if test "$with_id3lib" != "no"; then
-    AC_CHECK_LIB(id3, ID3Tag_New,, [with_id3lib=no])
-    AC_CHECK_HEADERS(id3/tag.h,, [with_id3lib=no])
+if test "$with_taglib" != "no"; then
+    AC_CHECK_PROG(with_taglib, taglib-config, "yes", "no")
 fi
-if test "$with_id3lib" = "no"; then
-    AC_MSG_WARN([id3lib is missing.])
-else
-    AC_DEFINE(WITH_ID3LIB,, [Native mp3 tag support])
+if test "$with_taglib" != "no"; then
+    AC_MSG_CHECKING([taglib usability])
+
+    saved_libs="$LIBS"
+    LIBS="$LIBS-ltag"
+    CPPFLAGS=`taglib-config --cflags`
+
+    AC_TRY_LINK([#include <tag.h>
+                 #include <fileref.h>],
+                [TagLib::FileRef f((TagLib::File*)0); f.tag()->title()],
+        [XCPPFLAGS="$XCPPFLAGS `taglib-config --cflags`" 
+                                            AC_MSG_RESULT(yes)],
+        [LIBS=$saved_libs AC_MSG_RESULT(no)])
 fi
 
-if test "$with_vorbis" != "no"; then
-    AC_CHECK_LIB(vorbis, vorbis_comment_query,, [with_vorbis=no])
-    AC_CHECK_LIB(vorbisfile, ov_comment,, [with_vorbis=no])
-    AC_CHECK_HEADERS(vorbis/codec.h vorbis/vorbisfile.h,, [with_vorbis=no])
-fi
-if test "$with_vorbis" = "no"; then
-    AC_MSG_WARN([Vorbis is missing.])
+if test "$with_taglib" = "yes"; then
+    AC_DEFINE(WITH_TAGLIB,, [Tag support using TagLib])
 else
-    AC_DEFINE(WITH_VORBIS,, [Native Vorbis tag support])
+    if test "$with_id3lib" != "no"; then
+        AC_CHECK_LIB(id3, ID3Tag_New,, [with_id3lib=no])
+        AC_CHECK_HEADERS(id3/tag.h,, [with_id3lib=no])
+    fi
+    if test "$with_id3lib" = "no"; then
+        AC_MSG_WARN([id3lib is missing.])
+    else
+        AC_DEFINE(WITH_ID3LIB,, [Native mp3 tag support])
+    fi
+
+    if test "$with_vorbis" != "no"; then
+        AC_CHECK_LIB(vorbis, vorbis_comment_query,, [with_vorbis=no])
+        AC_CHECK_LIB(vorbisfile, ov_comment,, [with_vorbis=no])
+        AC_CHECK_HEADERS(vorbis/codec.h vorbis/vorbisfile.h,,
+                         [with_vorbis=no])
+    fi
+    if test "$with_vorbis" = "no"; then
+        AC_MSG_WARN([Vorbis is missing.])
+    else
+        AC_DEFINE(WITH_VORBIS,, [Native Vorbis tag support])
+    fi
 fi
 
 if test "$with_screensaver" != "no"; then
@@ -127,7 +141,7 @@ fi
 AC_SUBST(CXX)
 AC_SUBST(CC)
 AC_SUBST(INSTALL)
-AC_SUBST(DEBUG_CFLAGS)
+AC_SUBST(XCPPFLAGS)
 AC_SUBST(LIBS)
 AC_SUBST(PLUGIN_OBJ)
 

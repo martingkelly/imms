@@ -15,8 +15,8 @@ libimmscore.a: $(CORE_OBJ) immsconf.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 %.o: %.c vars.mk
-	@$(CXX) $(CFLAGS) -M -E $< > .$*.d
-	$(CC) $(CFLAGS) -c $< -o $@
+	@$(CXX) $(CPPFLAGS) -M -E $< > .$*.d
+	$(CC) $(CPPFLAGS) -c $< -o $@
 
 .PHONY: clean distclean
 
