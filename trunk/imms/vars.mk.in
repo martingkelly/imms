@@ -7,7 +7,7 @@ VPATH = ..:../players/xmms:../analyzer:../utils:../players:../immsd
 ARFLAGS = rs
 
 SHELL = bash
-XMMS_OBJ = @PLUGIN_OBJ@ interface.o dbusclient.o libimmscore.a 
+XMMS_OBJ = @PLUGIN_OBJ@ interface.o dbusclient.o glib1dbus.o libimmscore.a 
 
 XMMSCPPFLAGS= `xmms-config --cflags`
 DBUSCPPFLAGS=`pkg-config dbus-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE

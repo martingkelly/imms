@@ -53,6 +53,7 @@ static void reset_selection()
 class XMMSFilter : public IDBusFilter
 {
 public:
+    XMMSFilter(IMMSClient<XMMSFilter> *_client) : client(_client) {}
     virtual bool dispatch(IDBusConnection &con, IDBusIMessage &message)
     {
         if (message.get_type() == MTError)
@@ -62,6 +63,22 @@ public:
         }
         if (message.get_type() == MTSignal)
         {
+            if (message.get_interface() == "org.freedesktop.Local")
+            {
+                if (message.get_member() == "Disconnected")
+                {
+                    client->connection_lost();
+                    return true;
+                }
+            }
+
+            if (message.get_interface() != "org.luminal.IMMSClient")
+            {
+                cerr << "Received message on unknown interface: "
+                    << message.get_interface() << endl;
+                return false;
+            }
+
             if (message.get_member() == "ResetSelection")
             {
                 reset_selection();
@@ -109,6 +126,8 @@ public:
 
         return false;
     }
+private:
+    IMMSClient<XMMSFilter> *client;
 };
 
 IMMSClient<XMMSFilter> *imms = 0;
@@ -222,6 +241,8 @@ void do_checks()
             return;
         }
     }
+
+    imms->check_connection();
 
     check_time();
 

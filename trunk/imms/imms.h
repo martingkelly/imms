@@ -38,7 +38,6 @@ public:
 
     // process internal events - call this periodically
     void do_events();
-    void do_idle_events();
 
     // configure imms
     void setup(bool use_xidle);
