@@ -85,40 +85,34 @@ if test "$with_pcre" = "no"; then
     AC_MSG_ERROR([PCRE required and missing.])
 fi
 
-AC_CHECK_PROG(have_pkgconfig, pkg-config, "yes", "no")
-if test "$have_packageconfig" = "no"; then
-    AC_MSG_ERROR([pkg-config required and missing])
-fi
+PKG_CHECK_MODULES([REQUIRED],
+              [fftw3f >= 3.0 dbus-1 >= 0.22 dbus-glib-1 >= 0.22],
+              [], [AC_MSG_ERROR([Required packages missing.])])
 
 saved_cppflags="$CPPFLAGS"
 saved_libs="$LIBS"
 
 CPPFLAGS="`pkg-config dbus-1 --cflags` -DDBUS_API_SUBJECT_TO_CHANGE"
+LIBS="`pkg-config dbus-1 --libs`"
 AC_CHECK_HEADERS(dbus/dbus.h,, [have_dbus=no])
-if test "$have_dbus" != "no"; then
-    LIBS="`pkg-config dbus-1 --libs`"
-    AC_CHECK_LIB(dbus-1, dbus_connection_send,, [have_dbus=no])
-fi
+AC_CHECK_LIB(dbus-1, dbus_connection_send,, [have_dbus=no])
 if test "$have_dbus" = "no"; then
     AC_MSG_ERROR([D-BUS 0.22 required and missing.])
 fi
 
 CPPFLAGS="`pkg-config dbus-glib-1 --cflags`"
+LIBS="`pkg-config dbus-glib-1 --libs`"
 AC_CHECK_HEADERS(dbus/dbus-glib.h,, [have_dbus_glib=no])
-if test "$have_dbus_glib" != "no"; then
-    LIBS="`pkg-config dbus-glib-1 --libs`"
-    AC_CHECK_LIB(dbus-glib-1, dbus_connection_setup_with_g_main,,
-                 [have_dbus_glib=no])
-fi
+AC_CHECK_LIB(dbus-glib-1, dbus_connection_setup_with_g_main,,
+             [have_dbus_glib=no])
 if test "$have_dbus_glib" = "no"; then
     AC_MSG_ERROR([D-BUS GLib bindings required and missing.])
 fi
 
+CPPFLAGS="`pkg-config fftw3f --cflags`"
+LIBS="`pkg-config fftw3f --libs`"
 AC_CHECK_HEADERS(fftw3.h,, [with_fftw=no])
-if test "$with_fftw" != "no"; then
-    LIBS="`pkg-config fftw3f --libs`"
-    AC_CHECK_LIB(fftw3f, fftwf_plan_dft_r2c_1d,, [with_fftw=no])
-fi
+AC_CHECK_LIB(fftw3f, fftwf_plan_dft_r2c_1d,, [with_fftw=no])
 if test "$with_fftw" = "no"; then
     AC_MSG_ERROR([FFTW 3.0 required and missing.])
 fi

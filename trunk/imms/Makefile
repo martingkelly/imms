@@ -18,7 +18,7 @@ clean:
 	rm -f $(wildcard build/lib*imms*.* build/analyzer build/immstool build/immsd build/imms-*.tar.* build/imms*.o core* build/.*.d)
 
 distclean: clean
-	rm -f $(wildcard .\#* config.* configure immsconf.h* vars.mk)
+	rm -f $(wildcard .\#* config.* configure immsconf.h* aclocal.m4* vars.mk)
 	rm -rf $(wildcard autom4te.cache)
 
 dist: immsconf.h distclean
