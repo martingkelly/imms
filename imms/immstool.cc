@@ -91,11 +91,11 @@ int main(int argc, char *argv[])
         list<string> all;
         string spectrum;
         int count = 0;
-        double mean[short_spectrum_size];
+        double mean[SHORTSPECTRUM];
         memset(&mean, 0, sizeof(mean));
         while (cin >> spectrum)
         {
-            if ((int)spectrum.length() != short_spectrum_size)
+            if ((int)spectrum.length() != SHORTSPECTRUM)
             {
                 cout << "bad spectrum: " << spectrum << endl;
                 continue;
@@ -103,31 +103,31 @@ int main(int argc, char *argv[])
             spectrum = spectrum_normalize(spectrum);
             ++count;
             all.push_back(spectrum);
-            for (int i = 0; i < short_spectrum_size; ++i)
+            for (int i = 0; i < SHORTSPECTRUM; ++i)
                 mean[i] += (spectrum[i] - 'a');
         }
 
         // total to mean
-        for (int i = 0; i < short_spectrum_size; ++i)
+        for (int i = 0; i < SHORTSPECTRUM; ++i)
             mean[i] /= count;
 
         cout << "Mean	  : ";
-        for (int i = 0; i < short_spectrum_size; ++i)
+        for (int i = 0; i < SHORTSPECTRUM; ++i)
             cout << std::setw(4) << ROUND(mean[i] * 10);
         cout << endl;
 
-        double deviations[short_spectrum_size];
+        double deviations[SHORTSPECTRUM];
         memset(&deviations, 0, sizeof(deviations));
 
         for (list<string>::iterator i = all.begin(); i != all.end(); ++i)
-            for (int j = 0; j < short_spectrum_size; ++j)
+            for (int j = 0; j < SHORTSPECTRUM; ++j)
                 deviations[j] += pow(mean[j] + 'a' - (*i)[j], 2);
 
-        for (int i = 0; i < short_spectrum_size; ++i)
+        for (int i = 0; i < SHORTSPECTRUM; ++i)
             deviations[i] = sqrt(deviations[i] / count);
 
         cout << "Deviation : ";
-        for (int i = 0; i < short_spectrum_size; ++i)
+        for (int i = 0; i < SHORTSPECTRUM; ++i)
             cout << std::setw(4) << ROUND(deviations[i] * 10);
         cout << endl;
     }
