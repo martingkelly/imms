@@ -13,6 +13,7 @@ using std::string;
 using std::endl;
 using std::cerr;
 using std::setprecision;
+using std::ofstream;
 
 //////////////////////////////////////////////
 // Constants
