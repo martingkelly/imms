@@ -11,8 +11,8 @@ libimmscore.a: $(CORE_OBJ) immsconf.h
 	$(AR) $(ARFLAGS) $@ $(CORE_OBJ)
 
 %.o: %.cc vars.mk
-	@$(CXX) $(CPPFLAGS) -M -E $< > .$*.d
-	$(CXX) $(CPPFLAGS) -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -M -E $< > .$*.d
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 %.o: %.c vars.mk
 	@$(CXX) $(CFLAGS) -M -E $< > .$*.d
