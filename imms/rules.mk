@@ -17,30 +17,6 @@ objects=$(sort $(notdir $(foreach type,c cc,$(call objects_$(type),$1))))
 objects_c=$(patsubst %.c,%.o,$(wildcard $(addsuffix /*.c,$1)))
 objects_cc=$(patsubst %.cc,%.o,$(wildcard $(addsuffix /*.cc,$1)))
 
-.PHONY: clean distclean dist
-
-clean:
-	rm -f $(wildcard *.o)
-	rm -f $(wildcard libimms.so libimmscore.a analyzer immstool immsremote imms-*.tar.* imms*.o core* .*.d)
-
-distclean: clean
-	rm -f $(wildcard ../.\#* ../config.* ../configure ../immsconf.h* ../vars.mk)
-	rm -rf $(wildcard ../autom4te.cache)
-
-../configure: configure.ac
-	autoheader
-	autoconf
-
-immsconf.h: ../configure
-	$(error Please run the "configure" script)
-
-dist: immsconf.h distclean 
-	cp -r .. /tmp/imms-$(VERSION)
-	rm -rf `find /tmp/imms-$(VERSION)/ -name .svn`
-	tar -C /tmp/ -cj imms-$(VERSION)/ -f imms-$(VERSION).tar.bz2
-	tar -C /tmp/ -cz imms-$(VERSION)/ -f imms-$(VERSION).tar.gz
-	rm -rf /tmp/imms-$(VERSION)/
-
 .PHONY: install install-user install-system user-message system-message
 
 ifeq ($(shell id -u), 0)
