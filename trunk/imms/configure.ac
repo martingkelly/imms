@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[1.2-rc1],[mag@luminal.org])
+AC_INIT([IMMS],[1.2-rc2],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -98,6 +98,18 @@ fi
 if test "$with_pcre" = "no"; then
     AC_MSG_ERROR([PCRE required and missing.])
 fi
+
+AC_CHECK_HEADERS(fftw3.h,, [with_fftw=no])
+if test "$with_fftw" != "no"; then
+    saved_libs="$LIBS"
+    LIBS=`pkg-config fftw3f --libs`
+    AC_CHECK_LIB(fftw3f, fftwf_plan_dft_r2c_1d,, [with_fftw=no])
+    if test "$with_fftw" = "no"; then
+        AC_MSG_ERROR([FFTW 3.0 required and missing.])
+    fi
+fi
+
+LIBS=$saved_libs
 
 if test "$with_taglib" != "no"; then
     AC_CHECK_PROG(with_taglib, taglib-config, "yes", "no")
