@@ -8,7 +8,6 @@
 #include "plugin.h"
 
 
-char *ch_email = NULL;
 int use_xidle = 1;
 int poll_tag = 0;
 
@@ -24,12 +23,8 @@ void read_config(void)
 {
     ConfigFile *cfgfile;
 
-    g_free(ch_email);
-    ch_email = NULL;
-
     if ((cfgfile = xmms_cfg_open_default_file()) != NULL)
     {
-        xmms_cfg_read_string(cfgfile, "imms", "email", &ch_email);
         xmms_cfg_read_int(cfgfile, "imms", "xidle", &use_xidle);
         xmms_cfg_free(cfgfile);
     }
@@ -39,7 +34,7 @@ void init(void)
 {
     imms_init();
     read_config();
-    imms_setup(ch_email, use_xidle);
+    imms_setup(use_xidle);
     poll_tag = gtk_timeout_add(200, poll_func, NULL);
 }
 
@@ -64,7 +59,7 @@ void configure_ok_cb(gpointer data)
 
     xmms_cfg_free(cfgfile);
 
-    imms_setup(ch_email, use_xidle);
+    imms_setup(use_xidle);
     gtk_widget_destroy(configure_win);
 }  
 
