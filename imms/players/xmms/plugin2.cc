@@ -27,8 +27,8 @@ bool shuffle = false;
 string cur_path = "", last_path = "";
 
 // Extern from interface.c
-extern VisPlugin imms_vp;
-int &session = imms_vp.xmms_session;
+extern GeneralPlugin imms_gp;
+int &session = imms_gp.xmms_session;
 
 // Wrapper that frees memory
 string imms_get_playlist_item(int at)

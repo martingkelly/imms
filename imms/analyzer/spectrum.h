@@ -23,6 +23,8 @@ using std::vector;
 #define LONGSPECTRUM    256
 #define MICRO           1000000
 
+float rms_string_distance(const string &s1, const string &s2);
+
 class BeatKeeper
 {
 public:

@@ -7,6 +7,7 @@
 #include <map>
 
 #include <utils.h>
+#include <strmanip.h>
 
 #include "spectrum.h"
 

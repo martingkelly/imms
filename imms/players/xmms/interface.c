@@ -164,23 +164,16 @@ void about(void)
             GTK_SIGNAL_FUNC(gtk_widget_destroyed), &about_win);
 }
 
-VisPlugin imms_vp =
+GeneralPlugin imms_gp =
 {
     NULL,           /* handle */
     NULL,           /* plugin filename */
     -1,             /* session */
     PACKAGE_STRING, /* description */
-    0,              /* pcm channels */
-    1,              /* freq channels */
     init,
-    cleanup,
     about,
     configure,
-    NULL,           /* disable */
-    NULL,           /* playback start */
-    NULL,           /* playback stop */
-    NULL,           /* render pcm */
-    NULL            /* render freq */
+    cleanup
 };
 
-VisPlugin *get_vplugin_info(void) { return &imms_vp; }
+GeneralPlugin *get_gplugin_info(void) { return &imms_gp; }

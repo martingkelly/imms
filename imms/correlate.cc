@@ -50,7 +50,10 @@ void CorrelationDb::add_recent(int delta)
 
 void CorrelationDb::expire_recent(time_t cutoff)
 {
+#ifdef DEBUG
+    cerr << "Running expire recent..." << endl;
     StackTimer t;
+#endif
 
     try {
         AutoTransaction a;

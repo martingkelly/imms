@@ -20,7 +20,7 @@ protected:
 
         IntPair id;
         int position, rating, relation;
-        int composite_rating, color_rating, bpm_rating;
+        int composite_rating;
         bool identified, unrated;
         time_t last_played;
         string path;

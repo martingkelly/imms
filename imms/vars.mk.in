@@ -6,7 +6,7 @@ DESTDIR = @prefix@
 VPATH = ..:../players/xmms:../analyzer:../utils
 
 SHELL = bash
-XMMS_OBJ = @PLUGIN_OBJ@ interface.o player.o libimmscore.a 
+XMMS_OBJ = @PLUGIN_OBJ@ interface.o libimmscore.a 
 
 CPPFLAGS = `xmms-config --cflags` @XCPPFLAGS@ -Wall -fPIC -D_REENTRANT -I../
 CXXFLAGS = -fno-rtti

@@ -10,11 +10,12 @@
 #include <time.h>
 #include <math.h>
 
-#include "imms.h"
-#include "sqldb2.h"
-#include "utils.h"
-#include "player.h"
-#include "strmanip.h"
+#include <imms.h>
+#include <sqldb2.h>
+#include <utils.h>
+#include <player.h>
+#include <spectrum.h>
+#include <strmanip.h>
 
 #define SHORTSPECTRUM   16
 
@@ -31,8 +32,6 @@ string Player::get_playlist_item(int i) { return ""; }
 
 int g_argc;
 char **g_argv;
-
-extern float rms_string_distance(const string &s1, const string &s2);
 
 class ImmsTool : public SqlDb
 {

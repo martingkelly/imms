@@ -8,22 +8,23 @@ first: configure
 
 include ../rules.mk
 
-all: libimms.so
+all: libimms.so analyzer immstool immsremote
 
 libimms.so: $(XMMS_OBJ) immsconf.h
 	$(CXX) $(XMMS_OBJ) \
 		$(LDFLAGS) \
 		-shared -Wl,-z,defs,-soname,$@ -o $@
 
-immstool: libimmscore.a
+libimmscore.a: $(call objects,..) immsconf.h
+	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
+
+immstool-CPPFLAGS = -I../analyzer
+immstool: immstool.o libimmscore.a spectrum.o
 
 sqlite_speed_test-LIBS = libimmscore.a
 
 immsremote: immsremote.o comm.o 
 immsremote: -lreadline -lcurses
-
-libimmscore.a: $(call objects,../) immsconf.h
-	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 
 analyzer-LIBS=`pkg-config fftw3f --libs`
 

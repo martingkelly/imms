@@ -42,7 +42,6 @@ int PlaylistDb::install_filter(const string &filter)
                     "SELECT DISTINCT(Library.uid) FROM 'Library' "
                     "INNER JOIN 'Rating' USING(uid) "
                     "LEFT OUTER JOIN 'Last' ON Last.sid = Library.sid "
-                    "LEFT OUTER JOIN 'Acoustic' ON Acoustic.uid = Library.uid "
                     "LEFT OUTER JOIN 'Info' ON Info.sid = Library.sid "
                     "WHERE " + filter + ";").execute();
         }

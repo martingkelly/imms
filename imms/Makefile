@@ -15,4 +15,4 @@ immsconf.h: configure
 vars.mk:;
 
 %:
-	make -C build $@
+	@make -C build --no-print-directory $@
