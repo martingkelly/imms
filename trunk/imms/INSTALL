@@ -5,6 +5,8 @@ Requirments:
     * libvorbis 1.0+ [optional]
     * sqlite 2.8.0+
     * pcre 4.3+
+    * dbus 0.22+
+    * dbus-glib 0.22+
 
 Installation:
 

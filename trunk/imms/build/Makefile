@@ -13,7 +13,7 @@ all: libxmmsimms.so immsd analyzer immstool
 libxmmsimms.so: $(XMMS_OBJ)
 libxmmsimms-LIBS = $(DBUSLDFLAGS) $(XMMSLDFLAGS)
 
-libimmscore.a: $(call objects,..)
+libimmscore.a: $(call objects,../immscore)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 
 immsd: libimmscore.a
