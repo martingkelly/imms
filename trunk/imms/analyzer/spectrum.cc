@@ -188,13 +188,12 @@ string BeatKeeper::get_bpm_graph()
 {
     bool empty = true;
     string graph;
-    for (int i = 3; i < BEATSSIZE; i += 4)
+    for (int i = 3; i < BEATSSIZE; i += 3)
     {
-        int c = 'a' + ROUND((beats[i] + beats[i-1]
-                    + beats[i-2] + beats[i-3]) / 40);
+        int c = 'a' + ROUND((beats[i] + beats[i-1] + beats[i-2]) / 30);
         if (c != 'a')
             empty = false;
-        graph += (char)(c > 'z' ? 'z' : c);
+        graph += std::min((char)c, 'z');
     }
     return empty ? "" : graph;
 }

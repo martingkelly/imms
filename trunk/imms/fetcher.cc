@@ -14,7 +14,7 @@ using std::cerr;
 
 
 InfoFetcher::SongData::SongData(int _position, const string &_path)
-    : position(_position), Song(Song::identify(_path))
+    : Song(Song::identify(_path)), position(_position)
 {
     rating = relation = 0;
     identified = unrated = false;
@@ -49,7 +49,7 @@ bool InfoFetcher::fetch_song_info(SongData &data)
         if (!playlist_identify_item(data.position))
             return false;
 
-    const string &path = data.path;
+    const string &path = data.get_path();
 
     if (access(path.c_str(), R_OK))
         return false;
@@ -60,14 +60,9 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     string title = info.second;
 
     if (artist != "" && title != "")
-    {
         data.identified = true;
-    }
-    else
-    {
-        if ((data.identified = parse_song_info(path, title)))
-            ImmsDb::set_title(title);
-    }
+    else if ((data.identified = parse_song_info(path, title)))
+        ImmsDb::set_title(title);
 
     data.rating = ImmsDb::get_rating();
 

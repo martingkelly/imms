@@ -93,14 +93,11 @@ void SongPicker::do_events()
 
 void SongPicker::revalidate_current(int pos, const string &path)
 {
-    if (winner.position == pos && winner.path == path)
-    {
+    if (winner.position == pos && winner.get_path() == path)
         current = winner;
-    }
-    else if (current.path != path || current.position != pos)
+    else if (current.get_path() != path || current.position != pos)
     {
-        current.path = path;
-        current.position = pos;
+        current = SongData(pos, path);
         fetch_song_info(current);
     }
 }
@@ -111,7 +108,10 @@ int SongPicker::select_next()
         while (add_candidate(true));
 
     if (candidates.empty())
+    {
+        cerr << "warning: candidates are empty!" << endl;
         return 0;
+    }
 
     Candidates::iterator i;
     unsigned int total = 0;

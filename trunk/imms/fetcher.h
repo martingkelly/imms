@@ -17,13 +17,12 @@ protected:
     public:
         SongData(int _position = -1, const string &_path = "");
         bool operator ==(const SongData &other) const
-        { return position == other.position; }
+            { return position == other.position; }
 
         int position, rating, relation;
         int composite_rating;
         bool identified, unrated;
         time_t last_played;
-        string path;
     };
 
     bool playlist_identify_item(int pos);

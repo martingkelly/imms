@@ -131,11 +131,11 @@ void Imms::print_song_info()
 {
     fout << string(TERM_WIDTH - 15, '-') << endl << "[";
 
-    if (current.path.length() > TERM_WIDTH - 2)
-        fout << "..." << current.path.substr(current.path.length()
-                - TERM_WIDTH + 5);
+    const string &path = current.get_path();
+    if (path.length() > TERM_WIDTH - 2)
+        fout << "..." << path.substr(path.length() - TERM_WIDTH + 5);
     else
-        fout << current.path;
+        fout << path;
 
     fout << "]\n  [Rating: " << current.rating;
     fout << setiosflags(std::ios::showpos);
@@ -204,7 +204,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     *static_cast<Song*>(this) = *static_cast<Song*>(&current);
 
 #ifdef DEBUG
-    cerr << " *** " << path_get_filename(current.path) << endl;
+    cerr << " *** " << path_get_filename(current.get_path()) << endl;
 #endif
 
     if (mod >= CONS_NON_SKIP_RATE)

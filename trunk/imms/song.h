@@ -12,7 +12,6 @@ typedef pair<string, string> StringPair;
 class Song
 {
 public:
-    Song() { reset(); }
     static Song identify(const string &path);
 
     void set_last(time_t last);
@@ -29,10 +28,12 @@ public:
     int get_uid() { return uid; }
     const string &get_path() { return path; }
 
-    bool isok() { return uid != -1; }
+    bool isok() { return uid != -1 && path != ""; }
 
     void reset() { uid = sid = -1; artist = title = ""; }
 protected:
+    Song() { reset(); }
+
     void register_new_sid();
 
     int uid, sid;
