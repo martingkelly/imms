@@ -83,7 +83,7 @@ void SongPicker::identify_more()
 
 void SongPicker::do_events()
 {
-    bool more;
+    bool more = false;
     for (int i = 0; i < 4 && (more = add_candidate()); ++i);
     if (!more)
         identify_more();
