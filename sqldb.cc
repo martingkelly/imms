@@ -58,6 +58,7 @@ void SqlDb::close_database()
     if (db)
         sqlite_close(db);
     db = NULL;
+    nrow = ncol = 0;
 }
 
 void SqlDb::run_query(const string &query)
