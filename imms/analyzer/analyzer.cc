@@ -14,6 +14,7 @@
 #include <immsdb.h>
 
 #include "spectrum.h"
+#include "strmanip.h"
 
 #define SCALE       100000.0
 
@@ -44,6 +45,7 @@ int analyze(const string &path)
         return -4;
     }
 
+    string epath = rex.replace(path, "'", "\'", Regexx::global);
     ostringstream command;
     command << "nice -n 15 sox \'" << path << "\' -t .raw -w -u -c 1 -r "
         << SAMPLERATE << " -";

@@ -1,4 +1,4 @@
 #!/bin/sh
 rm $0
-autoreconf
+make
 $0 $*
