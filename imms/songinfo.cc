@@ -12,7 +12,7 @@
 
 SongInfo::SongInfo() : filename(""), myslave(0) { }
 
-void SongInfo::link(string _filename)
+void SongInfo::link(const string &_filename)
 {
     if (filename == _filename)
         return;

@@ -31,6 +31,7 @@ class SongInfo : public InfoSlave
 {
 public:
     SongInfo();
+    SongInfo(const string &_filename) { link(_filename); }
 
     virtual string get_artist()
         { return myslave->get_artist(); }
@@ -43,7 +44,7 @@ public:
         { return myslave->get_rating(email); }
 #endif
 
-    void link(string _filename);
+    void link(const string &_filename);
 
     const string &get_filename()
         { return filename; }

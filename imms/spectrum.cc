@@ -389,7 +389,7 @@ float SpectrumAnalyzer::color_transition(const string &from,
     distance = distance < -1 ? -1 : distance;
 
     float power_diff = abs(spectrum_power(from) - spectrum_power(to));
-    power_diff = 1 - (power_diff > 10 ? 10 : power_diff) / 5.0;
+    power_diff = 1 - (power_diff > 8 ? 8 : power_diff) / 4.0;
 
     return distance * 0.3 + power_diff * 0.7;
 }
