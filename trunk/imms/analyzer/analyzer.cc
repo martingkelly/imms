@@ -123,15 +123,13 @@ int main(int argc, char *argv[])
         return -7;
     }
 
-    ImmsDb immsdb;
-
     nice(15);
 
     bool shouldexport = true;
     FILE *wisdom = fopen(get_imms_root(".fftw_wisdom").c_str(), "r");
     if (wisdom)
     {
-        fftw_import_wisdom_from_file(wisdom);
+        shouldexport = !fftw_import_wisdom_from_file(wisdom);
         fclose(wisdom);
     }
     else
@@ -153,6 +151,7 @@ int main(int argc, char *argv[])
 
     }
 
+    ImmsDb immsdb;
     for (int i = 1; i < argc; ++i)
         analyze(path_normalize(argv[i]));
 
