@@ -63,6 +63,8 @@ public:
     void integrate_spectrum(float long_spectrum[LONGSPECTRUM]);
     void finalize();
 
+    bool is_known();
+
 protected:
     void reset();
 

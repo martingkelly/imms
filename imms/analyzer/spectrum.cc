@@ -404,3 +404,14 @@ void SpectrumAnalyzer::finalize()
     cerr << "bpm graph [" << bpmgraph << "] " << endl;
 #endif
 }
+
+bool SpectrumAnalyzer::is_known()
+{
+    try {
+        StringPair p = song.get_acoustic();
+        return p.first != "" && p.second != "";
+    }
+    WARNIFFAILED();
+
+    return false;
+}
