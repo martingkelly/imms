@@ -97,7 +97,7 @@ void imms_poll()
 
             state = BUSY;
 
-            if (!delay)
+            if (last_pl_length < 0 || !delay)
             {
                 if (xmms_remote_is_shuffle(session))
                     xmms_remote_toggle_shuffle(session);
@@ -113,7 +113,7 @@ void imms_poll()
             cur_plpos = xmms_remote_get_playlist_pos(session);
             cur_path = imms_get_playlist_item(cur_plpos);
 
-            if (last_path != cur_path || (good_length > 5 && time_left == 0))
+            if (last_path != cur_path || (good_length > 2 && time_left == 0))
             {
                 xmms_remote_stop(session);
                 if (last_path == cur_path)
@@ -123,7 +123,7 @@ void imms_poll()
                 return;
             }
 
-            if (!delay)
+            if (good_length < 3 || !delay)
             {
                 song_length = xmms_remote_get_playlist_time(session,
                         cur_plpos);
@@ -160,7 +160,7 @@ void imms_poll()
             bool forced = (last_plpos + 1 != cur_plpos) &&
                 (cur_plpos != 0 || last_plpos != pl_length - 1);
 
-            bool bad = good_length < 5 || song_length <= 30*1000;
+            bool bad = good_length < 3 || song_length <= 30*1000;
 
             if (last_path != "")
                 imms->end_song(!time_left, forced, bad);
