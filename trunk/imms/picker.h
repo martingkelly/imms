@@ -22,6 +22,7 @@ protected:
     void identify_more();
     void reset();
 
+    bool playlist_ready;
     SongData current;
 
 private:

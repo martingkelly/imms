@@ -55,7 +55,7 @@ void InfoFetcher::playlist_changed()
     gettimeofday(&start, 0);
 #endif
 
-    immsdb.clear_playlist();
+    immsdb.playlist_clear();
 
     for (int i = 0; i < Player::get_playlist_length(); ++i)
     {

@@ -20,7 +20,8 @@ using std::string;
 
 // Local vars
 static Imms *imms = NULL;
-int cur_plpos, next_plpos = -1, pl_length = -1, last_song_length = -1;
+int cur_plpos, next_plpos = -1, pl_length = -1;
+int last_plpos = -1, last_song_length = -1;
 int good_length = 0, song_length = 0, busy = 0, just_enqueued = 0, ending = 0;
 bool spectrum_ok = false, shuffle = false;
 
@@ -146,19 +147,21 @@ void do_checks()
     // have imms do it's internal processing
     imms->pump();
 
+    cur_plpos = xmms_remote_get_playlist_pos(session);
+    
     // check if xmms is reporting the song length correctly
     song_length = xmms_remote_get_playlist_time(session, cur_plpos);
     if (song_length > 1000)
         good_length++;
 
-    if (last_song_length != song_length)
+    if (last_plpos != cur_plpos || last_song_length != song_length)
     {
-        cur_plpos = xmms_remote_get_playlist_pos(session);
         cur_path = imms_get_playlist_item(cur_plpos);
         if (cur_path == "")
             return;
 
         last_song_length = song_length;
+        last_plpos = cur_plpos;
 
         if (last_path != cur_path)
         {

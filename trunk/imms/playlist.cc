@@ -11,11 +11,21 @@ void PlaylistDb::sql_create_tables()
             "'ided' INTEGER DEFAULT '0');");    
 }
 
+int PlaylistDb::playlist_install_filter(const string &filter)
+{
+    string where_clause = "WHERE uid > '-1'";
+    if (filter != "")
+        where_clause += " AND (" + filter + ")";
+    run_query("DROP VIEW 'Filter';");
+    run_query("CREATE TEMPORARY VIEW 'Filter' AS "
+            "SELECT FROM 'Playlist' " + where_clause + ";");
+
+    select_query("SELECT count() FROM 'Filter';");
+    return nrow && resultp[1] ? atoi(resultp[1]) : 0;
+}
+
 int PlaylistDb::get_unknown_playlist_item()
 {
-    if (all_known)
-        return -1;
-
     select_query("SELECT pos FROM 'Playlist' WHERE uid IS NULL LIMIT 1;");
 
     if (nrow && resultp[1])
@@ -26,8 +36,6 @@ int PlaylistDb::get_unknown_playlist_item()
     if (nrow && resultp[1])
         return atoi(resultp[1]);
 #endif
-
-    all_known = true;
 
     return -1;
 }
@@ -68,8 +76,7 @@ string PlaylistDb::get_playlist_item(int pos)
     return nrow && resultp[1] ? resultp[1] : "";
 }
 
-void PlaylistDb::clear_playlist()
+void PlaylistDb::playlist_clear()
 {
-    all_known = false;
     run_query("DELETE FROM 'Playlist';");
 }

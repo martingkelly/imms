@@ -190,7 +190,7 @@ bool BasicDb::check_artist(string &artist)
 {
     select_query(
             "SELECT artist FROM 'Info' "
-            "WHERE artist LIKE '" + artist + "' LIMIT 1;");
+            "WHERE similar(artist, '" + artist + "') LIMIT 1;");
 
     if (nrow && resultp[1])
     {
@@ -205,7 +205,7 @@ bool BasicDb::check_title(string &title)
     select_query(
             "SELECT title FROM 'Info' "
             "WHERE artist = '" + artist + "' "
-                "AND title LIKE '" + title + "' LIMIT 1;");
+                "AND similar(title, '" + title + "') LIMIT 1;");
 
     if (nrow && resultp[1])
     {
