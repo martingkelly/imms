@@ -24,7 +24,7 @@ public:
     //      int select_next()
     //      bool add_candidate(int, bool)
 
-    void start_song(int position, const std::string &path);
+    void start_song(int position, std::string path);
     void end_song(bool at_the_end, bool jumped, bool bad);
 
     // get the last song played

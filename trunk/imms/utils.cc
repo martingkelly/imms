@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <math.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "utils.h"
 

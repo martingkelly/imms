@@ -291,6 +291,8 @@ void do_lint()
                 q.execute();
                 cout << *i << endl;
             }
+
+            at.commit();
         }
 
         Q("DELETE FROM Info "
