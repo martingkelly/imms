@@ -57,6 +57,7 @@ protected:
     void sql_schema_upgrade();
 
     // shared within callbacks
+    bool abort_requested;
     int from, from_weight, to, to_weight;
     float weight;
 
