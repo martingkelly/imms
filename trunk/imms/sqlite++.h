@@ -11,8 +11,10 @@ class SQLDatabaseConnection
 {
 public:
     SQLDatabaseConnection(const string &filename);
+    SQLDatabaseConnection() {};
     ~SQLDatabaseConnection();
 
+    void open(const string &filename);
     void close();
     static string error();
 };

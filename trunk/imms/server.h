@@ -2,9 +2,9 @@
 #define __SERVER_H
 
 #include "comm.h"
-#include "immsbase.h"
+#include "immsdb.h"
 
-class ImmsServer : public SocketServer, virtual public ImmsBase
+class ImmsServer : public SocketServer, virtual public ImmsDb
 {
 public:
     ImmsServer();
