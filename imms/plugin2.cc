@@ -11,6 +11,7 @@
 
 #include "immsconf.h"
 #include "plugin.h"
+#include "player.h"
 #include "imms.h"
 #include "utils.h"
 
@@ -77,6 +78,11 @@ static void reset_selection()
 {
     xmms_remote_playqueue_remove(session, next_plpos);
     next_plpos = -1;
+}
+
+void Player::reset_selection()
+{
+    ::reset_selection();
 }
 
 static void do_song_change()

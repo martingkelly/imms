@@ -9,7 +9,8 @@
 #include "utils.h"
 
 #define     SAMPLE_SIZE             100
-#define     MIN_SAMPLE_SIZE         30
+#define     MIN_SAMPLE_SIZE         35
+#define     REALLY_GOOD             50000
 #define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
 #define     BASE_BIAS               10
 #define     DISPERSION_FACTOR       4.1
@@ -60,6 +61,8 @@ bool SongPicker::add_candidate(bool urgent)
     {
         ++acquired;
         candidates.push_back(data);
+        if (urgent && data.composite_rating > REALLY_GOOD)
+            attempts = MAX_ATTEMPTS + 1;
     }
 
     return true;

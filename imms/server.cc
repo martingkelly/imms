@@ -97,8 +97,8 @@ void ImmsServer::do_events()
             *conn << "  show" << "\n";
             *conn << "  clear" << "\n";
             *conn << "  [or|and] artist <str>" << "\n";
-            *conn << "  [or|and] rating [<|>] <int>" << "\n";
-            *conn << "  [or|and] bpm [<|>] <int>" << "\n";
+            *conn << "  [or|and] rating =|>|< <int>" << "\n";
+            *conn << "  [or|and] bpm =|>|< <int>" << "\n";
             *conn << "  sql <str>" << "\n";
 
             break;
@@ -112,6 +112,7 @@ void ImmsServer::do_events()
         {
             filter = "";
             immsdb.install_filter(filter);
+            reset_selection();
             break;
         }
         if (str == "artist" || str == "sql" || str == "rating" || str == "bpm")
@@ -146,6 +147,7 @@ void ImmsServer::do_events()
                 filter += "Rating.rating " + params + " ";
             else if (str == "bpm")
                 filter += "Acoustic.bpm " + params + " ";
+            reset_selection();
 
             int n = immsdb.install_filter(filter);
             *conn << itos(n) << " hits" << "\n";

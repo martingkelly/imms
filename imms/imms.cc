@@ -96,6 +96,12 @@ void Imms::playlist_changed()
     InfoFetcher::playlist_changed();
 } 
 
+void Imms::reset_selection()
+{
+    SongPicker::reset();
+    Player::reset_selection();
+}
+
 int Imms::get_previous()
 {
     if (history.size() < 2)
