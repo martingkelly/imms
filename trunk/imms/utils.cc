@@ -86,7 +86,7 @@ float rms_string_distance(const string &s1, const string &s2, int max)
         return 0;
 
     int len = s1.length();
-    if (len == (int)s2.length())
+    if (len != (int)s2.length())
         return 0;
     len = std::min(len, max);
     float distance = 0;
