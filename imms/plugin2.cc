@@ -17,12 +17,12 @@ using std::string;
 
 #define DEFAULT_EMAIL       "default@imms.org"
 #define SPECTRUM_SKIP       0.15
-#define POLL_DELAY          5
+#define POLL_DELAY          3
 
 // Local vars
 static Imms *imms = NULL;
 int last_plpos = -1, cur_plpos, next_plpos = -1, pl_length = -1;
-int good_length = 0, song_length = 0, delay = 0, busy = 0, just_enqueued = 0;
+int good_length = 0, song_length = 0, busy = 0, just_enqueued = 0;
 bool need_more = true, spectrum_ok = false, shuffle = false, finished = false;
 
 string cur_path = "", last_path = "";
@@ -76,13 +76,17 @@ int random_index()
     while (1)
     {
         int pos = imms_random(pl_length);
-        if (pos != next_plpos)
+        if (pl_length < 3 || pos != next_plpos)
             return pos;
     }
 }
 
 void do_more_checks()
 {
+    // run these checks less frequently so as not to waste cpu time
+    static int delay = 0;
+    if (++delay < POLL_DELAY && pl_length > -1 && good_length > 2)
+        return;
     delay = 0;
 
     // update playlist length
@@ -90,9 +94,9 @@ void do_more_checks()
     if (new_pl_length != pl_length)
     {
         pl_length = new_pl_length;
-        need_more = true;
         imms->playlist_changed(pl_length);
         xmms_remote_playqueue_remove(session, next_plpos);
+        need_more = true;
         next_plpos = 0;
     }
 
@@ -101,7 +105,10 @@ void do_more_checks()
     if (song_length > 1000)
         good_length++;
 
-    shuffle = xmms_remote_is_shuffle(session);
+    bool newshuffle = xmms_remote_is_shuffle(session);
+    if (!newshuffle && shuffle)
+        xmms_remote_playqueue_remove(session, next_plpos);
+    shuffle = newshuffle;
 
     // have imms do it's internal processing
     imms->pump();
@@ -117,7 +124,6 @@ void do_song_change()
         imms->end_song(finished, forced, bad);
 
     // notify imms of the next song
-    std::cerr << "starting song " << cur_plpos << ": " << cur_path << std::endl;
     imms->start_song(cur_plpos, cur_path);
 
     last_plpos = cur_plpos;
@@ -163,7 +169,10 @@ void do_checks()
         cur_path = imms_get_playlist_item(cur_plpos);
 
         if (last_path != cur_path)
+        {
             do_song_change();
+            return;
+        }
     }
 
     // check the time to catch the end of the song
@@ -172,18 +181,29 @@ void do_checks()
     spectrum_ok = (cur_time > song_length * SPECTRUM_SKIP
             && cur_time < song_length * (1 - SPECTRUM_SKIP));
 
-    if (song_length - cur_time < 20)
+    if (song_length - cur_time < 20 * 1000)
         finished = true;
 
-    // run these checks less frequently so as not to waste cpu time
-    if (++delay > POLL_DELAY || pl_length < 0 || good_length < 3)
-        do_more_checks();
+    do_more_checks();
 
     int qlength = xmms_remote_get_playqueue_length(session);
-    if (!qlength && shuffle)
-        enqueue_next();
-    else if (!shuffle)
+    if (shuffle)
+    {
+        if (qlength > 1)
+        {
+            xmms_remote_playqueue_remove(session, next_plpos);
+            next_plpos = -1;
+        }
+        else if (!qlength)
+        {
+            enqueue_next();
+            return;
+        }
+    }
+    else
+    {
         next_plpos = (cur_plpos + 1) % pl_length;
+    }
     
     // if we don't have enough, feed imms more candidates for the next song
     if (shuffle && need_more)

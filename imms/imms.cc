@@ -33,8 +33,8 @@ using std::ofstream;
 #define     DAY                     (24*HOUR)
 
 #define     MAX_CORRELATION         15.0
-#define     SPECTRUM_IMPACT         20
-#define     BPM_IMPACT              20
+#define     SPECTRUM_IMPACT         15
+#define     BPM_IMPACT              15
 #define     PRIMARY                 0.80
 #define     CORRELATION_IMPACT      40
 
@@ -76,11 +76,10 @@ Imms::Imms()
     fout << endl << endl << ctime(&t) << setprecision(3);
 }
 
-void Imms::setup(const char* _email, bool use_xidle, bool _use_autooff)
+void Imms::setup(const char* _email, bool use_xidle)
 {
     email = _email;
     xidle_enabled = use_xidle;
-    use_autooff = _use_autooff;
 }
 
 void Imms::pump()
@@ -114,11 +113,11 @@ void Imms::start_song(int position, const string &path)
     XIdle::reset();
     SpectrumAnalyzer::reset();
 
-    revalidate_winner(path);
+    revalidate_current(path);
 
     history.push_back(position);
 
-    immsdb.set_id(winner.id);
+    immsdb.set_id(current.id);
     immsdb.set_last(time(0));
 
     print_song_info();
@@ -128,27 +127,27 @@ void Imms::print_song_info()
 {
     fout << string(TERM_WIDTH - 15, '-') << endl << "[";
 
-    if (winner.path.length() > TERM_WIDTH - 2)
-        fout << "..." << winner.path.substr(winner.path.length()
+    if (current.path.length() > TERM_WIDTH - 2)
+        fout << "..." << current.path.substr(current.path.length()
                 - TERM_WIDTH + 5);
     else
-        fout << winner.path;
+        fout << current.path;
 
-    fout << "]\n  [Rating: " << winner.rating;
+    fout << "]\n  [Rating: " << current.rating;
     fout << setiosflags(std::ios::showpos);
-    if (winner.relation)
-        fout << winner.relation << "r";
-    if (winner.color_rating)
-        fout << winner.color_rating << "s";
-    if (winner.bpm_rating)
-        fout << winner.bpm_rating << "b";
+    if (current.relation)
+        fout << current.relation << "r";
+    if (current.color_rating)
+        fout << current.color_rating << "s";
+    if (current.bpm_rating)
+        fout << current.bpm_rating << "b";
     fout << resetiosflags(std::ios::showpos);
 
-    fout << "] [Last: " << strtime(winner.last_played) <<
-        (winner.last_played == local_max ?  "!" : "") << "] ";
+    fout << "] [Last: " << strtime(current.last_played) <<
+        (current.last_played == local_max ?  "!" : "") << "] ";
 
-    fout << (!winner.identified ? "[Unknown] " : "");
-    fout << (winner.unrated ? "[New] " : "");
+    fout << (!current.identified ? "[Unknown] " : "");
+    fout << (current.unrated ? "[New] " : "");
 
     fout.flush();
 }
@@ -198,17 +197,17 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     if (bad)
         mod = 0;
 
-    immsdb.set_id(winner.id);
+    immsdb.set_id(current.id);
 
 #ifdef DEBUG
-    cerr << " *** " << path_get_filename(winner.path) << endl;
+    cerr << " *** " << path_get_filename(current.path) << endl;
 #endif
 
     SpectrumAnalyzer::finalize();
 
     if (mod > CONS_NON_SKIP_RATE + INTERACTIVE_BONUS)
     {
-        last_hp.sid = winner.id.second;
+        last_hp.sid = current.id.second;
         last_hp.bpm = SpectrumAnalyzer::get_last_bpm();
         last_hp.spectrum = SpectrumAnalyzer::get_last_spectrum();
     }
@@ -224,7 +223,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     if (abs(mod) > CONS_NON_SKIP_RATE)
         immsdb.add_recent(mod);
 
-    int new_rating = winner.rating + mod;
+    int new_rating = current.rating + mod;
     if (new_rating > MAX_RATING)
         new_rating = MAX_RATING;
     else if (new_rating < MIN_RATING)
@@ -232,6 +231,11 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     immsdb.set_last(time(0));
     immsdb.set_rating(new_rating);
+}
+
+float rescale(float score)
+{
+    return score < 0 ? score * 2 : score;
 }
 
 int Imms::fetch_song_info(SongData &data)
@@ -257,13 +261,13 @@ int Imms::fetch_song_info(SongData &data)
     if (data.spectrum != "")
     {
         if (last_hp.sid != -1 && last_hp.spectrum != "")
-            primary = color_transition(last_hp.spectrum, data.spectrum)
-                * PRIMARY;
+            primary = rescale(color_transition(
+                        last_hp.spectrum, data.spectrum)) * PRIMARY;
 
         const string &last_spectrum = SpectrumAnalyzer::get_last_spectrum();
         if (!last_skipped && last_spectrum != "")
-            secondary = color_transition(last_spectrum, data.spectrum)
-                * (1 - PRIMARY);
+            secondary = rescale(color_transition(
+                        last_spectrum, data.spectrum)) * (1 - PRIMARY);
     }
     if (primary + secondary < 0)
         data.color_rating = ROUND((primary + secondary) * SPECTRUM_IMPACT);
@@ -273,13 +277,13 @@ int Imms::fetch_song_info(SongData &data)
     if (data.bpm_value)
     {
         if (last_hp.sid != -1 && last_hp.bpm)
-            primary =
-                bpm_transition(last_hp.bpm, data.bpm_value) * PRIMARY;
+            primary = rescale(bpm_transition(
+                        last_hp.bpm, data.bpm_value)) * PRIMARY;
 
         int last_bpm = SpectrumAnalyzer::get_last_bpm();
         if (!last_skipped && last_bpm)
-            secondary =
-                bpm_transition(last_bpm, data.bpm_value) * (1 - PRIMARY);
+            secondary = rescale(bpm_transition(
+                        last_bpm, data.bpm_value)) * (1 - PRIMARY);
     }
     data.bpm_rating = ROUND((primary + secondary) * BPM_IMPACT);
 

@@ -19,13 +19,14 @@ public:
             bool urgent = false);
 
 protected:
-    void revalidate_winner(const std::string &path);
+    void revalidate_current(const std::string &path);
     void reset();
 
-    SongData winner;
+    SongData current;
 
 private:
     int acquired, attempts;
+    SongData winner;
 
     typedef std::list<SongData> Candidates;
     Candidates candidates;

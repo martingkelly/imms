@@ -44,7 +44,7 @@ public:
     bool check_artist(string &artist);
     bool check_title(string &title);
 
-    int artist_avg_rating();
+    int avg_rating();
 
     void clear_recent() { expire_recent(""); }
 

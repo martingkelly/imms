@@ -342,35 +342,6 @@ pair<float, float> spectrum_analyze(const string &spectstr)
     return pair<float, float>(mean, deviation);
 }
 
-int spectrum_power(const string &spectstr)
-{
-    float mean = 0;
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-        mean += (spectstr[i] - 'a') *
-           pow(1 + (SHORTSPECTRUM - i) / 16, 4);
-
-    return ROUND(mean / SHORTSPECTRUM);
-}
-
-string spectrum_normalize(const string &spectr)
-{
-    pair<float, float> stats = spectrum_analyze(spectr);
-
-    string normal = "";
-
-    // rescale the amplitude and shift to match means
-    float divscale = 7 / stats.second;
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-    {
-         int val = ROUND('m' + (spectr[i] - stats.first) * divscale);
-         val = val < 0 ? 0 : val;
-         val = val > 127 ? 127 : val;
-         normal += (char)val;
-    }
-
-    return normal;
-}
-
 int spectrum_distance(const string &s1, const string &s2)
 {
     int distance = 0;
@@ -387,14 +358,10 @@ float SpectrumAnalyzer::color_transition(const string &from,
     assert(from.length() == to.length()
             && (int)from.length() == SHORTSPECTRUM);
 
-    float distance =  1 - spectrum_distance(spectrum_normalize(from),
-            spectrum_normalize(to)) / 1000.0;
+    float distance = 1 - spectrum_distance(from, to) / 500.0;
     distance = distance < -1 ? -1 : distance;
 
-    float power_diff = abs(spectrum_power(from) - spectrum_power(to));
-    power_diff = 1 - (power_diff > 8 ? 8 : power_diff) / 4.0;
-
-    return distance * 0.3 + power_diff * 0.7;
+    return distance;
 }
 
 float SpectrumAnalyzer::bpm_transition(int from, int to)
@@ -482,9 +449,7 @@ void SpectrumAnalyzer::finalize()
     }
 
 #ifdef DEBUG
-    cerr << "spectrum [" << last_spectrum << "] "
-        << endl;
-    cerr << "power rating = " << spectrum_power(last_spectrum) << endl;
+    cerr << "spectrum [" << last_spectrum << "] " << endl;
 #endif
 
     if (have_spectrums > 20000)

@@ -24,8 +24,6 @@ using std::pair;
 int g_argc;
 char **g_argv;
 
-extern pair<float, float> spectrum_analyze(const string &spectstr);
-extern string spectrum_normalize(const string &spectr);
 extern int spectrum_distance(const string &s1, const string &s2);
 
 class ImmsTool : public SqlDb
@@ -120,7 +118,7 @@ int main(int argc, char *argv[])
 
 int usage()
 {
-    cout << "immstool distance|deviation|missing|purge|help" << endl;
+    cout << "immstool distance|deviation|missing|purge|lint|help" << endl;
     return -1;
 }
 
@@ -190,9 +188,7 @@ void ImmsTool::do_distance()
 int ImmsTool::distance_callback(int argc, char *argv[])
 {
     assert(argc == 3);
-    cout << setw(4) << spectrum_distance(
-            spectrum_normalize(g_argv[2]),
-            spectrum_normalize(argv[1]))
+    cout << setw(4) << spectrum_distance(g_argv[2], argv[1])
         << "  " << argv[1] << "  ";
 
     select_query("SELECT artist, title FROM Info "
@@ -240,7 +236,6 @@ void do_deviation()
             cout << "bad spectrum: " << spectrum << endl;
             continue;
         }
-        spectrum = spectrum_normalize(spectrum);
         ++count;
         all.push_back(spectrum);
         for (int i = 0; i < SHORTSPECTRUM; ++i)

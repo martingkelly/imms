@@ -346,18 +346,34 @@ int ImmsDb::identify(const string &path, time_t modtime,
     return uid;
 }
 
-int ImmsDb::artist_avg_rating()
+int ImmsDb::avg_rating()
 {
-    if (artist == "")
-        return -1;
+    if (title != "")
+    {
+        select_query(
+                "SELECT avg(rating) FROM Library "
+                    "INNER JOIN Info ON Library.sid = Info.sid "
+                    "INNER JOIN Rating ON Library.uid = Rating.uid "
+                    "WHERE Info.artist = '" + artist + "' "
+                    "AND Info.title = '" + title + "';");
 
-    select_query(
-            "SELECT avg(rating) FROM Library "
-                "INNER JOIN Info ON Library.sid = Info.sid "
-                "INNER JOIN Rating ON Library.uid = Rating.uid "
-                "WHERE Info.artist = '" + artist + "';");
+        if (nrow && resultp[1] && (int)atof(resultp[1]))
+            return (int)atof(resultp[1]);
+    }
 
-    return nrow && resultp[1] ? (int)atof(resultp[1]) : -1;
+    if (artist != "")
+    {
+        select_query(
+                "SELECT avg(rating) FROM Library "
+                    "INNER JOIN Info ON Library.sid = Info.sid "
+                    "INNER JOIN Rating ON Library.uid = Rating.uid "
+                    "WHERE Info.artist = '" + artist + "';");
+
+        if (nrow && resultp[1] && (int)atof(resultp[1]))
+            return (int)atof(resultp[1]);
+    }
+
+    return -1;
 }
 
 bool ImmsDb::check_artist(string &artist)
