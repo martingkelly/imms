@@ -54,11 +54,13 @@ AC_PROG_INSTALL
 AC_LANG(C++)
 
 AC_MSG_CHECKING([for --enable-debug])
-AC_MSG_RESULT([$enable_debug])
 
 XCPPFLAGS="-ggdb -O0 -DDEBUG"
 if test "$enable_debug" != "yes"; then
     XCPPFLAGS="-O3"
+    AC_MSG_RESULT([no])
+else
+    AC_MSG_RESULT([yes])
 fi
 
 AC_CHECK_LIB(z, compress,, [with_zlib=no])
