@@ -91,8 +91,8 @@ int BeatKeeper::getBPM()
             min = beats[i];
     }
 
-    // look at the top 15%
-    float cutoff = min + (max - min) * 0.85;
+    // look at the top 20%
+    float cutoff = min + (max - min) * 0.80;
 
     int totalpeaks = 0;
     vector<int> slowpeaks;
@@ -182,8 +182,8 @@ static int bounds[] =
     { -1, 1, 2, 3, 5, 7, 10, 14, 20, 28, 40, 54, 74, 101, 137, 187, 255 };
 
 static float scales[] =
-    { 9800, 5000, 4200, 3500, 2600, 2100, 1650, 1200, 1000, 780, 550,
-        400, 290, 200, 110, 42 };
+    { 11000, 5000, 4200, 3500, 2600, 2100, 1650, 1200, 1000, 780, 550,
+        400, 290, 200, 110, 40 };
 
 SpectrumAnalyzer::SpectrumAnalyzer()
 {
