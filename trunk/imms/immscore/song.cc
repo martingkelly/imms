@@ -7,11 +7,46 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <iostream>
 
 using std::cerr;
 using std::endl;
+
+int evaluate_artist(const string &artist, const string &album,
+        const string &title, int count)
+{
+    int score = 0;
+
+    score += album != "" ? 10 : -4;
+    score += title != "" ? 5 : -10;
+
+    score += count;
+
+    int length = artist.length();
+    int upper = 0, ascii = 0, alpha = 0, blanks = 0, uscore = 0;
+    for (int i = 0; i < length; ++i) 
+    {
+        int c = artist[i];
+        upper += isupper(c);
+        ascii += isascii(c);
+        alpha += isalpha(c);
+        blanks += isblank(c);
+        uscore += (c == '_' || c == '-');
+    }
+
+    if (uscore > 1 && blanks == 0)
+        score -= 6;
+    if (upper == length)
+        score -= 4;
+    if (upper > 0 && upper < length / 3)
+        score += 10;
+    if (length - ascii < 3)
+        score += 10;
+
+    return score;
+}
 
 Song::Song(const string &path_, int _uid, int _sid) : path(path_)
 {
@@ -57,6 +92,45 @@ void Song::update_tag_info()
     string artist = info.get_artist();
     string album = info.get_album();
     string title = info.get_title();
+
+    // don't erase existing tags
+    if (artist == "" && title == "")
+    {
+        Q q("SELECT count(1) FROM Tags WHERE uid = ?;");
+        q << uid;
+        if (q.next())
+            return;
+    }
+
+    if (artist != "")
+    {
+        int count = 0;
+        {
+            Q q("SELECT count(1) FROM Tags WHERE artist = ?;");
+            q << artist;
+            if (q.next())
+                q >> count;
+        }
+
+        int trust = evaluate_artist(artist, album, title, count);
+        int oldtrust = 0, aid = -1;
+
+        {
+            Q q("SELECT A.aid, A.artist, A.trust "
+                    "FROM Library L NATURAL INNER JOIN Info I "
+                    "INNER JOIN Artists A on I.aid = A.aid WHERE L.uid = ?;");
+            q << uid;
+            if (q.next())
+                q >> aid >> oldtrust;
+        }
+
+        if (aid > -1 && trust > oldtrust)
+        {
+            Q q("UPDATE Artists SET readable = ?, trust = ? WHERE aid = ?;");
+            q << artist << trust << aid;
+            q.execute();
+        }
+    }
 
     Q q("INSERT OR REPLACE INTO Tags "
             "('uid', 'artist', 'album', 'title') "

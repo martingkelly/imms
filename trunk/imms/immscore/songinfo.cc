@@ -158,3 +158,12 @@ void SongInfo::link(const string &_filename)
     if (!myslave)
         myslave = new InfoSlave();
 }
+
+string SongInfo::get_artist()
+    { return trim(myslave->get_artist()); }
+
+string SongInfo::get_title()
+    { return trim(myslave->get_title()); }
+
+string SongInfo::get_album()
+    { return trim(myslave->get_album()); }

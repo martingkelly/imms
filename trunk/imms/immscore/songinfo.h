@@ -23,12 +23,9 @@ public:
     SongInfo(const string &_filename) { link(_filename); }
     ~SongInfo() { delete myslave; }
 
-    virtual string get_artist()
-        { return myslave->get_artist(); }
-    virtual string get_title()
-        { return myslave->get_title(); }
-    virtual string get_album()
-        { return myslave->get_album(); }
+    virtual string get_artist();
+    virtual string get_title();
+    virtual string get_album();
 
     void link(const string &_filename);
 

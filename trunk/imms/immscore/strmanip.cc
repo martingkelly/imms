@@ -23,6 +23,12 @@ void string_split(list<string> &store, const string &s, const string &delims)
     store.insert(store.end(), rex.match.begin(), rex.match.end());
 }
 
+string trim(const string &s)
+{
+    unsigned p = s.find_last_not_of(" ");
+    return p == string::npos ? s : s.substr(0, p + 1);
+}
+
 string escape_char(char c)
 {
     string s(1, c);
