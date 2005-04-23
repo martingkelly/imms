@@ -17,7 +17,7 @@ bmpplugin2.o: plugin2.cc
 
 BMPDESTDIR=""
 ifeq ($(shell id -u), 0)
-	BMPDESTDIR=`beep-config --general-plugin-dir`
+	BMPDESTDIR=`pkg-config --variable=general_plugin_dir bmp`
 else
 	BMPDESTDIR=${HOME}/.bmp/Plugins/General
 endif
