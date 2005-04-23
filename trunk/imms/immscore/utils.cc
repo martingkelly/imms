@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <errno.h>
 
+#include "immsconf.h"
 #include "utils.h"
 
 using std::ifstream;
@@ -38,13 +39,20 @@ time_t usec_diff(struct timeval &tv1, struct timeval &tv2)
         + tv2.tv_usec - tv1.tv_usec;
 }
 
-StackTimer::StackTimer() { gettimeofday(&start, 0); }
+StackTimer::StackTimer()
+{
+#ifdef DEBUG
+    gettimeofday(&start, 0);
+#endif
+}
 
 StackTimer::~StackTimer()
 {
+#ifdef DEBUG
     struct timeval end;
     gettimeofday(&end, 0);
     std::cout << usec_diff(start, end) / 1000 << " msecs elapsed" << std::endl;
+#endif
 }
 
 string get_imms_root(const string &file)
