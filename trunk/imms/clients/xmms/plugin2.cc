@@ -28,7 +28,7 @@ int cur_plpos, next_plpos = -1, pl_length = -1,
     last_plpos = -1, last_song_length = -1;
 int good_length = 0, song_length = 0,
     busy = 0, just_enqueued = 0, ending = 0;
-bool shuffle = false, select_pending = false, xidle_val = false;
+bool shuffle = true, select_pending = false, xidle_val = false;
 
 string cur_path = "", last_path = "";
 
