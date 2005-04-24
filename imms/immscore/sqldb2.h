@@ -2,9 +2,11 @@
 #define __SQLDB_H
 
 #include <string>
+#include <memory>
 #include "sqlite++.h"
 
 using std::string;
+using std::auto_ptr;
 
 class SqlDb
 {
@@ -17,7 +19,7 @@ protected:
     int changes();
 
 private:
-    AttachedDatabase *correlations;
+    auto_ptr<AttachedDatabase> correlations, acoustic;
     SQLDatabaseConnection dbcon;
 };
 
