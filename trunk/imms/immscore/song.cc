@@ -73,7 +73,7 @@ Song::Song(const string &path_, int _uid, int _sid) : path(path_)
     try {
         identify(statbuf.st_mtime);
 
-        Q("UPDATE 'Library' SET lastseen = ? WHERE uid = ?")
+        Q("UPDATE Library SET lastseen = ? WHERE uid = ?")
             << time(0) << uid << execute;
     }
     WARNIFFAILED();
@@ -157,7 +157,7 @@ void Song::identify(time_t modtime)
 
     {
         Q q("SELECT Library.uid, sid, modtime "
-                "FROM 'Identify' NATURAL JOIN 'Library' "
+                "FROM Identify NATURAL JOIN 'Library' "
                 "WHERE path = ?;");
         q << path;
 
@@ -184,7 +184,7 @@ void Song::_identify(time_t modtime)
     // old path but modtime has changed - update checksum
     if (uid != -1)
     {
-        Q q("UPDATE 'Identify' SET modtime = ?, "
+        Q q("UPDATE Identify SET modtime = ?, "
                 "checksum = ? WHERE path = ?;");
         q << modtime << checksum << path;
         q.execute();
@@ -194,7 +194,7 @@ void Song::_identify(time_t modtime)
     // moved or new file and path needs updating
     reset();
 
-    Q q("SELECT uid, path FROM 'Identify' WHERE checksum = ?;");
+    Q q("SELECT uid, path FROM Identify WHERE checksum = ?;");
     q << checksum;
 
     bool duplicate;
@@ -213,11 +213,11 @@ void Song::_identify(time_t modtime)
 
                 sid = -1;
 
-                Q("UPDATE 'Identify' SET path = ?, "
+                Q("UPDATE Identify SET path = ?, "
                         "modtime = ? WHERE path = ?;")
                     << path << modtime << oldpath << execute;
 
-                Q("UPDATE 'Library' SET sid = -1 WHERE uid = ?;")
+                Q("UPDATE Library SET sid = -1 WHERE uid = ?;")
                     << uid << execute;
 #ifdef DEBUG
                 cerr << "identify: moved: uid = " << uid << endl;
@@ -263,7 +263,7 @@ void Song::set_last(time_t last)
         if (sid < 0)
             register_new_sid();
 
-        Q q("INSERT OR REPLACE INTO 'Last' ('sid', 'last') VALUES (?, ?);");
+        Q q("INSERT OR REPLACE INTO Last ('sid', 'last') VALUES (?, ?);");
         q << sid << last;
         q.execute();
 
@@ -282,7 +282,7 @@ int Song::get_playcounter()
 
     try
     {
-        Q q("SELECT playcounter FROM 'Library' WHERE uid = ?;");
+        Q q("SELECT playcounter FROM Library WHERE uid = ?;");
         q << uid;
 
         if (q.next())
@@ -300,7 +300,7 @@ void Song::increment_playcounter()
 
     try
     { 
-        Q("UPDATE 'Library' SET playcounter = playcounter + 1 WHERE uid = ?;")
+        Q("UPDATE Library SET playcounter = playcounter + 1 WHERE uid = ?;")
             << uid << execute;
     }
     WARNIFFAILED();
@@ -315,7 +315,7 @@ void Song::set_rating(int rating)
     {
         int trend = get_trend();
 
-        Q("INSERT OR REPLACE INTO 'Rating' "
+        Q("INSERT OR REPLACE INTO Rating "
                "('uid', 'rating', 'trend') VALUES (?, ?, ?);")
             << uid << rating << trend << execute;
     }
@@ -329,7 +329,7 @@ void Song::set_trend(int trend)
 
     try
     {
-        Q("UPDATE 'Rating' SET trend = ? WHERE uid = ?;")
+        Q("UPDATE Rating SET trend = ? WHERE uid = ?;")
             << trend << uid << execute;
     }
     WARNIFFAILED();
@@ -339,7 +339,7 @@ void Song::set_acoustic(const string &spectrum, const string &bpmgraph)
 {
     try
     {
-        Q q("INSERT OR REPLACE INTO 'Acoustic' "
+        Q q("INSERT OR REPLACE INTO A.Acoustic "
                 "('uid', 'spectrum', 'bpm') VALUES (?, ?, ?);");
         q << uid << spectrum << bpmgraph;
         q.execute();
@@ -352,7 +352,7 @@ StringPair Song::get_acoustic()
     StringPair res;
     try
     {
-        Q q("SELECT spectrum, bpm FROM 'Acoustic' WHERE uid = ?;");
+        Q q("SELECT spectrum, bpm FROM A.Acoustic WHERE uid = ?;");
         q << uid;
         if (q.next())
             q >> res.first >> res.second;
@@ -468,7 +468,7 @@ int Song::get_trend()
 
     try
     {
-        Q q("SELECT trend FROM 'Rating' WHERE uid = ?;");
+        Q q("SELECT trend FROM Rating WHERE uid = ?;");
         q << uid;
 
         if (q.next())

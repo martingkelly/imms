@@ -17,7 +17,7 @@ BasicDb::BasicDb()
 BasicDb::~BasicDb()
 {
     try {
-        Q q("DELETE FROM 'Journal' WHERE time < ?;");
+        Q q("DELETE FROM Journal WHERE time < ?;");
         q << time(0) - 30 * DAY ;
         q.execute();
     }
@@ -42,31 +42,31 @@ void BasicDb::sql_create_v7_tables()
     RuntimeErrorBlocker reb;
     try
     {
-        Q("CREATE TABLE 'Library' ("
+        Q("CREATE TABLE Library ("
                 "'uid' INTEGER NOT NULL, "
                 "'sid' INTEGER DEFAULT -1, "
                 "'path' VARCHAR(4096) UNIQUE NOT NULL, "
                 "'modtime' TIMESTAMP NOT NULL, "
                 "'checksum' TEXT NOT NULL);").execute();
 
-        Q("CREATE TABLE 'Rating' ("
+        Q("CREATE TABLE Rating ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'rating' INTEGER NOT NULL);").execute();
 
-        Q("CREATE TABLE 'Acoustic' ("
+        Q("CREATE TABLE Acoustic ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'spectrum' TEXT, 'bpm' TEXT);").execute();
 
-        Q("CREATE TABLE 'Info' ("
+        Q("CREATE TABLE Info ("
                 "'sid' INTEGER UNIQUE NOT NULL," 
                 "'artist' TEXT NOT NULL, "
                 "'title' TEXT NOT NULL);").execute();
 
-        Q("CREATE TABLE 'Last' ("
+        Q("CREATE TABLE Last ("
                 "'sid' INTEGER UNIQUE NOT NULL, " 
                 "'last' TIMESTAMP);").execute();
 
-        Q("CREATE TABLE 'Journal' ("
+        Q("CREATE TABLE Journal ("
                 "'uid' INTEGER NOT NULL, " 
                 "'delta' INTEGER NOT NULL, " 
                 "'time' TIMESTAMP NOT NULL);").execute();
@@ -80,38 +80,38 @@ void BasicDb::sql_create_v8_tables()
     RuntimeErrorBlocker reb;
     try
     {
-        Q("CREATE TABLE 'Identify' ("
+        Q("CREATE TABLE Identify ("
                 "'path' VARCHAR(4096) UNIQUE NOT NULL, "
                 "'uid' INTEGER NOT NULL, "
                 "'modtime' TIMESTAMP NOT NULL, "
                 "'checksum' TEXT NOT NULL);").execute();
                 
-        Q("CREATE TABLE 'Library' ("
+        Q("CREATE TABLE Library ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'sid' INTEGER DEFAULT -1, "
                 "'playcounter' INTEGER DEFAULT 0, "
                 "'lastseen' TIMESTAMP DEFAULT 0, "
                 "'firstseen' TIMESTAMP DEFAULT 0);").execute();
 
-        Q("CREATE TABLE 'Rating' ("
+        Q("CREATE TABLE Rating ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'rating' INTEGER NOT NULL, "
                 "'trend' INTEGER DEFAULT 0);").execute();
 
-        Q("CREATE TABLE 'Acoustic' ("
+        Q("CREATE TABLE Acoustic ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'spectrum' TEXT, 'bpm' TEXT);").execute();
 
-        Q("CREATE TABLE 'Info' ("
+        Q("CREATE TABLE Info ("
                 "'sid' INTEGER UNIQUE NOT NULL," 
                 "'artist' TEXT NOT NULL, "
                 "'title' TEXT NOT NULL);").execute();
 
-        Q("CREATE TABLE 'Last' ("
+        Q("CREATE TABLE Last ("
                 "'sid' INTEGER UNIQUE NOT NULL, " 
                 "'last' TIMESTAMP);").execute();
 
-        Q("CREATE TABLE 'Journal' ("
+        Q("CREATE TABLE Journal ("
                 "'uid' INTEGER NOT NULL, " 
                 "'delta' INTEGER NOT NULL, " 
                 "'time' TIMESTAMP NOT NULL);").execute();
@@ -125,50 +125,50 @@ void BasicDb::sql_create_tables()
     RuntimeErrorBlocker reb;
     try
     {
-        Q("CREATE TABLE 'Identify' ("
+        Q("CREATE TABLE Identify ("
                 "'path' VARCHAR(4096) UNIQUE NOT NULL, "
                 "'uid' INTEGER NOT NULL, "
                 "'modtime' TIMESTAMP NOT NULL, "
                 "'checksum' TEXT NOT NULL);").execute();
                 
-        Q("CREATE TABLE 'Library' ("
+        Q("CREATE TABLE Library ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'sid' INTEGER DEFAULT -1, "
                 "'playcounter' INTEGER DEFAULT 0, "
                 "'lastseen' TIMESTAMP DEFAULT 0, "
                 "'firstseen' TIMESTAMP DEFAULT 0);").execute();
 
-        Q("CREATE TABLE 'Rating' ("
+        Q("CREATE TABLE Rating ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'rating' INTEGER NOT NULL, "
                 "'trend' INTEGER DEFAULT 0);").execute();
 
-        Q("CREATE TABLE 'Acoustic' ("
+        Q("CREATE TABLE A.Acoustic ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'spectrum' TEXT, 'bpm' TEXT);").execute();
 
-        Q("CREATE TABLE 'Info' ("
+        Q("CREATE TABLE Info ("
                 "'sid' INTEGER UNIQUE NOT NULL," 
                 "'aid' INTEGER NOT NULL, "
                 "'title' TEXT NOT NULL);").execute();
 
-        Q("CREATE TABLE 'Tags' ("
+        Q("CREATE TABLE Tags ("
                 "'uid' INTEGER UNIQUE NOT NULL, " 
                 "'title' TEXT NOT NULL, "
                 "'album' TEXT NOT NULL, "
                 "'artist' TEXT NOT NULL);").execute();
 
-        Q("CREATE TABLE 'Artists' ("
+        Q("CREATE TABLE Artists ("
                 "'aid' INTEGER PRIMARY KEY," 
                 "'artist' TEXT UNIQUE NOT NULL, "
                 "'readable' TEXT UNIQUE, "
                 "'trust' INTEGER DEFAULT 0);").execute();
 
-        Q("CREATE TABLE 'Last' ("
+        Q("CREATE TABLE Last ("
                 "'sid' INTEGER UNIQUE NOT NULL, " 
                 "'last' TIMESTAMP);").execute();
 
-        Q("CREATE TABLE 'Journal' ("
+        Q("CREATE TABLE Journal ("
                 "'uid' INTEGER NOT NULL, " 
                 "'delta' INTEGER NOT NULL, " 
                 "'time' TIMESTAMP NOT NULL);").execute();
@@ -357,6 +357,9 @@ void BasicDb::sql_schema_upgrade(int from)
         if (from < 10) 
         {
             sql_create_tables();
+
+            Q("INSERT INTO A.Acoustic SELECT * FROM Acoustic").execute();
+            Q("DROP TABLE Acoustic").execute();
 
             Q("UPDATE Identify SET modtime = 0;").execute();
         }
