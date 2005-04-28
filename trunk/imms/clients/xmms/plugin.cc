@@ -27,7 +27,7 @@ using std::endl;
 
 // Local vars
 unsigned int time_left = 1000, sloppy_skips = 0;
-int last_plpos = -2, cur_plpos, pl_length = -1;
+int last_plpos = -2, cur_plpos, pl_length = -1, should_play = 0;
 int good_length = 0, song_length = 0, delay = 0, xidle_val = 0;
 string cur_path = "", last_path = "";
 
@@ -59,6 +59,12 @@ struct FilterOps;
 typedef IMMSClient<FilterOps> XMMSClient;
 XMMSClient *imms = 0;
 
+void request_play()
+{
+    should_play = 5;
+    xmms_remote_play(session);
+}
+
 struct FilterOps
 {
     static void set_next(int next)
@@ -75,7 +81,7 @@ struct FilterOps
         last_path = cur_path;
         good_length = 0;
 
-        xmms_remote_play(session);
+        request_play();
     }
     static void reset_selection() {}
     static string get_item(int index)
@@ -147,8 +153,19 @@ void do_checks()
         }
     }
 
-    if (!xmms_remote_is_playing(session))
+    bool is_playing = xmms_remote_is_playing(session);
+
+    if (!is_playing)
+    {
+        if (should_play <= 0) {}
+        else if (should_play > 1)
+            --should_play;
+        else
+            request_play();
         return;
+    }
+
+    should_play = 0;
 
     // run these checks less frequently so as not to waste cpu time
     if (++delay > POLL_DELAY || pl_length < 0 || good_length < 3)
@@ -199,7 +216,7 @@ void do_find_next()
     {
         last_plpos = cur_plpos = xmms_remote_get_playlist_pos(session);
         last_path = cur_path = imms_get_playlist_item(cur_plpos);
-        xmms_remote_play(session);
+        request_play();
         imms->start_song(cur_plpos, cur_path);
     }
 }
