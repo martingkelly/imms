@@ -131,9 +131,14 @@ void AttachedDatabase::detach()
 
 // AutoTransaction
 
-AutoTransaction::AutoTransaction() : commited(false)
+AutoTransaction::AutoTransaction(bool exclusive) : commited(false)
 {
-    int r = sqlite3_exec(SQLDatabase::db(), "BEGIN TRANSACTION;", 0, 0, 0);
+    int r;
+    string exclusive_term = exclusive ? "EXCLUSIVE " : "";
+    string query = "BEGIN " + exclusive_term + " TRANSACTION;";
+    do { r = sqlite3_exec(SQLDatabase::db(), query.c_str(), 0, 0, 0); }
+    while (r == SQLITE_BUSY);
+
     if (r)
     {
         commited = true;

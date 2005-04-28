@@ -153,7 +153,7 @@ void Song::update_tag_info()
 
 void Song::identify(time_t modtime)
 {
-    AutoTransaction a;
+    AutoTransaction a(true);
 
     {
         Q q("SELECT Library.uid, sid, modtime "
