@@ -26,7 +26,7 @@ void CorrelationDb::sql_create_tables()
     RuntimeErrorBlocker reb;
     QueryCacheDisabler qcd;
     try {
-        Q("CREATE TABLE C.Correlations' ("
+        Q("CREATE TABLE C.Correlations ("
                 "'x' INTEGER NOT NULL, "
                 "'y' INTEGER NOT NULL, "
                 "'weight' INTEGER DEFAULT '0');").execute();
@@ -50,7 +50,7 @@ void CorrelationDb::add_recent(int uid, int delta)
     if (uid > -1)
     {
         try {
-            Q q("INSERT INTO 'Journal' VALUES (?, ?, ?);");
+            Q q("INSERT INTO Journal VALUES (?, ?, ?);");
             q << uid << delta << time(0);
             q.execute();
         }
@@ -244,13 +244,16 @@ float CorrelationDb::correlate(int sid1, int sid2)
         return 0;
 
     int min = std::min(sid1, sid2), max = std::max(sid1, sid2);
-    
-    Q q("SELECT weight FROM C.Correlations WHERE x = ? AND y = ?;");
-    q << min << max;
-    
     float correlation = 0;
-    if (q.next())
-        q >> correlation;
+    
+    try {
+        Q q("SELECT weight FROM C.Correlations WHERE x = ? AND y = ?;");
+        q << min << max;
+
+        if (q.next())
+            q >> correlation;
+    }
+    WARNIFFAILED();
 
     return correlation;
 }
@@ -272,9 +275,9 @@ void CorrelationDb::sql_schema_upgrade(int from)
 
             // Copy the data into new tables, and drop the backups
             try {
-                Q("INSERT OR REPLACE INTO 'Correlations' (x, y, weight) "
+                Q("INSERT OR REPLACE INTO Correlations (x, y, weight) "
                         "SELECT origin, destination, weight "
-                        "FROM 'Correlations_backup';").execute();
+                        "FROM Correlations_backup;").execute();
             }
             WARNIFFAILED();
             Q("DROP TABLE Correlations_backup;").execute();
