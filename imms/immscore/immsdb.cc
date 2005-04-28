@@ -8,7 +8,7 @@ using std::endl;
 
 ImmsDb::ImmsDb()
 {
-    sql_schema_upgrade();
+    sql_schema_upgrade(SCHEMA_VERSION);
     sql_create_tables();
 }
 
