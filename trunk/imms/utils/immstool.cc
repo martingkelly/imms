@@ -232,7 +232,7 @@ void do_identify(const string &path)
 
     cout << endl << "positively correlated with: " << endl;
 
-    Q q("SELECT x, y, weight FROM Correlations "
+    Q q("SELECT x, y, weight FROM C.Correlations "
             "WHERE (x = ? OR y = ?) AND weight > 1 ORDER BY (weight) DESC");
     q << s.get_sid() << s.get_sid();
 
@@ -333,14 +333,17 @@ void do_lint()
         Q("DELETE FROM Rating "
                 "WHERE uid NOT IN (SELECT uid FROM Library);").execute();
 
-        Q("DELETE FROM Acoustic "
+        Q("DELETE FROM A.Acoustic "
                 "WHERE uid NOT IN (SELECT uid FROM Library);").execute();
 
-#ifdef DANGEROUS
         Q("DELETE FROM Info "
                 "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
 
-        Q("DELETE FROM Correlations "
+        Q("DELETE FROM Artists "
+                "WHERE aid NOT IN (SELECT aid FROM Info);").execute();
+
+#ifdef DANGEROUS
+        Q("DELETE FROM C.Correlations "
                 "WHERE x NOT IN (SELECT sid FROM Library) "
                 "OR y NOT IN (SELECT sid FROM Library);").execute();
 #endif
@@ -349,7 +352,6 @@ void do_lint()
 
         Q("VACUUM Identify;").execute();
         Q("VACUUM Library;").execute();
-        Q("VACUUM Correlations;").execute();
     }
     WARNIFFAILED();
 
@@ -359,10 +361,10 @@ void do_bpm_distance(const string &to)
 {
     string rescaled = rescale_bpmgraph(to);
 
-    Q q("SELECT Identify.path, Acoustic.bpm, Library.sid FROM 'Library' "
-            "INNER JOIN 'Acoustic' ON Library.uid = Acoustic.uid "
+    Q q("SELECT Identify.path, A.Acoustic.bpm, Library.sid FROM 'Library' "
+            "INNER JOIN A.Acoustic ON Library.uid = A.Acoustic.uid "
             "JOIN 'Identify' ON Identify.uid = Library.uid "
-            "WHERE Acoustic.bpm NOT NULL;");
+            "WHERE A.Acoustic.bpm NOT NULL;");
 
     while(q.next())
     {
@@ -388,10 +390,10 @@ void do_bpm_distance(const string &to)
 
 void do_spec_distance(const string &to)
 {
-    Q q("SELECT Identify.path, Acoustic.spectrum, Library.sid FROM 'Library' "
-            "INNER JOIN 'Acoustic' ON Library.uid = Acoustic.uid "
+    Q q("SELECT Identify.path, A.Acoustic.spectrum, Library.sid FROM 'Library' "
+            "INNER JOIN A.Acoustic ON Library.uid = A.Acoustic.uid "
             "JOIN 'Identify' ON Identify.uid = Library.uid "
-            "WHERE Acoustic.spectrum NOT NULL;");
+            "WHERE A.Acoustic.spectrum NOT NULL;");
 
     while(q.next())
     {
@@ -475,7 +477,7 @@ void do_deviation()
 
 void do_dump_bpm()
 {
-    Q q("SELECT uid, bpm, spectrum FROM Acoustic;");
+    Q q("SELECT uid, bpm, spectrum FROM A.Acoustic;");
 
     bool first = true;
     unsigned len = 0;

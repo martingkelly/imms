@@ -7,6 +7,7 @@ first: configure
  
 configure: configure.ac
 	autoheader
+	aclocal
 	autoconf
 
 immsconf.h: configure
