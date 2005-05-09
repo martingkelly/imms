@@ -284,14 +284,13 @@ void CorrelationDb::sql_schema_upgrade(int from)
         }
         if (from < 10)
         {
-            // Backup the existing tables
-            Q("DELETE FROM Correlations WHERE abs(weight) < 0.25;");
-
-            Q("CREATE TABLE C.Correlations "
-                    "AS SELECT * FROM Correlations;").execute();
-            Q("DROP TABLE Correlations;").execute();
-
             sql_create_tables();
+
+            Q("DELETE FROM Correlations WHERE abs(weight) < 0.25;").execute();
+
+            Q("INSERT INTO C.Correlations "
+                    "SELECT * FROM Correlations;").execute();
+            Q("DROP TABLE Correlations;").execute();
 
             Q("VACUUM;").execute();
         }
