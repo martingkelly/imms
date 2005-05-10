@@ -4,6 +4,7 @@
 #include <sys/time.h>
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 #define     HOUR                    (60*60)
 #define     DAY                     (24*HOUR)
@@ -13,7 +14,7 @@ using std::string;
 using std::vector;
 
 int imms_random(int max);
-time_t usec_diff(struct timeval &tv1, struct timeval &tv2);
+uint64_t usec_diff(struct timeval &tv1, struct timeval &tv2);
 
 class StackTimer
 {

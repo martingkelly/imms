@@ -83,7 +83,7 @@ void Imms::get_metacandidates()
 void Imms::do_events()
 {
     if (!SongPicker::do_events())
-        CorrelationDb::expire_recent();
+        CorrelationDb::maybe_expire_recent();
     XIdle::query();
 }
 
