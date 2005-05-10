@@ -83,11 +83,8 @@ void CorrelationDb::get_related(vector<int> &out, int pivot_sid, int limit)
     WARNIFFAILED();
 }
 
-void CorrelationDb::expire_recent(time_t cutoff)
+void CorrelationDb::maybe_expire_recent()
 {
-    if (!cutoff)
-        cutoff = time(0) - CORRELATION_TIME;
-
     struct timeval now;
     gettimeofday(&now, 0);
 
@@ -96,6 +93,11 @@ void CorrelationDb::expire_recent(time_t cutoff)
 
     start = now;
 
+    expire_recent(time(0) - CORRELATION_TIME);
+}
+
+void CorrelationDb::expire_recent(time_t cutoff)
+{
 #if 0 && defined(DEBUG)
     cerr << "Running expire recent..." << endl;
     StackTimer t;
@@ -117,8 +119,9 @@ void CorrelationDb::expire_recent(time_t cutoff)
 
             time_t next;
             q >> from >> from_weight >> next;
-            if (next > cutoff)
-                return;
+
+            if (next > cutoff) 
+                break;
 
             correlate_from = next + 1;
 
