@@ -141,14 +141,15 @@ void Song::update_tag_info()
             q >> aid >> oldtrust;
     }
 
-    if (aid < 0 || oldtrust <= trust)
+    if (aid < 0 || oldtrust >= trust)
         return;
 
     try {
         Q q("UPDATE Artists SET readable = ?, trust = ? WHERE aid = ?;");
         q << artist << trust << aid;
         q.execute();
-    } catch (SQLException &e) {}
+    }
+    WARNIFFAILED();
 }
 
 void Song::identify(time_t modtime)
