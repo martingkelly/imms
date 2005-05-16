@@ -18,7 +18,7 @@ immstool: immstool.o libimmscore.a spectrum.o
 
 analyzer: $(call objects,../analyzer)
 analyzer: libimmscore.a
-analyzer-LIBS=`pkg-config fftw3 --libs`
+analyzer-LIBS=`pkg-config fftw3 --libs` -ltorch
 
 songinfo-CPPFLAGS=$(TAGCPPFLAGS)
 socketserver-CPPFLAGS=$(GLIB2CPPFLAGS)

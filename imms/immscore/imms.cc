@@ -7,7 +7,7 @@
 
 #include "imms.h"
 #include "strmanip.h"
-#include "utils.h"
+#include "immsutil.h"
 
 using std::string;
 using std::endl;

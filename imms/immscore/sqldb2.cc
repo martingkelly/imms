@@ -8,7 +8,7 @@
 
 #include "strmanip.h"
 #include "sqldb2.h"
-#include "utils.h"
+#include "immsutil.h"
 
 using std::endl;
 using std::cerr;

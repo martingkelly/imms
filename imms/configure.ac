@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[2.1.1-rc1],[mag@luminal.org])
+AC_INIT([IMMS],[2.2-pre1],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -101,6 +101,24 @@ if test "$enable_analyzer" != "no"; then
     if test "$have_fftw" = "no"; then
         AC_MSG_WARN([******************************************************]);
         AC_MSG_WARN("fftw3 >= 3.0 required for analyzer and missing");
+        AC_MSG_WARN("Acoustic analyzer will not be built");
+        AC_MSG_WARN([******************************************************]);
+        enable_analyzer=no
+    fi
+fi
+
+if test "$enable_analyzer" != "no"; then
+    AC_CHECK_HEADERS(torch/KMeans.h,, [with_torch=no])
+
+    AC_MSG_CHECKING([libtorch usability])
+    AC_TRY_LINK([#include <torch/KMeans.h> ],
+                [KMeans kmeans(10, 5)],
+        [AC_MSG_RESULT(yes)],
+        [with_torch=no AC_MSG_RESULT(no)])
+    
+    if test "$have_torch" = "no"; then
+        AC_MSG_WARN([******************************************************]);
+        AC_MSG_WARN("torch >= 3.0 required for analyzer and missing");
         AC_MSG_WARN("Acoustic analyzer will not be built");
         AC_MSG_WARN([******************************************************]);
         enable_analyzer=no

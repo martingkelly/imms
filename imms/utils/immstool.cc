@@ -14,7 +14,7 @@
 #include <imms.h>
 #include <song.h>
 #include <sqldb2.h>
-#include <utils.h>
+#include <immsutil.h>
 #include <spectrum.h>
 #include <strmanip.h>
 #include <picker.h>

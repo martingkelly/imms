@@ -4,7 +4,7 @@
 
 #include "strmanip.h"
 #include "immsdb.h"
-#include "utils.h"
+#include "immsutil.h"
 
 using std::endl;
 using std::cerr; 

@@ -6,7 +6,7 @@
 #include <fstream>
 #include <map>
 
-#include <utils.h>
+#include <immsutil.h>
 #include <sqlite++.h>
 
 #include "spectrum.h"
@@ -15,48 +15,6 @@ using std::endl;
 using std::cerr;
 using std::pair;
 using std::map;
-
-inline int freq2bark(int f) { return (int)(26.81 / (1 + (1960.0 / f)) - 0.53); }
-inline int bark2freq(int b) { return (int)(1960 / (26.81 / (b + 0.53) - 1)); }
-
-inline int indx2freq(int i) { return i * SAMPLERATE / WINDOWSIZE; }
-inline int freq2indx(int i) { return (int)(i * WINDOWSIZE / SAMPLERATE) + 1; }
-
-float scales[] = { 0.6619, 1.384, 1.918, 1.493, 3.261, 2.417, 2.756,
-    2.45, 2.778, 2.915, 2.476, 2.497, 2.052, 2.213, 1.885, 1.859, 1.931,
-    1.65, 1.525, 1.506, 1.302, 2.376, 23.1 };
-
-float bias[] = { 164.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0 };
-
-static string encode_spectrum(float spectrum[BARKSIZE])
-{
-    string spec;
-    for (int i = 0; i < BARKSIZE; ++i)
-    {
-        char c = 'a' + ROUND((spectrum[i] - bias[i]) * scales[i]);
-        c = std::min('z', std::max('a', c));
-
-        spec += c;
-    }
-    return spec;
-}
-
-static void freq2bark(double freqs[NFREQS], float bark[BARKSIZE])
-{
-    for (int i = 0; i < NFREQS; )
-    {
-        int b = freq2bark(indx2freq(i));
-        int last = std::min(freq2indx(bark2freq(b + 1)), NFREQS);
-
-        bark[b] = 0;
-        for (int j = i; j < last; ++j)
-            bark[b] += freqs[j];
-        //bark[b] /= (float)(last - i);
-
-        i = last;
-    }
-}
 
 void BeatKeeper::reset()
 {
@@ -98,12 +56,12 @@ const BeatKeeper &BeatKeeper::operator +=(const BeatKeeper &other)
 
 static inline int offset2bpm(int offset)
 {
-    return ROUND(60 * WINDOWSPSEC / (float)(MINBEATLENGTH + offset));
+    return ROUND(60 * WINPERSEC / (float)(MINBEATLENGTH + offset));
 }
 
 static inline int bpm2offset(int bpm)
 {
-    return ROUND(60 * WINDOWSPSEC / (float)bpm  - MINBEATLENGTH);
+    return ROUND(60 * WINPERSEC / (float)bpm  - MINBEATLENGTH);
 }
 
 static inline bool roughly_double(int a, int b)
@@ -353,10 +311,10 @@ pair<float, float> spectrum_analyze(const string &spectstr)
     return pair<float, float>(mean, deviation);
 }
 
-void SpectrumAnalyzer::integrate_spectrum(double long_spectrum[LONGSPECTRUM])
+void SpectrumAnalyzer::integrate_spectrum(const vector<double> &long_spectrum)
 {
     float bark[BARKSIZE];
-    freq2bark(long_spectrum, bark);
+    //freq2bark(long_spectrum, bark);
 
     float power = 0;
     for (int i = 0; i < 3; ++i)
@@ -394,13 +352,7 @@ void SpectrumAnalyzer::finalize()
     if (!have_spectrums)
         return;
 
-#ifdef DEBUG
-    cerr << "spectrum  [" << encode_spectrum(spectrum) << "] " << endl;
-    cerr << "bpm graph [" << bpmgraph << "] " << endl;
-    cerr << "rescaled [" << rescale_bpmgraph(bpmgraph) << "] " << endl;
-#endif
-
-    song.set_acoustic(encode_spectrum(spectrum), bpmgraph);
+    //song.set_acoustic(encode_spectrum(spectrum), bpmgraph);
 }
 
 bool SpectrumAnalyzer::is_known()

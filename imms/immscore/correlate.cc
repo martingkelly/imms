@@ -5,7 +5,7 @@
 
 #include "correlate.h"
 #include "strmanip.h"
-#include "utils.h"
+#include "immsutil.h"
 
 using std::endl;
 using std::cerr;

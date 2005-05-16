@@ -2,7 +2,7 @@
 #define __CLIENTSTUB_H_
 
 #include "giosocket.h"
-#include "utils.h"
+#include "immsutil.h"
 #include "clientstubbase.h"
 
 #include <stdlib.h>

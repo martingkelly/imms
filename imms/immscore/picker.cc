@@ -5,7 +5,7 @@
 
 #include "picker.h"
 #include "strmanip.h"
-#include "utils.h"
+#include "immsutil.h"
 
 #define     SAMPLE_SIZE             100
 #define     MIN_SAMPLE_SIZE         35
