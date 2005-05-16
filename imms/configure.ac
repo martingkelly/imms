@@ -108,13 +108,16 @@ if test "$enable_analyzer" != "no"; then
 fi
 
 if test "$enable_analyzer" != "no"; then
-    AC_CHECK_HEADERS(torch/KMeans.h,, [with_torch=no])
+    AC_CHECK_HEADERS(torch/KMeans.h,, [have_torch=no])
 
+    saved_libs="$LIBS"
+    LIBS="$LIBS -ltorch"
     AC_MSG_CHECKING([libtorch usability])
     AC_TRY_LINK([#include <torch/KMeans.h> ],
-                [KMeans kmeans(10, 5)],
+                [Torch::KMeans kmeans(10, 5)],
         [AC_MSG_RESULT(yes)],
-        [with_torch=no AC_MSG_RESULT(no)])
+        [have_torch=no; AC_MSG_RESULT(no)])
+    LIBS=$saved_libs
     
     if test "$have_torch" = "no"; then
         AC_MSG_WARN([******************************************************]);
@@ -169,9 +172,9 @@ if test "$with_taglib" != "no"; then
     AC_TRY_LINK([#include <tag.h>
                  #include <fileref.h>],
                 [TagLib::FileRef f((TagLib::File*)0); f.tag()->title()],
-        [TAGCPPFLAGS="$TAGCPPFLAGS `taglib-config --cflags`" 
+        [TAGCPPFLAGS="$TAGCPPFLAGS `taglib-config --cflags`"
                                             AC_MSG_RESULT(yes)],
-        [LIBS=$saved_libs AC_MSG_RESULT(no)])
+        [LIBS=$saved_libs; AC_MSG_RESULT(no)])
 fi
 
 if test "$with_taglib" = "yes"; then
