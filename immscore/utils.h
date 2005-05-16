@@ -9,7 +9,6 @@
 #define     HOUR                    (60*60)
 #define     DAY                     (24*HOUR)
 #define     ROUND(x)                (int)((x) + 0.5)
-#define     DEBUGVAL(x)             cerr << #x << " = " << x << endl;
 
 using std::string;
 using std::vector;
