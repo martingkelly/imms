@@ -360,7 +360,9 @@ void BasicDb::sql_schema_upgrade(int from)
 
             Q("INSERT INTO A.Acoustic SELECT * FROM Acoustic").execute();
             Q("DROP TABLE Acoustic").execute();
-
+        }
+        if (from < 11)
+        {
             Q("UPDATE Identify SET modtime = 0;").execute();
         }
 

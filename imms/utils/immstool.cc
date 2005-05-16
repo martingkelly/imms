@@ -18,6 +18,7 @@
 #include <spectrum.h>
 #include <strmanip.h>
 #include <picker.h>
+#include <appname.h>
 
 using std::string;
 using std::cout;
@@ -28,6 +29,8 @@ using std::cin;
 using std::setw;
 using std::pair;
 using std::ifstream;
+
+const string AppName = IMMSTOOL_APP;
 
 int usage();
 int rating_usage();

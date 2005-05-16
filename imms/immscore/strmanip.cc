@@ -25,7 +25,7 @@ void string_split(list<string> &store, const string &s, const string &delims)
 
 string trim(const string &s)
 {
-    unsigned p = s.find_last_not_of(" ");
+    size_t p = s.find_last_not_of(" ");
     return p == string::npos ? s : s.substr(0, p + 1);
 }
 

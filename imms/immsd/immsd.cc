@@ -6,6 +6,7 @@
 #include <errno.h>
 
 #include "imms.h"
+#include "appname.h"
 #include "strmanip.h"
 #include "utils.h"
 #include "serverstub.h"
@@ -16,7 +17,10 @@
 using std::cerr;
 using std::cout;
 using std::endl;
+using std::string;
 using std::stringstream;
+
+const string AppName = IMMSD_APP;
 
 Imms *imms;
 
