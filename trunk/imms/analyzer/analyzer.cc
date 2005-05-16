@@ -12,6 +12,7 @@
 #include <utils.h>
 #include <song.h>
 #include <immsdb.h>
+#include <appname.h>
 
 #include "spectrum.h"
 #include "strmanip.h"
@@ -24,6 +25,8 @@ using std::endl;
 using std::string;
 using std::ostringstream;
 using std::fstream;
+
+const string AppName = ANALYZER_APP;
 
 typedef uint16_t sample_t;
 

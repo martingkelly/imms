@@ -3,6 +3,7 @@
 #include "sqlite++.h"
 #include "strmanip.h"
 #include "songinfo.h"
+#include "appname.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -71,10 +72,14 @@ Song::Song(const string &path_, int _uid, int _sid) : path(path_)
         return;
 
     try {
+        AutoTransaction a(AppName != IMMSD_APP);
+
         identify(statbuf.st_mtime);
 
         Q("UPDATE Library SET lastseen = ? WHERE uid = ?")
             << time(0) << uid << execute;
+
+        a.commit();
     }
     WARNIFFAILED();
 }
@@ -153,8 +158,6 @@ void Song::update_tag_info()
 
 void Song::identify(time_t modtime)
 {
-    AutoTransaction a(true);
-
     {
         Q q("SELECT Library.uid, sid, modtime "
                 "FROM Identify NATURAL JOIN 'Library' "
@@ -174,7 +177,6 @@ void Song::identify(time_t modtime)
     _identify(modtime);
 
     update_tag_info();
-    a.commit();
 }
 
 void Song::_identify(time_t modtime)
