@@ -16,7 +16,7 @@
 
 #include "immsconf.h"
 #include "cplugin.h"
-#include "utils.h"
+#include "immsutil.h"
 #include "clientstub.h"
 
 using std::string;

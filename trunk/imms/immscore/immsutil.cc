@@ -10,7 +10,7 @@
 #include <errno.h>
 
 #include "immsconf.h"
-#include "utils.h"
+#include "immsutil.h"
 
 using std::ifstream;
 using std::ofstream;

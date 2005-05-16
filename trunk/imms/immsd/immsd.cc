@@ -8,7 +8,7 @@
 #include "imms.h"
 #include "appname.h"
 #include "strmanip.h"
-#include "utils.h"
+#include "immsutil.h"
 #include "serverstub.h"
 #include "socketserver.h"
 

@@ -20,16 +20,23 @@ using std::vector;
 #define WINDOWSIZE      512
 #define OVERLAP         256
 #define SAMPLERATE      22050
+#define NUMMEL          40
+#define NUMCEPSTR       10
+#define NUMGAUSS        3
 
-#define WINDOWSPSEC     (SAMPLERATE/(WINDOWSIZE-OVERLAP)) 
-#define MINBEATLENGTH   (WINDOWSPSEC*60/MAXBPM)
-#define MAXBEATLENGTH   (WINDOWSPSEC*60/MINBPM)
+#define WINPERSEC       (SAMPLERATE / (WINDOWSIZE - OVERLAP)) 
 #define BEATSSIZE       (MAXBEATLENGTH-MINBEATLENGTH)
 #define READSIZE        (WINDOWSIZE - OVERLAP)
-#define NFREQS          (WINDOWSIZE / 2 + 1)
+#define NUMFREQS        (WINDOWSIZE / 2 + 1)
+#define MAXFREQ         (SAMPLERATE / 2)
+#define FREQDELTA       ROUND(MAXFREQ / (float)NUMFREQS)
+#define MINFREQ         FREQDELTA
 #define BARKSIZE        (int)(26.81/(1+(2*1960.0/SAMPLERATE)) + 0.47)
 #define SHORTSPECTRUM   BARKSIZE
-#define LONGSPECTRUM    NFREQS
+#define LONGSPECTRUM    NUMFREQS
+
+#define MINBEATLENGTH   (WINPERSEC*60/MAXBPM)
+#define MAXBEATLENGTH   (WINPERSEC*60/MINBPM)
 
 class BeatKeeper
 {
@@ -60,7 +67,7 @@ class SpectrumAnalyzer
 public:
     SpectrumAnalyzer(const string &path);
     ~SpectrumAnalyzer() { finalize(); }
-    void integrate_spectrum(double long_spectrum[LONGSPECTRUM]);
+    void integrate_spectrum(const vector<double> &long_spectrum);
     void finalize();
 
     bool is_known();
