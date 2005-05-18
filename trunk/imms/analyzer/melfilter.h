@@ -6,6 +6,8 @@
 
 using std::vector;
 
+#define NUMMEL      40
+
 class MelFilter
 {
 public:

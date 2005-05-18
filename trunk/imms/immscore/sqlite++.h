@@ -125,6 +125,8 @@ public:
     SQLQuery &operator<<(const string &s);
     SQLQuery &operator<<(const SQLExec &execute);
 
+    SQLQuery &bind(const void *data, size_t n);
+
     SQLQuery &operator>>(int &i);
     SQLQuery &operator>>(long &i);
     SQLQuery &operator>>(double &i);

@@ -1,101 +1,38 @@
 #include <stdio.h>
 #include <unistd.h>
-#include <assert.h>
 #include <iostream>
 #include <string>
-#include <fstream>
 #include <sstream>
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
 
-#include <torch/Sequence.h>
-#include <torch/MemoryDataSet.h>
-#include <torch/KMeans.h>
-#include <torch/Random.h>
-#include <torch/EMTrainer.h>
-#include <torch/DiagonalGMM.h>
-#include <torch/NLLMeasurer.h>
-#include <torch/MemoryXFile.h>
-
 #include <immsutil.h>
-#include <song.h>
-#include <immsdb.h>
 #include <appname.h>
 
 #include "spectrum.h"
 #include "strmanip.h"
 #include "melfilter.h"
 #include "fftprovider.h"
-
-#define TEST
-
-#define NUMITER     100
-#define ENDACCUR    0.0001
+#include "mfcckeeper.h"
+#include "hanning.h"
 
 using std::cout;
 using std::cerr;
 using std::endl;
 using std::string;
 using std::ostringstream;
-using std::fstream;
-
-using namespace Torch;
-
-const string AppName = ANALYZER_APP;
 
 typedef uint16_t sample_t;
 
-class HanningWindow
+const string AppName = ANALYZER_APP;
+
+class Analyzer
 {
 public:
-    HanningWindow(unsigned size)
-    {
-        weights.resize(size);
-
-        static const float alpha = 0.46;
-        for (unsigned i = 0; i < size; ++i)
-            weights[i] = (1 - alpha) -
-                (alpha * cos((2 * M_PI * i)/(size - 1)));
-    }
-    void apply(double *data, unsigned size)
-    {
-        assert(size == weights.size());
-        for (unsigned i = 0; i < size; ++i)
-            data[i] *= weights[i];
-    }
-private:
-    vector<double> weights;
-};
-
-struct Gaussian
-{
-    Gaussian() {};
-    Gaussian(float weight, float *means, float *vars) : weight(weight)
-    {
-        memcpy(data[0], means, sizeof(float) * NUMCEPSTR);
-        memcpy(data[1], vars, sizeof(float) * NUMCEPSTR);
-    }
-    float weight;
-    float data[2][NUMCEPSTR];
-};
-
-struct GMM
-{
-    GMM(DiagonalGMM &gmm)
-    {
-        for(int i = 0; i < NUMGAUSS; i++)
-            gauss[i] = Gaussian(exp(gmm.log_weights[i]),
-                    gmm.means[i], gmm.var[i]);
-    }
-    Gaussian gauss[NUMGAUSS];
-};
-
-class AnalyzerShared
-{
-public:
-    AnalyzerShared() : hanwin(WINDOWSIZE)
-        { Random::seed(); }
+    Analyzer() : hanwin(WINDOWSIZE) { }
+    int analyze(const string &path);
+protected:
     FFTWisdom wisdom;
     FFTProvider<WINDOWSIZE> pcmfft;
     FFTProvider<NUMMEL> specfft;
@@ -103,13 +40,7 @@ public:
     HanningWindow hanwin;
 };
 
-int usage()
-{
-    cout << "usage: analyzer <filename>" << endl;
-    return -1;
-}
-
-int analyze(const string &path, AnalyzerShared &shared)
+int Analyzer::analyze(const string &path)
 {
     if (access(path.c_str(), R_OK))
     {
@@ -132,122 +63,76 @@ int analyze(const string &path, AnalyzerShared &shared)
         return -2;
     }
 
+    StackTimer t;
+
+    size_t frames = 0;
+
     sample_t indata[WINDOWSIZE];
     vector<double> outdata(NUMFREQS);
 
-#ifdef DEBUG
-    StackTimer t;
-#endif
+    MFCCKeeper mfcckeeper;
 
     int r = fread(indata, sizeof(sample_t), OVERLAP, p);
 
     if (r != OVERLAP)
         return -3;
 
-    Sequence cepseq(0, NUMCEPSTR);
-    MemoryDataSet cepdat;
-    Sequence *cepseq_p = &cepseq;
-    cepdat.setInputs(&cepseq_p, 1);
+    while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p) == READSIZE)
+    {
+        for (int i = 0; i < WINDOWSIZE; ++i)
+            pcmfft.input()[i] = (double)indata[i];
 
-    try {
-#ifndef TEST
-        SpectrumAnalyzer analyzer(path);
+        // window the data
+        hanwin.apply(pcmfft.input(), WINDOWSIZE);
 
-        if (analyzer.is_known())
-        {
-            cout << "analyzer: Already analyzed - skipping." << endl;
-            return 1;
-        }
-#endif
+        // fft to get the spectrum
+        pcmfft.execute();
 
-        while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p)
-                == READSIZE)
-        {
-            for (int i = 0; i < WINDOWSIZE; ++i)
-                shared.pcmfft.input()[i] = (double)indata[i];
+        // calculate the power spectrum
+        for (int i = 0; i < NUMFREQS; ++i)
+            outdata[i] = pow(pcmfft.output()[i][0], 2) +
+                pow(pcmfft.output()[i][1], 2);
 
-            // window the data
-            shared.hanwin.apply(shared.pcmfft.input(), WINDOWSIZE);
+        // apply mel filter bank
+        vector<double> melfreqs;
+        mfbank.apply(outdata, melfreqs);
 
-            // fft to get the spectrum
-            shared.pcmfft.execute();
+        // compute log energy
+        for (int i = 0; i < NUMMEL; ++i)
+            melfreqs[i] = log(melfreqs[i]);
 
-            // calculate the power spectrum
-            for (int i = 0; i < NUMFREQS; ++i)
-                outdata[i] = pow(shared.pcmfft.output()[i][0], 2) +
-                    pow(shared.pcmfft.output()[i][1], 2);
+        // another fft to get the MFCCs
+        specfft.apply(melfreqs);
 
-#ifndef TEST
-            analyzer.integrate_spectrum(outdata);
-#endif
+        float cepstrum[NUMCEPSTR];
+        for (int i = 0; i < NUMCEPSTR; ++i)
+            cepstrum[i] = specfft.output()[i][0];
 
-            // apply mel filter bank
-            vector<double> melfreqs;
-            shared.mfbank.apply(outdata, melfreqs);
+        mfcckeeper.process(cepstrum);
 
-            // compute log energy
-            for (int i = 0; i < NUMMEL; ++i)
-                melfreqs[i] = log(melfreqs[i]);
+        // finally shift the already read data
+        memmove(indata, indata + READSIZE, OVERLAP * sizeof(sample_t));
 
-            // another fft to get the MFCCs
-            shared.specfft.apply(melfreqs);
-
-            float cepstrum[NUMCEPSTR];
-            for (int i = 0; i < NUMCEPSTR; ++i)
-                cepstrum[i] = shared.specfft.output()[i][0];
-
-            cepseq.addFrame(cepstrum, true);
-
-            // finally shift the already read data
-            memmove(indata, indata + READSIZE, OVERLAP * sizeof(sample_t));
-        }
-
+        ++frames;
     }
-    catch (std::string &s) { cerr << s << endl; }
 
     pclose(p);
 
-#ifdef TEST
-    cerr << "obtained " << cepseq.n_frames << " frames" << endl;
+#ifdef DEBUG
+    cerr << "obtained " << frames << " frames" << endl;
 #endif
 
-    KMeans kmeans(cepdat.n_inputs, NUMGAUSS);
-    kmeans.setROption("prior weights", 0.001);
-
-    EMTrainer kmeans_trainer(&kmeans);
-    kmeans_trainer.setIOption("max iter", NUMITER);
-    kmeans_trainer.setROption("end accuracy", ENDACCUR);
-
-    MeasurerList kmeans_measurers;
-    MemoryXFile memfile1;
-    NLLMeasurer nll_kmeans_measurer(kmeans.log_probabilities,
-            &cepdat, &memfile1);
-    kmeans_measurers.addNode(&nll_kmeans_measurer);
-
-    DiagonalGMM gmm(cepdat.n_inputs, NUMGAUSS, &kmeans_trainer);
-    gmm.setROption("prior weights", 0.001);
-    gmm.setOOption("initial kmeans trainer measurers", &kmeans_measurers);
-
-    // Measurers on the training dataset
-    MeasurerList measurers;
-    MemoryXFile memfile2;
-    NLLMeasurer nll_meas(gmm.log_probabilities, &cepdat, &memfile2);
-    measurers.addNode(&nll_meas);
-
-    EMTrainer trainer(&gmm);
-    trainer.setIOption("max iter", NUMITER);
-    trainer.setROption("end accuracy", ENDACCUR);
-
-    trainer.train(&cepdat, &measurers);
-    gmm.display();
-
+    mfcckeeper.finalize();
     return 0;
 }
 
 int main(int argc, char *argv[])
 {
     if (argc < 2)
-        return usage();
+    {
+        cout << "usage: analyzer <filename> [<filename>] ..." << endl;
+        return -1;
+    }
 
     StackLockFile lock(get_imms_root() + ".analyzer_lock");
     if (!lock.isok())
@@ -262,9 +147,11 @@ int main(int argc, char *argv[])
 
     nice(15);
 
-    AnalyzerShared shared;
+    Analyzer analyzer;
 
-    ImmsDb immsdb;
     for (int i = 1; i < argc; ++i)
-        analyze(path_normalize(argv[i]), shared);
+    {
+        if (analyzer.analyze(path_normalize(argv[i])))
+            cerr << "analyzer: Could not process " << argv[i] << endl;
+    }
 }
