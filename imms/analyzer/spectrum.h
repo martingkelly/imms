@@ -19,14 +19,12 @@ using std::vector;
 
 #define WINDOWSIZE      512
 #define OVERLAP         256
+#define READSIZE        (WINDOWSIZE - OVERLAP)
+
 #define SAMPLERATE      22050
-#define NUMMEL          40
-#define NUMCEPSTR       10
-#define NUMGAUSS        3
 
 #define WINPERSEC       (SAMPLERATE / (WINDOWSIZE - OVERLAP)) 
 #define BEATSSIZE       (MAXBEATLENGTH-MINBEATLENGTH)
-#define READSIZE        (WINDOWSIZE - OVERLAP)
 #define NUMFREQS        (WINDOWSIZE / 2 + 1)
 #define MAXFREQ         (SAMPLERATE / 2)
 #define FREQDELTA       ROUND(MAXFREQ / (float)NUMFREQS)

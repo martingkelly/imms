@@ -304,6 +304,14 @@ SQLQuery &SQLQuery::operator<<(const string &s)
     return *this;
 }
 
+SQLQuery &SQLQuery::bind(const void *data, size_t n)
+{
+    if (stmt)
+        if (sqlite3_bind_blob(stmt, ++curbind, data, n, SQLITE_TRANSIENT))
+            throw SQLStandardException();
+    return *this;
+}
+
 SQLQuery &SQLQuery::operator<<(const SQLExec &execute)
 {
     this->execute();
