@@ -10,11 +10,12 @@
 #include <immsutil.h>
 #include <appname.h>
 
-#include "spectrum.h"
+#include "analyzer.h"
 #include "strmanip.h"
 #include "melfilter.h"
 #include "fftprovider.h"
 #include "mfcckeeper.h"
+#include "beatkeeper.h"
 #include "hanning.h"
 
 using std::cout;
@@ -71,13 +72,15 @@ int Analyzer::analyze(const string &path)
     vector<double> outdata(NUMFREQS);
 
     MFCCKeeper mfcckeeper;
+    BeatManager beatkeeper;
 
     int r = fread(indata, sizeof(sample_t), OVERLAP, p);
 
     if (r != OVERLAP)
         return -3;
 
-    while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p) == READSIZE)
+    while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p)
+            == READSIZE && ++frames < MAXFREQ)
     {
         for (int i = 0; i < WINDOWSIZE; ++i)
             pcmfft.input()[i] = (double)indata[i];
@@ -97,6 +100,8 @@ int Analyzer::analyze(const string &path)
         vector<double> melfreqs;
         mfbank.apply(outdata, melfreqs);
 
+        beatkeeper.process(melfreqs);
+
         // compute log energy
         for (int i = 0; i < NUMMEL; ++i)
             melfreqs[i] = log(melfreqs[i]);
@@ -112,8 +117,6 @@ int Analyzer::analyze(const string &path)
 
         // finally shift the already read data
         memmove(indata, indata + READSIZE, OVERLAP * sizeof(sample_t));
-
-        ++frames;
     }
 
     pclose(p);
@@ -122,6 +125,7 @@ int Analyzer::analyze(const string &path)
     cerr << "obtained " << frames << " frames" << endl;
 #endif
 
+    beatkeeper.finalize();
     mfcckeeper.finalize();
     return 0;
 }

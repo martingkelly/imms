@@ -40,12 +40,13 @@ public:
 protected:
     void register_new_sid();
     void identify(time_t modtime);
-    void update_tag_info();
+    void update_tag_info(const string &artist, const string &album,
+            const string &title);
 
     int uid, sid, playcounter;
     string title, artist, path;
 private:
-    void _identify(time_t modtime);
+    void _identify(time_t modtime, const string &checksum);
 };
 
 #endif

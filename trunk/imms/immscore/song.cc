@@ -72,13 +72,11 @@ Song::Song(const string &path_, int _uid, int _sid) : path(path_)
         return;
 
     try {
-        AutoTransaction a(AppName != IMMSD_APP);
-
         identify(statbuf.st_mtime);
 
+        AutoTransaction a(AppName != IMMSD_APP);
         Q("UPDATE Library SET lastseen = ? WHERE uid = ?")
             << time(0) << uid << execute;
-
         a.commit();
     }
     WARNIFFAILED();
@@ -97,15 +95,9 @@ void Song::get_tag_info(string &artist, string &album, string &title) const
     q >> artist >> album >> title;
 }
 
-void Song::update_tag_info()
+void Song::update_tag_info(const string &artist, const string &album,
+        const string &title)
 {
-    SongInfo info;
-    info.link(path);
-
-    string artist = info.get_artist();
-    string album = info.get_album();
-    string title = info.get_title();
-
     // don't erase existing tags
     if (artist == "" && title == "")
     {
@@ -174,15 +166,30 @@ void Song::identify(time_t modtime)
         }
     }
 
-    _identify(modtime);
-
-    update_tag_info();
-}
-
-void Song::_identify(time_t modtime)
-{
     string checksum = Md5Digest::digest_file(path);
 
+    {
+        AutoTransaction a(AppName != IMMSD_APP);
+        _identify(modtime, checksum);
+        a.commit();
+    }
+
+    SongInfo info;
+    info.link(path);
+
+    string artist = info.get_artist();
+    string album = info.get_album();
+    string title = info.get_title();
+
+    {
+        AutoTransaction a(AppName != IMMSD_APP);
+        update_tag_info(artist, album, title);
+        a.commit();
+    }
+}
+
+void Song::_identify(time_t modtime, const string &checksum)
+{
     // old path but modtime has changed - update checksum
     if (uid != -1)
     {

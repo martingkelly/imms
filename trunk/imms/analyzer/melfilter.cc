@@ -5,7 +5,7 @@
 #include <iostream>
 
 #include <immsutil.h>
-#include "spectrum.h"
+#include "analyzer.h"
 #include "melfilter.h"
 
 using std::ostringstream;

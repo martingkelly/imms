@@ -15,7 +15,6 @@
 #include <song.h>
 #include <sqldb2.h>
 #include <immsutil.h>
-#include <spectrum.h>
 #include <strmanip.h>
 #include <picker.h>
 #include <appname.h>
@@ -35,7 +34,6 @@ const string AppName = IMMSTOOL_APP;
 int usage();
 int rating_usage();
 void do_help();
-void do_deviation();
 void do_missing();
 void do_purge(const string &path);
 time_t get_last(const string &path);
@@ -95,10 +93,6 @@ int main(int argc, char *argv[])
         }
 
         do_identify(argv[2]);
-    }
-    else if (!strcmp(argv[1], "deviation"))
-    {
-        do_deviation();
     }
     else if (!strcmp(argv[1], "artistscan"))
     {
@@ -167,7 +161,7 @@ int usage()
     cout << "End user functionality: " << endl;
     cout << " immstool rate|missing|purge|lint|identify|help" << endl;
     cout << "Debug functionality: " << endl;
-    cout << " immstool bpmdistance|specdistance|deviation|graph" << endl;
+    cout << " immstool bpmdistance|specdistance|graph" << endl;
     return -1;
 }
 
@@ -431,51 +425,6 @@ void do_missing()
         if (access(path.c_str(), F_OK))
             cout << path << endl;
     }
-}
-
-void do_deviation()
-{
-    list<string> all;
-    string spectrum;
-    int count = 0;
-    double mean[SHORTSPECTRUM];
-    memset(&mean, 0, sizeof(mean));
-    while (cin >> spectrum)
-    {
-        if ((int)spectrum.length() != SHORTSPECTRUM)
-        {
-            cout << "bad spectrum: " << spectrum << endl;
-            continue;
-        }
-        ++count;
-        all.push_back(spectrum);
-        for (int i = 0; i < SHORTSPECTRUM; ++i)
-            mean[i] += (spectrum[i] - 'a');
-    }
-
-    // total to mean
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-        mean[i] /= count;
-
-    cout << "Mean     : ";
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-        cout << std::setw(4) << ROUND(mean[i] * 10);
-    cout << endl;
-
-    double deviations[SHORTSPECTRUM];
-    memset(&deviations, 0, sizeof(deviations));
-
-    for (list<string>::iterator i = all.begin(); i != all.end(); ++i)
-        for (int j = 0; j < SHORTSPECTRUM; ++j)
-            deviations[j] += pow(mean[j] + 'a' - (*i)[j], 2);
-
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-        deviations[i] = sqrt(deviations[i] / count);
-
-    cout << "Deviation : ";
-    for (int i = 0; i < SHORTSPECTRUM; ++i)
-        cout << std::setw(4) << ROUND(deviations[i] * 10);
-    cout << endl;
 }
 
 void do_dump_bpm()
