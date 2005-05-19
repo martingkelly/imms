@@ -198,10 +198,10 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
         else
             mod = CONS_NON_SKIP_RATE;
 
-        if (!xidle_enabled)
-            mod += NO_XIDLE_BONUS;
-        else if (XIdle::is_active())
+        if (XIdle::is_active())
             mod += INTERACTIVE_BONUS;
+        else if (!xidle_enabled)
+            mod += NO_XIDLE_BONUS;
     }
     else
     {
@@ -216,10 +216,10 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
         if (mod < JUMPED_FROM)
         {
-            if (!xidle_enabled)
-                mod -= NO_XIDLE_BONUS;
-            else if (XIdle::is_active())
+            if (XIdle::is_active())
                 mod -= INTERACTIVE_BONUS;
+            else if (!xidle_enabled)
+                mod -= NO_XIDLE_BONUS;
         }
     }
 
