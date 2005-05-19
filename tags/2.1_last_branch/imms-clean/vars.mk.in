@@ -1,0 +1,29 @@
+CC = @CC@
+CXX = @CXX@
+VERSION = @PACKAGE_VERSION@
+INSTALL_PROGRAM = @INSTALL@
+prefix = @prefix@
+PREFIX = $(prefix)
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+
+VPATH = ../immscore:../analyzer:../utils:../clients:../immsd:../clients/xmms:../clients/bmp
+ARFLAGS = rs
+
+SHELL = bash
+PLUGINS = @PLUGINS@
+OPTIONAL = @OPTIONAL@
+
+GLIB2CPPFLAGS=`pkg-config glib-2.0 --cflags`
+GLIB1CPPFLAGS=`pkg-config glib --cflags`
+TAGCPPFLAGS=@TAGCPPFLAGS@
+
+INCLUDES=-I../ -I../immscore -I../clients
+CPPFLAGS=@CPPFLAGS@ @XCPPFLAGS@ -Wall -fPIC -D_REENTRANT $(INCLUDES)
+CXXFLAGS=@CXXFLAGS@ -fno-rtti
+
+GLIB2LDFLAGS=`pkg-config glib-2.0 --libs`
+GLIB1LDFLAGS=`pkg-config glib --libs`
+LDFLAGS=-L. @LIBS@
+
+default: all
