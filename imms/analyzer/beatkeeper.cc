@@ -67,5 +67,12 @@ void BeatManager::process(const std::vector<double> &melfreqs)
 
 void BeatManager::finalize()
 {
+#ifdef DEBUG
     lofreq.dump("/tmp/lofreq");
+#endif
+}
+
+void *BeatManager::get_result()
+{
+    return lofreq.beats;
 }

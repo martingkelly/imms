@@ -14,7 +14,7 @@ libimmscore.a: $(call objects,../immscore)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 
 immstool-CPPFLAGS = -I../analyzer
-immstool: immstool.o libimmscore.a
+immstool: immstool.o emd.o libimmscore.a 
 
 analyzer: $(call objects,../analyzer)
 analyzer: libimmscore.a

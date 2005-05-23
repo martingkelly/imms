@@ -147,6 +147,11 @@ void BasicDb::sql_create_tables()
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'spectrum' TEXT, 'bpm' TEXT);").execute();
 
+        Q("CREATE TABLE A.AcousticNG ("
+                "'uid' INTEGER UNIQUE NOT NULL, "
+                "'mfcc' BLOB DEFAULT NULL, "
+                "'bpm' BLOB DEFAULT NULL);").execute();
+
         Q("CREATE TABLE Info ("
                 "'sid' INTEGER UNIQUE NOT NULL," 
                 "'aid' INTEGER NOT NULL, "
@@ -364,6 +369,10 @@ void BasicDb::sql_schema_upgrade(int from)
         if (from < 11)
         {
             Q("UPDATE Identify SET modtime = 0;").execute();
+        }
+        if (from < 12)
+        {
+            sql_create_tables();
         }
 
         a.commit();

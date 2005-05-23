@@ -1,7 +1,6 @@
 #include <torch/KMeans.h>
 #include <torch/Random.h>
 #include <torch/EMTrainer.h>
-#include <torch/DiagonalGMM.h>
 #include <torch/NLLMeasurer.h>
 #include <torch/MemoryXFile.h>
 
@@ -14,30 +13,20 @@
 
 using namespace Torch;
 
-struct Gaussian
+Gaussian::Gaussian(float weight, float *means_, float *vars_) : weight(weight)
 {
-    Gaussian() {};
-    Gaussian(float weight, float *means, float *vars) : weight(weight)
-    {
-        memcpy(data[0], means, sizeof(float) * NUMCEPSTR);
-        memcpy(data[1], vars, sizeof(float) * NUMCEPSTR);
-    }
-    float weight;
-    float data[2][NUMCEPSTR];
-};
+    memcpy(means, means_, sizeof(float) * NUMCEPSTR);
+    memcpy(vars, vars_, sizeof(float) * NUMCEPSTR);
+}
 
-struct GMMAdapter
+void MixtureModel::init(DiagonalGMM &gmm)
 {
-    GMMAdapter(DiagonalGMM &gmm)
-    {
-        for(int i = 0; i < NUMGAUSS; i++)
-            gauss[i] = Gaussian(exp(gmm.log_weights[i]),
-                    gmm.means[i], gmm.var[i]);
-    }
-    Gaussian gauss[NUMGAUSS];
-};
+    for(int i = 0; i < NUMGAUSS; i++)
+        gauss[i] = Gaussian(exp(gmm.log_weights[i]),
+                gmm.means[i], gmm.var[i]);
+}
 
-SQLQuery &operator<<(SQLQuery &q, const GMMAdapter &a)
+SQLQuery &operator<<(SQLQuery &q, const MixtureModel &a)
 {
     q.bind(&a.gauss, sizeof(a.gauss));
     return q;
@@ -85,5 +74,14 @@ void MFCCKeeper::finalize()
 
     trainer.train(&cepdat, &measurers);
 
+    result = gmm;
+
+#ifdef DEBUG
     gmm.display();
+#endif
+}
+
+void *MFCCKeeper::get_result()
+{
+    return result.gauss;
 }

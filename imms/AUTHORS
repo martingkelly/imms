@@ -1,0 +1,32 @@
+Author:
+     Michael Grigoriev <mag@luminal.org>
+
+With the following exceptions: (see actual files for more details):
+
+    md5.{h,c} (added ability to restrict maximum size to process)
+        from GNU textutils
+    levenshtein.{h,c} (stripped down)
+        python-Levenshtein library
+        by David Necas (Yeti) <yeti@physics.muni.cz>
+    regexx.{h,cc} (stripped down)
+        Regexx - Regular Expressions C++ solution
+        by Gustavo Niemeyer <gustavo@nn.com.br>
+    xidle.{h,cc}
+        Borrows from xautolock 2.1
+        by Michel Eyckmans (MCE) <eyckmans@imec.be>
+    emd.{h,c}
+        by Yossi Rubner <rubner@cs.stanford.edu>
+
+Other acknowledgement:
+
+    build system inspired by WvStreams 
+    by Avery Pennarun <apenwarr@nit.ca>
+    and Pierre Phaneuf <pphaneuf@nit.ca>
+
+    The beat detection algorithm is inspired by
+    SoundTouch Audio Processing Library
+    by Olli Parviainen <oparviai@iki.fi>
+
+    Special thank you to David Held for testing and ideas.
+
+All other code Copyright (C) 2003-2005 Michael Grigoriev

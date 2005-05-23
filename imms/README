@@ -1,32 +1,14 @@
 Website:
     http://www.luminal.org/wiki/index.php/IMMS
 
+Mailing list:
+    imms@luminal.org
+
 Author:
-     Michael Grigoriev <mag@luminal.org>
-
-Aknowledgements: (see actual files for more details):
-    Makefiles inspired by WvStreams 
-        by Avery Pennarun <apenwarr@nit.ca> and Pierre Phaneuf <pphaneuf@nit.ca>
-    md5.{h,c} (added ability to restrict maximum size to process)
-        from GNU textutils
-    levenshtein.{h,c} (stripped down)
-        python-Levenshtein library
-        by David Necas (Yeti) <yeti@physics.muni.cz>
-    regexx.{h,cc} (stripped down)
-        Regexx - Regular Expressions C++ solution
-        by Gustavo Niemeyer <gustavo@nn.com.br>
-    xidle.{h,cc}
-        Borrows from xautolock 2.1
-        by Michel Eyckmans (MCE) <eyckmans@imec.be>
-    spectrum.cc
-        The beat detection algorithm is inspired by
-        SoundTouch Audio Processing Library
-        by Olli Parviainen <oparviai@iki.fi>
-
-    Special thank you to David Held for testing and ideas.
+    Michael Grigoriev <mag@luminal.org>
 
 Licence:
-    GNU/GPL - see LICENSE for details
+    GNU/GPL - see LICENSE and AUTHORS for details
 
 Installation:
     See INSTALL for details

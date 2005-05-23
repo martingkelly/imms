@@ -36,7 +36,7 @@ void SQLDatabase::open(const string &filename)
     if (sqlite3_open(filename.c_str(), &db_ptr))
         throw SQLStandardException();
 
-    sqlite3_busy_timeout(db(), 60000);
+    sqlite3_busy_timeout(db(), 30000);
 }
 
 void SQLDatabase::close()
@@ -184,23 +184,11 @@ sqlite3_stmt *SQLQueryManager::get(const string &query)
     if (i != statements.end())
         return i->second;
 
-#ifdef TRANS
-    int tr = 1;
-    if (cache)
-        tr = sqlite3_exec(SQLDatabase::db(), "BEGIN TRANSACTION;", 0, 0, 0);
-#endif
-
     sqlite3_stmt *statement = 0;
     int qr = sqlite3_prepare(SQLDatabase::db(), query.c_str(),
             -1, &statement, 0);
 
     SQLException except = SQLStandardException();
-
-#ifdef TRANS
-    if (tr == 0) 
-        if (sqlite3_exec(SQLDatabase::db(), "COMMIT TRANSACTION;", 0, 0, 0))
-            throw SQLStandardException();
-#endif
 
     if (qr)
     {
@@ -353,6 +341,21 @@ SQLQuery &SQLQuery::operator>>(double &i)
 {
     if (stmt)
         i = sqlite3_column_double(stmt, curbind++);
+    return *this;
+}
+
+SQLQuery &SQLQuery::load(void *data, size_t &n)
+{
+    if (!stmt)
+        return *this;
+
+    size_t blobsize = sqlite3_column_bytes(stmt, curbind);
+    if (blobsize > n)
+        throw SQLException("Error",
+                "insufficient memory provided for load BLOB");
+    n = blobsize;
+    const void *blobdata = sqlite3_column_blob(stmt, curbind++);
+    memcpy(data, blobdata, blobsize);
     return *this;
 }
 

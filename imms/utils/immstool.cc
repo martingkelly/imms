@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <list>
 #include <utility>
+#include <algorithm>
 
 #include <assert.h>
 #include <stdlib.h>
@@ -18,6 +19,9 @@
 #include <strmanip.h>
 #include <picker.h>
 #include <appname.h>
+
+#include <distance.h>
+#include <beatkeeper.h>
 
 using std::string;
 using std::cout;
@@ -38,12 +42,12 @@ void do_missing();
 void do_purge(const string &path);
 time_t get_last(const string &path);
 void do_lint();
-void do_artistscan();
 void do_dump_bpm();
-void do_spec_distance(const string &to);
-void do_bpm_distance(const string &to);
+void do_distance(const string &path1, const string &path2);
 void do_identify(const string &path);
 int do_rate(const string &path, char *rating);
+
+float EMD::cost[NUMGAUSS][NUMGAUSS];
 
 int main(int argc, char *argv[])
 {
@@ -56,25 +60,15 @@ int main(int argc, char *argv[])
     {
         do_dump_bpm();
     }
-    else if (!strcmp(argv[1], "bpmdistance"))
+    else if (!strcmp(argv[1], "distance"))
     {
-        if (argc < 3)
+        if (argc != 4)
         {
-            cout << "immstool distance <reference bpm>" << endl;
+            cout << "immstool distance path1 path2" << endl;
             return -1;
         }
 
-        do_bpm_distance(argv[2]);
-    }
-    else if (!strcmp(argv[1], "specdistance"))
-    {
-        if (argc < 3)
-        {
-            cout << "immstool distance <reference spectrum>" << endl;
-            return -1;
-        }
-
-        do_spec_distance(argv[2]);
+        do_distance(argv[2], argv[3]);
     }
     else if (!strcmp(argv[1], "rate"))
     {
@@ -93,10 +87,6 @@ int main(int argc, char *argv[])
         }
 
         do_identify(argv[2]);
-    }
-    else if (!strcmp(argv[1], "artistscan"))
-    {
-        do_artistscan();
     }
     else if (!strcmp(argv[1], "missing"))
     {
@@ -161,7 +151,7 @@ int usage()
     cout << "End user functionality: " << endl;
     cout << " immstool rate|missing|purge|lint|identify|help" << endl;
     cout << "Debug functionality: " << endl;
-    cout << " immstool bpmdistance|specdistance|graph" << endl;
+    cout << " immstool distance|graph" << endl;
     return -1;
 }
 
@@ -354,66 +344,6 @@ void do_lint()
 
 }
 
-void do_bpm_distance(const string &to)
-{
-    string rescaled = rescale_bpmgraph(to);
-
-    Q q("SELECT Identify.path, A.Acoustic.bpm, Library.sid FROM 'Library' "
-            "INNER JOIN A.Acoustic ON Library.uid = A.Acoustic.uid "
-            "JOIN 'Identify' ON Identify.uid = Library.uid "
-            "WHERE A.Acoustic.bpm NOT NULL;");
-
-    while(q.next())
-    {
-        string path, bpm;
-        int sid;
-        q >> path >> bpm >> sid;
-
-        cout << setw(4) << rms_string_distance(rescaled, rescale_bpmgraph(bpm))
-            << "  " << bpm << "  ";
-
-        StringPair info = sid2info(sid);
-
-        if (info.first != "")
-        {
-            cout << setw(25) << info.first;
-            cout << setw(25) << info.second;
-        }
-        else
-            cout << setw(50) << path_get_filename(path);
-        cout << endl;
-    }
-}
-
-void do_spec_distance(const string &to)
-{
-    Q q("SELECT Identify.path, A.Acoustic.spectrum, Library.sid FROM 'Library' "
-            "INNER JOIN A.Acoustic ON Library.uid = A.Acoustic.uid "
-            "JOIN 'Identify' ON Identify.uid = Library.uid "
-            "WHERE A.Acoustic.spectrum NOT NULL;");
-
-    while(q.next())
-    {
-        string path, spectrum;
-        int sid;
-        q >> path >> spectrum >> sid;
-
-        cout << setw(4) << rms_string_distance(to, spectrum, 15)
-            << "  " << spectrum << "  ";
-
-        StringPair info = sid2info(sid);
-
-        if (info.first != "")
-        {
-            cout << setw(25) << info.first;
-            cout << setw(25) << info.second;
-        }
-        else
-            cout << setw(50) << path_get_filename(path);
-        cout << endl;
-    }
-}
-
 void do_missing()
 {
     Q q("SELECT path FROM 'Identify';");
@@ -487,34 +417,41 @@ int do_rate(const string &path, char *rating)
             return rating_usage();
     }
 
-    r = std::min(MAX_RATING, std::max(MIN_RATING, r));
+    r = min(MAX_RATING, max(MIN_RATING, r));
 
     cout << "New rating: " << r << endl;
     s.set_rating(r);
     return 0;
 }
 
-void do_artistscan()
+void do_distance(const string &path1, const string &path2)
 {
-    int aid = -1;
-    while (1)
+    Song song1(path1), song2(path2);
+
+    if (!song1.isok() || !song2.isok())
     {
-        Q q("SELECT aid, artist, readable, trust FROM Artists WHERE aid > ?;");
-        q << aid;
-
-        int trust;
-        string artist, readable;
-
-        bool done; 
-        while ((done = q.next()))
-        {
-            q >> aid >> artist >> readable >> trust;
-        }
-
-        if (!done)
-        {
-        }
-        else
-            break;
+        cerr << "could not identify '" << path1
+            << "' or '" << path2 << "'" << endl;
+        return;
     }
+
+    MixtureModel m1, m2;
+    float beats[BEATSSIZE];
+
+    if (!song1.get_acoustic(&m1, sizeof(MixtureModel),
+            beats, sizeof(beats)))
+    {
+        cerr << "loading acoustic data for song1" << endl;
+        return;
+    }
+
+    if (!song2.get_acoustic(&m2, sizeof(MixtureModel),
+            beats, sizeof(beats)))
+    {
+        cerr << "loading acoustic data for song2" << endl;
+        return;
+    }
+
+    float distance = EMD::distance(m1, m2);
+    cout << "Distance: " << distance << endl;
 }

@@ -133,6 +133,8 @@ public:
     SQLQuery &operator>>(float &i);
     SQLQuery &operator>>(string &s);
 
+    SQLQuery &load(void *data, size_t &n);
+
 private:
     int curbind;
 

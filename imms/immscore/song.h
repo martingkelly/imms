@@ -18,7 +18,6 @@ public:
     void set_info(const StringPair &info);
     void set_rating(int rating);
     void set_trend(int trend);
-    void set_acoustic(const string &spectrum, const string &bpmgraph);
     void increment_playcounter();
 
     int get_rating();
@@ -28,13 +27,18 @@ public:
 
     StringPair get_info();
     void get_tag_info(string &artist, string &album, string &title) const;
-    StringPair get_acoustic();
 
     int get_sid() { return sid; }
     int get_uid() { return uid; }
     const string &get_path() const { return path; }
 
     bool isok() { return uid != -1 && path != ""; }
+    bool isanalyzed();
+
+    void set_acoustic(const void *mfccdat, size_t mfccsize,
+            const void *bpmdat, size_t bpmsize);
+    bool get_acoustic(void *mfccdat, size_t mfccsize,
+            void *bpmdat, size_t bpmsize);
 
     void reset() { playcounter = uid = sid = -1; artist = title = ""; }
 protected:

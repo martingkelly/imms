@@ -95,6 +95,56 @@ void Song::get_tag_info(string &artist, string &album, string &title) const
     q >> artist >> album >> title;
 }
 
+bool Song::isanalyzed()
+{
+    try {
+        Q q("SELECT * FROM A.AcousticNG WHERE mfcc NOTNULL "
+               "AND bpm NOTNULL AND uid = ?;");
+        if (q.next())
+            return true;
+    }
+    WARNIFFAILED();
+    return false;
+}
+
+void Song::set_acoustic(const void *mfccdat, size_t mfccsize,
+        const void *bpmdat, size_t bpmsize)
+{
+    try {
+        Q q("INSERT OR REPLACE INTO A.AcousticNG "
+                "('uid', 'mfcc', 'bpm') "
+                "VALUES (?, ?, ?);");
+        q << uid;
+        q.bind(mfccdat, mfccsize);
+        q.bind(bpmdat, bpmsize);
+        q.execute();
+    }
+    WARNIFFAILED();
+}
+
+bool Song::get_acoustic(void *mfccdat, size_t mfccsize,
+        void *bpmdat, size_t bpmsize)
+{
+    if (uid < 0)
+        return false;
+
+    try
+    {
+        Q q("SELECT mfcc, bpm FROM A.AcousticNG WHERE uid = ?;");
+        q << uid;
+
+        if (q.next())
+        {
+            q.load(mfccdat, mfccsize);  
+            q.load(bpmdat, bpmsize);  
+            return true;
+        }
+    }
+    WARNIFFAILED();
+
+    return false;
+}
+
 void Song::update_tag_info(const string &artist, const string &album,
         const string &title)
 {
@@ -344,33 +394,6 @@ void Song::set_trend(int trend)
     WARNIFFAILED();
 }
 
-void Song::set_acoustic(const string &spectrum, const string &bpmgraph)
-{
-    try
-    {
-        Q q("INSERT OR REPLACE INTO A.Acoustic "
-                "('uid', 'spectrum', 'bpm') VALUES (?, ?, ?);");
-        q << uid << spectrum << bpmgraph;
-        q.execute();
-    }
-    WARNIFFAILED();
-}
-
-StringPair Song::get_acoustic()
-{
-    StringPair res;
-    try
-    {
-        Q q("SELECT spectrum, bpm FROM A.Acoustic WHERE uid = ?;");
-        q << uid;
-        if (q.next())
-            q >> res.first >> res.second;
-    }
-    WARNIFFAILED();
-
-    return res;
-}
-
 void Song::set_info(const StringPair &info)
 {
     if (uid < 0)
@@ -518,7 +541,6 @@ StringPair Song::get_info()
 #endif
     return StringPair(artist, title);
 }    
-
 
 void Song::register_new_sid()
 {

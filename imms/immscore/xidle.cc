@@ -44,6 +44,7 @@ bool XIdle::is_active()
 
 void XIdle::query()
 {
+#ifdef WITH_XSCREENSAVER
     if (!xidle_enabled)
         return;
 
@@ -57,33 +58,34 @@ void XIdle::query()
         query_pointer();
 
     last_checked = time(0);
+#endif
 }
 
 bool XIdle::query_idle_time()
 {
+#ifdef WITH_XSCREENSAVER
     time_t idle_time = 1000;
 
-#ifdef WITH_XSCREENSAVER
     static XScreenSaverInfo* mitInfo = 0;
     if (!mitInfo)
         mitInfo = XScreenSaverAllocInfo();
     XScreenSaverQueryInfo(display, DefaultRootWindow(display), mitInfo);
     idle_time = mitInfo->idle;
-#endif 
 
     if (idle_time < SAMPLE_RATE)
         return ++active;
 
+#endif 
     return false;
 }
 
 bool XIdle::query_pointer()
 {
+#ifdef WITH_XSCREENSAVER
     Window dummyWin;
     unsigned int mask;
     int rootX = 0, rootY = 0, dummyInt;
 
-#ifdef WITH_XSCREENSAVER
     if (!XQueryPointer(display, root, &root, &dummyWin, &rootX, &rootY,
                 &dummyInt, &dummyInt, &mask))
     {
@@ -98,7 +100,6 @@ bool XIdle::query_pointer()
             }
         }
     }
-#endif
 
     if (rootX != prev_rootX || rootY != prev_rootY || mask != prev_mask)
     {
@@ -109,5 +110,6 @@ bool XIdle::query_pointer()
         return ++active;
     }
 
+#endif
     return false;
 }
