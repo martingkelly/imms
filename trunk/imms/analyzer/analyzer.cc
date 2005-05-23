@@ -9,6 +9,8 @@
 
 #include <immsutil.h>
 #include <appname.h>
+#include <song.h>
+#include <immsdb.h>
 
 #include "analyzer.h"
 #include "strmanip.h"
@@ -16,6 +18,7 @@
 #include "fftprovider.h"
 #include "mfcckeeper.h"
 #include "beatkeeper.h"
+#include "distance.h"
 #include "hanning.h"
 
 using std::cout;
@@ -46,7 +49,20 @@ int Analyzer::analyze(const string &path)
     if (access(path.c_str(), R_OK))
     {
         cerr << "analyzer: Could not open file " << path << endl;
-        return -4;
+        return -2;
+    }
+
+    Song song(path);
+    if (!song.isok())
+    {
+        cerr << "analyzer: Could not identify file " << path << endl;
+        return -3;
+    }
+
+    if (song.isanalyzed())
+    {
+        cerr << "analyzer: File already analyzed. Skipping " << path << endl;
+        return 0;
     }
 
     string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
@@ -61,7 +77,7 @@ int Analyzer::analyze(const string &path)
     if (!p)
     {
         cerr << "analyzer: Could not open pipe!" << endl;
-        return -2;
+        return -4;
     }
 
     StackTimer t;
@@ -77,10 +93,10 @@ int Analyzer::analyze(const string &path)
     int r = fread(indata, sizeof(sample_t), OVERLAP, p);
 
     if (r != OVERLAP)
-        return -3;
+        return -5;
 
     while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p)
-            == READSIZE && ++frames < MAXFREQ)
+            == READSIZE && ++frames < MAXFRAMES)
     {
         for (int i = 0; i < WINDOWSIZE; ++i)
             pcmfft.input()[i] = (double)indata[i];
@@ -109,9 +125,10 @@ int Analyzer::analyze(const string &path)
         // another fft to get the MFCCs
         specfft.apply(melfreqs);
 
+        // discard the first mfcc
         float cepstrum[NUMCEPSTR];
-        for (int i = 0; i < NUMCEPSTR; ++i)
-            cepstrum[i] = specfft.output()[i][0];
+        for (int i = 1; i <= NUMCEPSTR; ++i)
+            cepstrum[i - 1] = specfft.output()[i][0];
 
         mfcckeeper.process(cepstrum);
 
@@ -125,8 +142,9 @@ int Analyzer::analyze(const string &path)
     cerr << "obtained " << frames << " frames" << endl;
 #endif
 
-    beatkeeper.finalize();
-    mfcckeeper.finalize();
+    song.set_acoustic(mfcckeeper.get_result(), MFCCKeeper::ResultSize,
+            beatkeeper.get_result(), BeatManager::ResultSize);
+
     return 0;
 }
 
@@ -151,6 +169,7 @@ int main(int argc, char *argv[])
 
     nice(15);
 
+    ImmsDb immsdb;
     Analyzer analyzer;
 
     for (int i = 1; i < argc; ++i)

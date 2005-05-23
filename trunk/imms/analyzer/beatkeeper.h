@@ -15,6 +15,7 @@
 
 class BeatKeeper
 {
+    friend class BeatManager;
 public:
     BeatKeeper() { reset(); }
     void reset();
@@ -37,6 +38,10 @@ class BeatManager
 public:
     void process(const std::vector<double> &melfreqs);
     void finalize();
+
+    void *get_result();
+
+    static const int ResultSize = BEATSSIZE * sizeof(float);
 protected:
     BeatKeeper lofreq;
 };

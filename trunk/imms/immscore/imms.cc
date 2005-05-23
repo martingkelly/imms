@@ -130,11 +130,10 @@ void Imms::start_song(int position, string path)
         if (last_jumped)
             set_lastinfo(handpicked);
 
-        StringPair acoustic = current.get_acoustic();
-
         at.commit();
 
-        if (acoustic.first == "") {
+        // FIXME:
+        if (0) {
             string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
             system(string("analyzer '" + epath + "' &").c_str());
         }
@@ -182,7 +181,8 @@ void Imms::set_lastinfo(LastInfo &last)
 {
     last.set_on = time(0);
     last.sid = current.get_sid();
-    last.acoustic = current.get_acoustic();
+    // FIXME:
+    // last.acoustic = current.get_acoustic();
 }
 
 void Imms::end_song(bool at_the_end, bool jumped, bool bad)
@@ -293,27 +293,6 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     float rel = ImmsDb::correlate(data.get_sid(), last.sid) / MAX_CORRELATION;
     rel = std::max(std::min(rel, (float)1), (float)-1);
     data.relation += ROUND(rel * weight * CORRELATION_IMPACT);
-
-    StringPair acoustic = data.get_acoustic();
-    if (last.acoustic.first != "" && acoustic.first != "")
-    {
-        float d = rms_string_distance(last.acoustic.first, acoustic.first, 15);
-        float rel = (SPECTRUM_RADIUS - d) / SPECTRUM_RADIUS;
-        if (rel < 0)
-            rel *= 2;
-        data.specrating += ROUND(rel * weight * SPECTRUM_IMPACT);
-    }
-
-    if (last.acoustic.second != "" && acoustic.second != "")
-    {
-        float d = rms_string_distance(
-                rescale_bpmgraph(last.acoustic.second),
-                rescale_bpmgraph(acoustic.second));
-        float rel =  (BPM_RADIUS - d) / BPM_RADIUS;
-        if (rel < 0)
-            rel *= 2;
-        data.bpmrating += ROUND(rel * weight * BPM_IMPACT);
-    }
 }
 
 bool Imms::fetch_song_info(SongData &data)
