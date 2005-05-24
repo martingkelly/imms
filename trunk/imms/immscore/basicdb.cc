@@ -152,6 +152,13 @@ void BasicDb::sql_create_tables()
                 "'mfcc' BLOB DEFAULT NULL, "
                 "'bpm' BLOB DEFAULT NULL);").execute();
 
+        Q("CREATE TABLE A.Distances ("
+                "'x' INTEGER NOT NULL, 'y' INTEGER NOT NULL, "
+                "'dist' INTEGER NOT NULL);").execute();
+
+        Q("CREATE UNIQUE INDEX A.Distances_x_y_i "
+                "ON Distances (x, y);").execute();
+
         Q("CREATE TABLE Info ("
                 "'sid' INTEGER UNIQUE NOT NULL," 
                 "'aid' INTEGER NOT NULL, "

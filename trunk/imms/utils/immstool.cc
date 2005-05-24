@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iomanip>
 #include <list>
+#include <set>
 #include <utility>
 #include <algorithm>
 
@@ -14,7 +15,7 @@
 
 #include <imms.h>
 #include <song.h>
-#include <sqldb2.h>
+#include <immsdb.h>
 #include <immsutil.h>
 #include <strmanip.h>
 #include <picker.h>
@@ -32,6 +33,7 @@ using std::cin;
 using std::setw;
 using std::pair;
 using std::ifstream;
+using std::set;
 
 const string AppName = IMMSTOOL_APP;
 
@@ -42,9 +44,9 @@ void do_missing();
 void do_purge(const string &path);
 time_t get_last(const string &path);
 void do_lint();
-void do_distance(const string &path1, const string &path2);
 void do_identify(const string &path);
 int do_rate(const string &path, char *rating);
+void update_distances();
 
 float EMD::cost[NUMGAUSS][NUMGAUSS];
 
@@ -53,17 +55,17 @@ int main(int argc, char *argv[])
     if (argc < 2)
         return usage();
 
-    SqlDb sqldb;
+    ImmsDb immsdb;
 
-    if (!strcmp(argv[1], "distance"))
+    if (!strcmp(argv[1], "distances"))
     {
-        if (argc != 4)
+        if (argc > 2)
         {
-            cout << "immstool distance path1 path2" << endl;
+            cout << "huh??" << endl;
             return -1;
         }
 
-        do_distance(argv[2], argv[3]);
+        update_distances();
     }
     else if (!strcmp(argv[1], "rate"))
     {
@@ -146,7 +148,7 @@ int usage()
     cout << "End user functionality: " << endl;
     cout << " immstool rate|missing|purge|lint|identify|help" << endl;
     cout << "Debug functionality: " << endl;
-    cout << " immstool distance|graph" << endl;
+    cout << " immstool distances|graph" << endl;
     return -1;
 }
 
@@ -388,16 +390,9 @@ int do_rate(const string &path, char *rating)
     return 0;
 }
 
-void do_distance(const string &path1, const string &path2)
+float distance_by_uid(int uid1, int uid2)
 {
-    Song song1(path1), song2(path2);
-
-    if (!song1.isok() || !song2.isok())
-    {
-        cerr << "could not identify '" << path1
-            << "' or '" << path2 << "'" << endl;
-        return;
-    }
+    Song song1("", uid1), song2("", uid2);
 
     MixtureModel m1, m2;
     float beats[BEATSSIZE];
@@ -406,16 +401,83 @@ void do_distance(const string &path1, const string &path2)
             beats, sizeof(beats)))
     {
         cerr << "loading acoustic data for song1" << endl;
-        return;
+        return -1;
     }
 
     if (!song2.get_acoustic(&m2, sizeof(MixtureModel),
             beats, sizeof(beats)))
     {
         cerr << "loading acoustic data for song2" << endl;
-        return;
+        return -1;
     }
 
-    float distance = EMD::distance(m1, m2);
-    cout << "Distance: " << distance << endl;
+    return EMD::distance(m1, m2);
+}
+
+void update_distances()
+{
+    vector<int> uids;
+    int uid;
+    try
+    {
+        Q q("SELECT uid FROM A.AcousticNG WHERE mfcc NOTNULL;");
+        while (q.next())
+        {
+            q >> uid;
+            uids.push_back(uid);
+        }
+    }
+    WARNIFFAILED();
+
+    size_t numuids = uids.size();
+    for (size_t i = 0; i < numuids; ++i)
+    {
+        int uid = uids[i];
+        set<int> neigh;
+        neigh.insert(uids.begin(), uids.end());
+        neigh.erase(uid);
+        int x, y;
+
+        try
+        {
+            Q q("SELECT x, y FROM A.Distances WHERE x = ? OR y = ?;");
+            q << uid << uid;
+            while (q.next()) 
+            {
+                q >> x >> y;
+                if (x == uid && y != uid)
+                    neigh.erase(y);
+                if (x != uid && y == uid)
+                    neigh.erase(x);
+            }
+        }
+        WARNIFFAILED();
+
+        try {
+            AutoTransaction at;
+            Q q("INSERT OR REPLACE INTO A.Distances ('x', 'y', 'dist') "
+                    "VALUES (?, ?, ?);");
+
+            for (set<int>::iterator j = neigh.begin(); j != neigh.end(); ++j)
+            {
+                int small = min(uid, *j);
+                int large = max(uid, *j);
+                int dist = ROUND(distance_by_uid(uid, *j));
+                if (dist < 0)
+                    continue;
+                if (dist > 255)
+                {
+                    cerr << "warning: bogus distance (" << dist << ") between "
+                        << small << " and " << large << endl;
+                    dist = 255;
+                }
+                cout << "updating " << small << " -> "
+                    << large << " = " << dist << endl;
+                q << small << large << dist;
+                q.execute();
+            }
+            at.commit();
+        }
+        WARNIFFAILED();
+    }
 }

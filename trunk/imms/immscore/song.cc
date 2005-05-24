@@ -100,6 +100,7 @@ bool Song::isanalyzed()
     try {
         Q q("SELECT * FROM A.AcousticNG WHERE mfcc NOTNULL "
                "AND bpm NOTNULL AND uid = ?;");
+        q << uid;
         if (q.next())
             return true;
     }
