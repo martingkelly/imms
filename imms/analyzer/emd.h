@@ -23,6 +23,7 @@ extern "C" {
 #define MAX_SIG_SIZE   300
 #define MAX_ITERATIONS 500
 #define EPSILON        1e-6
+#define EMDINF         1e20
 
 typedef int feature_t;
 

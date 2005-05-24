@@ -19,7 +19,7 @@
 
 #include "emd.h"
 
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 3
 /*
  DEBUG_LEVEL:
    0 = NO MESSAGES
@@ -31,7 +31,6 @@
 
 
 #define MAX_SIG_SIZE1  (MAX_SIG_SIZE+1)  /* FOR THE POSIBLE DUMMY FEATURE */
-#define INFINITY       1e20
 
 /* NEW TYPES DEFINITION */
 
@@ -411,7 +410,7 @@ static int isOptimal(node1_t *U, node1_t *V)
   int i, j, minI, minJ;
 
   /* FIND THE MINIMAL Cij-Ui-Vj OVER ALL i,j */
-  deltaMin = INFINITY;
+  deltaMin = EMDINF;
   for(i=0; i < _n1; i++)
     for(j=0; j < _n2; j++)
       if (! _IsX[i][j])
@@ -429,7 +428,7 @@ static int isOptimal(node1_t *U, node1_t *V)
   printf("deltaMin=%f\n", deltaMin);
 #endif
 
-   if (deltaMin == INFINITY)
+   if (deltaMin == EMDINF)
      {
        fprintf(stderr, "emd: Unexpected error in isOptimal.\n");
        exit(0);
@@ -475,7 +474,7 @@ static void newSol()
     steps = findLoop(Loop);
 
     /* FIND THE LARGEST VALUE IN THE LOOP */
-    xMin = INFINITY;
+    xMin = EMDINF;
     for (k=1; k < steps; k+=2)
       {
 	if (Loop[k]->val < xMin)
@@ -637,7 +636,7 @@ static void russel(double *S, double *D)
   for (i=0; i < _n1; i++)
     {
       CurU->i = i;
-      CurU->val = -INFINITY;
+      CurU->val = -EMDINF;
       CurU->Next = CurU+1;
       CurU++;
     }
@@ -647,7 +646,7 @@ static void russel(double *S, double *D)
   for (j=0; j < _n2; j++)
     {
       CurV->i = j;
-      CurV->val = -INFINITY;
+      CurV->val = -EMDINF;
       CurV->Next = CurV+1;
       CurV++;
     }
@@ -687,7 +686,7 @@ static void russel(double *S, double *D)
  
       /* FIND THE SMALLEST Delta[i][j] */
       found = 0; 
-      deltaMin = INFINITY;      
+      deltaMin = EMDINF;      
       PrevU = &uHead;
       for (CurU=uHead.Next; CurU != NULL; CurU=CurU->Next)
 	{
@@ -730,7 +729,7 @@ static void russel(double *S, double *D)
 		{
 		  /* FIND THE NEW MAXIMUM VALUE IN THE COLUMN */
 		  oldVal = CurV->val;
-		  CurV->val = -INFINITY;
+		  CurV->val = -EMDINF;
 		  for (CurU=uHead.Next; CurU != NULL; CurU=CurU->Next)
 		    {
 		      int i;
@@ -757,7 +756,7 @@ static void russel(double *S, double *D)
 		{
 		  /* FIND THE NEW MAXIMUM VALUE IN THE ROW */
 		  oldVal = CurU->val;
-		  CurU->val = -INFINITY;
+		  CurU->val = -EMDINF;
 		  for (CurV=vHead.Next; CurV != NULL; CurV=CurV->Next)
 		    {
 		      int j;
