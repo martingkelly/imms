@@ -61,14 +61,20 @@ int Analyzer::analyze(const string &path)
 
     if (song.isanalyzed())
     {
-        cerr << "analyzer: File already analyzed. Skipping " << path << endl;
+        cerr << "analyzer: " << path << endl;
+        cerr << "analyzer: File already analyzed. Skipping." << endl;
         return 0;
     }
 
     string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
+    string extension = string_tolower(path_get_extension(path));
+
     ostringstream command;
-    command << "nice -n 15 sox \'" << epath << "\' -t .raw -w -u -c 1 -r "
-        << SAMPLERATE << " -";
+    command << "nice -n 15 sox ";
+    if (extension == "mp3" || extension == "ogg")
+        command << "-t ." << extension << " ";
+    command << "\'" << epath << "\' ";
+    command << "-t .raw -w -u -c 1 -r " << SAMPLERATE << " -";
 #ifdef DEBUG
     cout << "analyzer: Executing: " << command.str() << endl;
 #endif

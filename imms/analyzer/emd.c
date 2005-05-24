@@ -19,7 +19,7 @@
 
 #include "emd.h"
 
-#define DEBUG_LEVEL 3
+#define DEBUG_LEVEL 0
 /*
  DEBUG_LEVEL:
    0 = NO MESSAGES

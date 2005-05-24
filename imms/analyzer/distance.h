@@ -11,9 +11,12 @@ float KL_Distance(const Gaussian &g1, const Gaussian &g2)
     float total = 0;
     for (int i = 0; i < NUMCEPSTR; ++i)
     {
-        float dist = g1.vars[i] / g2.vars[i] + g2.vars[i] / g1.vars[i] +
+        // sanitize the variences so we don't get huge distances
+        float var1 = max(g1.vars[i], 10.0);
+        float var2 = max(g2.vars[i], 10.0);
+        float dist = var1 / var2 + var2 / var1 +
             pow(g1.means[i] - g2.means[i], 2.0) *
-            (1.0 / g1.vars[i] + 1.0 / g2.vars[i]);
+            (1.0 / var1 + 1.0 / var2);
 
         total += dist - 2;
     }
