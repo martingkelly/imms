@@ -42,7 +42,6 @@ void do_missing();
 void do_purge(const string &path);
 time_t get_last(const string &path);
 void do_lint();
-void do_dump_bpm();
 void do_distance(const string &path1, const string &path2);
 void do_identify(const string &path);
 int do_rate(const string &path, char *rating);
@@ -56,11 +55,7 @@ int main(int argc, char *argv[])
 
     SqlDb sqldb;
 
-    if (!strcmp(argv[1], "dumpbpm"))
-    {
-        do_dump_bpm();
-    }
-    else if (!strcmp(argv[1], "distance"))
+    if (!strcmp(argv[1], "distance"))
     {
         if (argc != 4)
         {
@@ -354,37 +349,6 @@ void do_missing()
         q >> path;
         if (access(path.c_str(), F_OK))
             cout << path << endl;
-    }
-}
-
-void do_dump_bpm()
-{
-    Q q("SELECT uid, bpm, spectrum FROM A.Acoustic;");
-
-    bool first = true;
-    unsigned len = 0;
-
-    while (q.next())
-    {
-        int uid = 0;
-        string bpm, spectrum;
-        q >> uid >> bpm >> spectrum;
-
-        string point = rescale_bpmgraph(bpm) + rescale_bpmgraph(spectrum);
-
-        if (first)
-        {
-            len = point.length();
-            cout << len << endl;
-            first = false;
-        }
-
-        if (point.length() != len)
-            continue;
-
-        for (unsigned i = 0; i < point.length(); ++i)
-            cout << point[i] - 'a' << " ";
-        cout << uid << endl;
     }
 }
 

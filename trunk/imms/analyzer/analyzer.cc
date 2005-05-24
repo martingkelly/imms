@@ -142,6 +142,9 @@ int Analyzer::analyze(const string &path)
     cerr << "obtained " << frames << " frames" << endl;
 #endif
 
+    mfcckeeper.finalize();
+    beatkeeper.finalize();
+
     song.set_acoustic(mfcckeeper.get_result(), MFCCKeeper::ResultSize,
             beatkeeper.get_result(), BeatManager::ResultSize);
 
