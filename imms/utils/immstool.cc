@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <list>
 #include <set>
+#include <map>
 #include <utility>
 #include <algorithm>
 
@@ -34,6 +35,7 @@ using std::setw;
 using std::pair;
 using std::ifstream;
 using std::set;
+using std::multimap;
 
 const string AppName = IMMSTOOL_APP;
 
@@ -43,10 +45,11 @@ void do_help();
 void do_missing();
 void do_purge(const string &path);
 time_t get_last(const string &path);
+void do_closest(const string &path);
 void do_lint();
 void do_identify(const string &path);
 int do_rate(const string &path, char *rating);
-void update_distances();
+void do_update_distances();
 
 float EMD::cost[NUMGAUSS][NUMGAUSS];
 
@@ -65,7 +68,17 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        update_distances();
+        do_update_distances();
+    }
+    if (!strcmp(argv[1], "closest"))
+    {
+        if (argc != 3)
+        {
+            cout << "immstool closest <filename>" << endl;
+            return -1;
+        }
+
+        do_closest(argv[2]);
     }
     else if (!strcmp(argv[1], "rate"))
     {
@@ -414,7 +427,7 @@ float distance_by_uid(int uid1, int uid2)
     return EMD::distance(m1, m2);
 }
 
-void update_distances()
+void do_update_distances()
 {
     vector<int> uids;
     int uid;
@@ -480,4 +493,58 @@ void update_distances()
         }
         WARNIFFAILED();
     }
+}
+
+void do_closest(const string &path)
+{
+    Song song(path);
+
+    if (!song.isok())
+    {
+        cerr << "immstool: could not identify " << path << endl;
+        return; 
+    }
+    
+    int uid = song.get_uid();
+
+    multimap<int, int> closest;
+
+    try
+    {
+        Q q("SELECT x,y,dist FROM A.Distances WHERE x = ? or y = ? "
+                "ORDER BY dist ASC LIMIT 25;");
+        q << uid << uid;
+
+        int x, y, dist;
+        while (q.next())
+        {
+            q >> x >> y >> dist;
+            int other = -1;
+            if (x == uid && y != uid)
+                other = y;
+            if (x != uid && y == uid)
+                other = x;
+            if (other > 0)
+                closest.insert(pair<int, int>(dist, other));
+        }
+    }
+    WARNIFFAILED();
+
+    try 
+    {
+        Q q("SELECT path FROM Identify WHERE uid = ?;");
+        for (multimap<int, int>::iterator i = closest.begin();
+                i != closest.end(); ++i)
+        {
+            q << i->second;
+            if (q.next())
+            {
+                string path;
+                q >> path;
+                cout << i->first << ": " << path_get_filename(path) << endl;
+            }
+            q.execute();
+        }
+    }
+    WARNIFFAILED();
 }
