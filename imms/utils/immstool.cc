@@ -22,8 +22,8 @@
 #include <picker.h>
 #include <appname.h>
 
-#include <distance.h>
-#include <beatkeeper.h>
+#include <classifier/distance.h>
+#include <analyzer/beatkeeper.h>
 
 using std::string;
 using std::cout;

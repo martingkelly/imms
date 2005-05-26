@@ -18,7 +18,6 @@
 #include "fftprovider.h"
 #include "mfcckeeper.h"
 #include "beatkeeper.h"
-#include "distance.h"
 #include "hanning.h"
 
 using std::cout;

@@ -7,7 +7,7 @@ PREFIX = $(prefix)
 exec_prefix = @exec_prefix@
 bindir = @bindir@
 
-VPATH = ../immscore:../analyzer:../utils:../clients:../immsd:../clients/xmms:../clients/bmp
+VPATH = ../immscore:../analyzer:../classifier:../utils:../clients:../immsd:../clients/xmms:../clients/bmp
 ARFLAGS = rs
 
 SHELL = bash
