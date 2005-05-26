@@ -13,12 +13,15 @@ all: immsd immstool $(OPTIONAL) $(PLUGINS)
 libimmscore.a: $(call objects,../immscore)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 
-immstool-CPPFLAGS = -I../analyzer
 immstool: immstool.o emd.o libimmscore.a 
 
 analyzer: $(call objects,../analyzer)
 analyzer: libimmscore.a
 analyzer-LIBS=`pkg-config fftw3 --libs` -ltorch
+
+classifier: $(call objects,../classifier)
+classifier: libimmscore.a
+classifier-LIBS=-ltorch
 
 songinfo-CPPFLAGS=$(TAGCPPFLAGS)
 socketserver-CPPFLAGS=$(GLIB2CPPFLAGS)

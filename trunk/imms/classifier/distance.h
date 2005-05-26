@@ -3,8 +3,9 @@
 
 #include <assert.h>
 
+#include <analyzer/mfcckeeper.h>
+
 #include "emd.h"
-#include "mfcckeeper.h"
 
 float KL_Distance(const Gaussian &g1, const Gaussian &g2)
 {

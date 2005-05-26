@@ -296,6 +296,7 @@ fi
 
 if test "$enable_analyzer" != "no"; then
     AC_APPEND(OPTIONAL, analyzer)
+    AC_APPEND(OPTIONAL, classifier)
 fi
 
 LIBS=$saved_libs
