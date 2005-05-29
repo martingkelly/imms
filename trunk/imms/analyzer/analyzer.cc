@@ -47,21 +47,21 @@ int Analyzer::analyze(const string &path)
 {
     if (access(path.c_str(), R_OK))
     {
-        cerr << "analyzer: Could not open file " << path << endl;
+        LOG(ERROR) << "Could not open file " << path << endl;
         return -2;
     }
 
     Song song(path);
     if (!song.isok())
     {
-        cerr << "analyzer: Could not identify file " << path << endl;
+        LOG(ERROR) << "Could not identify file " << path << endl;
         return -3;
     }
 
     if (song.isanalyzed())
     {
-        cerr << "analyzer: " << path << endl;
-        cerr << "analyzer: File already analyzed. Skipping." << endl;
+        LOG(ERROR) << path << endl;
+        LOG(ERROR) << "File already analyzed. Skipping." << endl;
         return 0;
     }
 
@@ -81,7 +81,7 @@ int Analyzer::analyze(const string &path)
 
     if (!p)
     {
-        cerr << "analyzer: Could not open pipe!" << endl;
+        LOG(ERROR) << "Could not open pipe!" << endl;
         return -4;
     }
 
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
     StackLockFile lock(get_imms_root() + ".analyzer_lock");
     if (!lock.isok())
     {
-        cerr << "analyzer: Another instance already active - exiting." << endl;
+        LOG(ERROR) << "Another instance already active - exiting." << endl;
         return -7;
     }
 
@@ -183,6 +183,6 @@ int main(int argc, char *argv[])
     for (int i = 1; i < argc; ++i)
     {
         if (analyzer.analyze(path_normalize(argv[i])))
-            cerr << "analyzer: Could not process " << argv[i] << endl;
+            LOG(ERROR) << "Could not process " << argv[i] << endl;
     }
 }

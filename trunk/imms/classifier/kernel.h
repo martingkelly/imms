@@ -9,10 +9,7 @@ using namespace Torch;
 class EMDKernel : public Kernel
 {
 public:
-    virtual real eval(Sequence *x, Sequence *y)
-    {
-        return 0;
-    }
+    virtual real eval(Sequence *x, Sequence *y);
 }; 
 
 #endif  // __KERNEL_H

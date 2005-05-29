@@ -1,12 +1,14 @@
 #ifndef __MFCCKEEPER_H
 #define __MFCCKEEPER_H
 
-#include <torch/Sequence.h>
-#include <torch/MemoryDataSet.h>
-#include <torch/DiagonalGMM.h>
+#define NUMCEPSTR   15
+#define NUMGAUSS    5
 
-#define NUMCEPSTR   10
-#define NUMGAUSS    3
+#include <memory>
+
+namespace Torch {
+    class DiagonalGMM;
+}
 
 struct Gaussian
 {
@@ -29,19 +31,20 @@ private:
     void init(Torch::DiagonalGMM &gmm);
 };
 
+struct MFCCKeeperPrivate;
+
 class MFCCKeeper
 {
 public:
     MFCCKeeper();
+    ~MFCCKeeper();
     void process(float *capstrum);
     void finalize();
     void *get_result();
 
     static const int ResultSize = sizeof(MixtureModel);
 protected:
-    Torch::Sequence cepseq;
-    Torch::Sequence* cepseq_p;
-    Torch::MemoryDataSet cepdat;
+    std::auto_ptr<MFCCKeeperPrivate> impl;
 
     MixtureModel result;
 };
