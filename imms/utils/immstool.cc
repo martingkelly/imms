@@ -51,8 +51,6 @@ void do_identify(const string &path);
 int do_rate(const string &path, char *rating);
 void do_update_distances();
 
-float EMD::cost[NUMGAUSS][NUMGAUSS];
-
 int main(int argc, char *argv[])
 {
     if (argc < 2)
@@ -396,35 +394,11 @@ int do_rate(const string &path, char *rating)
             return rating_usage();
     }
 
-    r = min(MAX_RATING, max(MIN_RATING, r));
+    r = std::min(MAX_RATING, std::max(MIN_RATING, r));
 
     cout << "New rating: " << r << endl;
     s.set_rating(r);
     return 0;
-}
-
-float distance_by_uid(int uid1, int uid2)
-{
-    Song song1("", uid1), song2("", uid2);
-
-    MixtureModel m1, m2;
-    float beats[BEATSSIZE];
-
-    if (!song1.get_acoustic(&m1, sizeof(MixtureModel),
-            beats, sizeof(beats)))
-    {
-        cerr << "loading acoustic data for song1" << endl;
-        return -1;
-    }
-
-    if (!song2.get_acoustic(&m2, sizeof(MixtureModel),
-            beats, sizeof(beats)))
-    {
-        cerr << "loading acoustic data for song2" << endl;
-        return -1;
-    }
-
-    return EMD::distance(m1, m2);
 }
 
 void do_update_distances()
@@ -467,15 +441,15 @@ void do_update_distances()
         WARNIFFAILED();
 
         try {
-            AutoTransaction at;
+            AutoTransaction at(true);
             Q q("INSERT OR REPLACE INTO A.Distances ('x', 'y', 'dist') "
                     "VALUES (?, ?, ?);");
 
             for (set<int>::iterator j = neigh.begin(); j != neigh.end(); ++j)
             {
-                int small = min(uid, *j);
-                int large = max(uid, *j);
-                int dist = ROUND(distance_by_uid(uid, *j));
+                int small = std::min(uid, *j);
+                int large = std::max(uid, *j);
+                int dist = ROUND(song_cepstr_distance(uid, *j));
                 if (dist < 0)
                     continue;
                 if (dist > 255)

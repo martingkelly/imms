@@ -6,10 +6,20 @@
 #include <vector>
 #include <stdint.h>
 
+#include "appname.h"
+
+enum LogTypes {
+    INFO,
+    ERROR
+};
+
 #define     HOUR                    (60*60)
 #define     DAY                     (24*HOUR)
 #define     ROUND(x)                (int)((x) + 0.5)
-#define     DEBUGVAL(x)             cerr << #x << " = " << x << endl;
+
+#define     LOG(x)                  \
+            (x == INFO ? std::cout : std::cerr) << AppName << ": "
+#define     DEBUGVAL(x)             LOG(ERROR) << #x << " = " << x << endl;
 
 using std::string;
 using std::vector;

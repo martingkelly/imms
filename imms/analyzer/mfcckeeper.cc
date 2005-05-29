@@ -3,6 +3,10 @@
 #include <torch/EMTrainer.h>
 #include <torch/NLLMeasurer.h>
 #include <torch/MemoryXFile.h>
+#include <torch/Sequence.h>
+#include <torch/MemoryDataSet.h>
+#include <torch/DiagonalGMM.h>
+
 
 #include <sqlite++.h>
 
@@ -32,20 +36,29 @@ SQLQuery &operator<<(SQLQuery &q, const MixtureModel &a)
     return q;
 }
 
-MFCCKeeper::MFCCKeeper() : cepseq(0, NUMCEPSTR), cepseq_p(&cepseq)
+struct MFCCKeeperPrivate
 {
-    cepdat.setInputs(&cepseq_p, 1);
+    MFCCKeeperPrivate() : cepseq(0, NUMCEPSTR), cepseq_p(&cepseq)
+        { cepdat.setInputs(&cepseq_p, 1); }
+    Torch::Sequence cepseq;
+    Torch::Sequence* cepseq_p;
+    Torch::MemoryDataSet cepdat;
+};
+
+MFCCKeeper::MFCCKeeper() : impl(new MFCCKeeperPrivate)
+{
     Random::seed();
 }
+MFCCKeeper::~MFCCKeeper() {}
 
 void MFCCKeeper::process(float *cepstrum)
 {
-    cepseq.addFrame(cepstrum, true);
+    impl->cepseq.addFrame(cepstrum, true);
 }
 
 void MFCCKeeper::finalize()
 {
-    KMeans kmeans(cepdat.n_inputs, NUMGAUSS);
+    KMeans kmeans(impl->cepdat.n_inputs, NUMGAUSS);
     kmeans.setROption("prior weights", 0.001);
 
     EMTrainer kmeans_trainer(&kmeans);
@@ -55,24 +68,24 @@ void MFCCKeeper::finalize()
     MeasurerList kmeans_measurers;
     MemoryXFile memfile1;
     NLLMeasurer nll_kmeans_measurer(kmeans.log_probabilities,
-            &cepdat, &memfile1);
+            &impl->cepdat, &memfile1);
     kmeans_measurers.addNode(&nll_kmeans_measurer);
 
-    DiagonalGMM gmm(cepdat.n_inputs, NUMGAUSS, &kmeans_trainer);
+    DiagonalGMM gmm(impl->cepdat.n_inputs, NUMGAUSS, &kmeans_trainer);
     gmm.setROption("prior weights", 0.001);
     gmm.setOOption("initial kmeans trainer measurers", &kmeans_measurers);
 
     // Measurers on the training dataset
     MeasurerList measurers;
     MemoryXFile memfile2;
-    NLLMeasurer nll_meas(gmm.log_probabilities, &cepdat, &memfile2);
+    NLLMeasurer nll_meas(gmm.log_probabilities, &impl->cepdat, &memfile2);
     measurers.addNode(&nll_meas);
 
     EMTrainer trainer(&gmm);
     trainer.setIOption("max iter", NUMITER);
     trainer.setROption("end accuracy", ENDACCUR);
 
-    trainer.train(&cepdat, &measurers);
+    trainer.train(&impl->cepdat, &measurers);
 
     result = gmm;
 
