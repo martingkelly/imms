@@ -9,10 +9,8 @@
 
 #define     SAMPLE_SIZE             100
 #define     MIN_SAMPLE_SIZE         35
-#define     REALLY_GOOD             50000
 #define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
-#define     BASE_BIAS               10
-#define     DISPERSION_FACTOR       4.1
+#define     TICKETS(x)              ROUND(pow(2.5, x/20) * 100 / pow(2.5, 5))
 
 using std::endl;
 using std::cerr;
@@ -104,7 +102,7 @@ bool SongPicker::add_candidate(bool urgent)
     {
         ++acquired;
         candidates.push_back(data);
-        if (urgent && data.composite_rating > REALLY_GOOD)
+        if (urgent && data.tickets > 80)
             attempts = MAX_ATTEMPTS + 1;
     }
 
@@ -159,60 +157,33 @@ int SongPicker::select_next()
     }
 
     Candidates::iterator i;
-    unsigned int total = 0;
-    time_t max_last_played = 0;
-    int max_composite = -INT_MAX, min_composite = INT_MAX;
+    unsigned total = 0;
+    float max_last_played = 0;
+
+    for (i = candidates.begin(); i != candidates.end(); ++i)
+        if (i->last_played > max_last_played)
+            max_last_played = i->last_played;
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
-        time_t effective_last_played = ROUND(i->last_played * i->trend_scale);
-        if (effective_last_played > max_last_played)
-            max_last_played = effective_last_played;
+        i->tickets = TICKETS(i->effective_rating) + i->relation +
+            i->specrating + i->bpmrating;
+
+        i->tickets = ROUND(i->tickets * i->last_played / max_last_played);
+        total += i->tickets;
     }
 
-    for (i = candidates.begin(); i != candidates.end(); ++i)
-    {
-        i->composite_rating = i->rating + i->relation +
-            i->specrating + i->bpmrating + i->newness;
-
-        i->composite_rating = ROUND(i->composite_rating * i->last_played
-                * i->trend_scale / (double)max_last_played);
-        
-        if (i->composite_rating > max_composite)
-            max_composite = i->composite_rating;
-        if (i->composite_rating < min_composite)
-            min_composite = i->composite_rating;
-    }
-
-    bool have_good = (max_composite > MIN_RATING);
-    if (have_good && min_composite < MIN_RATING)
-        min_composite = MIN_RATING;
-
-    for (i = candidates.begin(); i != candidates.end(); ++i)
-    {
-        if (have_good && i->composite_rating < MIN_RATING)
-        {
-            i->composite_rating = 0;
-            continue;
-        }
-
-        i->composite_rating =
-            ROUND(pow(((double)(i->composite_rating - min_composite))
-                        / DISPERSION_FACTOR, DISPERSION_FACTOR));
-        i->composite_rating += BASE_BIAS;
-        total += i->composite_rating;
-    }
 #ifdef DEBUG
     cerr << string(80 - 15, '-') << endl;
-    cerr << " >> [" << min_composite << "-" << max_composite << "] ";
+    cerr << " >> ";
 #endif
 
-    int weight_index = imms_random(total);
+    int winning_ticket = imms_random(total);
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
-        weight_index -= i->composite_rating;
-        if (weight_index < 0)
+        winning_ticket -= i->tickets;
+        if (winning_ticket < 0)
         {
             winner = *i;
 #ifndef DEBUG
@@ -220,11 +191,11 @@ int SongPicker::select_next()
         }
     }
 #else
-            weight_index = INT_MAX;
-            cerr << "{" << i->composite_rating << "} ";
+            winning_ticket = INT_MAX;
+            cerr << "{" << i->tickets << "} ";
         }
-        else if (i->composite_rating)
-            cerr << i->composite_rating << " ";
+        else if (i->tickets)
+            cerr << i->tickets << " ";
     }
     cerr << endl;
 #endif

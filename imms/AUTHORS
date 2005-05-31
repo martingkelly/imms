@@ -16,6 +16,8 @@ With the following exceptions: (see actual files for more details):
         by Michel Eyckmans (MCE) <eyckmans@imec.be>
     emd.{h,c}
         by Yossi Rubner <rubner@cs.stanford.edu>
+    normal.h
+        by by Agner Fog
 
 Other acknowledgement:
 

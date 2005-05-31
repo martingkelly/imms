@@ -48,14 +48,14 @@ void build_feature_vector(int uid1, int uid2, vector<float> &features)
     if (!song1.get_acoustic(&m1, sizeof(MixtureModel),
                 beats1, sizeof(beats2)))
     {
-        cerr << "warning: failed to load cepstrum data uid " << uid1 << endl;
+        cerr << "warning: failed to load acoustic data uid " << uid1 << endl;
         return;
     }
 
     if (!song2.get_acoustic(&m2, sizeof(MixtureModel),
                 beats2, sizeof(beats2)))
     {
-        cerr << "warning: failed to load cepstrum data uid " << uid2 << endl;
+        cerr << "warning: failed to load acoustic data uid " << uid2 << endl;
         return;
     }
 
@@ -65,49 +65,24 @@ void build_feature_vector(int uid1, int uid2, vector<float> &features)
     BeatKeeper::extract_features(beats2, features);
 }
 
-bool load_examples_from_file(const string &path, list<string> &files)
+typedef map< vector<float> , int > DataMap;
+
+bool load_examples_from_file(const string &path, DataMap &data, int type)
 {
     ifstream in(path.c_str());
 
-    string line;
-    while (getline(in, line))
-        files.push_back(line);
-
-    return true;
-}
-
-bool load_examples_from_dir(const string &path, list<string> &files)
-{
-    LOG(ERROR) << "reading from directories not implemented yet!" << endl;
-    return false;
-}
-
-bool mass_identify(const list<string> &files,
-        map<int, int> &data, int type)
-{
-    for (list<string>::const_iterator i = files.begin();
-            i != files.end(); ++i)
+    int uid1, uid2;
+    while (in >> uid1 && in >> uid2)
     {
-        Song song(*i);
-
-        if (!song.isok())
-        {
-            LOG(ERROR) << "failed to identify " << *i << endl;
-            return false;
-        }
-
-        if (!song.isanalyzed())
-            LOG(ERROR) << "warning: song not analyzed: " << *i << endl;
-
-        cout << ".";
-        cout.flush();
-        data[song.get_uid()] = type;
+        vector<float> features;
+        build_feature_vector(uid1, uid2, features);
+        data[features] = type;
     }
 
     return true;
 }
 
-bool load_examples(const string &path, list<string> &files)
+bool load_examples(const string &path, DataMap &data, int type)
 {
     struct stat statbuf;
     if (stat(path.c_str(), &statbuf))
@@ -117,11 +92,8 @@ bool load_examples(const string &path, list<string> &files)
     }
 
     if (S_ISREG(statbuf.st_mode))
-        return load_examples_from_file(path, files);
-    if (S_ISDIR(statbuf.st_mode))
-        return load_examples_from_dir(path, files);
-
-    LOG(ERROR) << path << " is neither a file nor directory!" << endl;
+        return load_examples_from_file(path, data, type);
+    LOG(ERROR) << path << " is not a file!" << endl;
     return false;
 }
 
@@ -182,33 +154,19 @@ int main(int argc, char *argv[])
     if (name == "" || positive == "" || negative == "")
         usage();
 
-    list<string> positive_samples, negative_samples;
-    if (!load_examples(positive, positive_samples)
-            || !load_examples(negative, negative_samples))
+    ImmsDb immsdb;
+
+    DataMap data;
+    if (!load_examples(positive, data, 1)
+            || !load_examples(negative, data, -1))
     {
         LOG(ERROR) << "failed to load example lists!" << endl;
         return -1;
     }
 
-    ImmsDb immsdb;
-
-    LOG(INFO) << "Identifying files: ";
-    cout.flush();
-    map<int, int> data;
-    if (!mass_identify(positive_samples, data, 1)
-            || !mass_identify(negative_samples, data, -1))
-    {
-        LOG(INFO) << endl;
-        LOG(ERROR) << "failed to identify some examples!" << endl;
-        return -2;
-    }
-    cout << endl;
-
-    LOG(INFO) << "successfully identified all files" << endl;
+    LOG(INFO) << "loaded " << data.size() << " examples" << endl;
 
     Model model(name);
-    float accuracy = model.train(data);
-    DEBUGVAL(accuracy);
-
+    //float accuracy = model.train(data);
     return 0;
 }

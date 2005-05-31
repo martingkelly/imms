@@ -3,6 +3,7 @@
 #include <time.h>
 #include <iostream>
 
+#include "flags.h"
 #include "correlate.h"
 #include "strmanip.h"
 #include "immsutil.h"
@@ -11,8 +12,8 @@ using std::endl;
 using std::cerr;
 
 #define CORRELATION_TIME    (15*30)   // n * 30 ==> n minutes
-#define MAX_CORR_STR        "10"
-#define MAX_CORRELATION     10
+#define MAX_CORR_STR        "12"
+#define MAX_CORRELATION     12
 #define SECOND_DEGREE       0.5
 #define PROCESSING_TIME     5000000
 
@@ -45,13 +46,13 @@ void CorrelationDb::sql_create_tables()
     WARNIFFAILED();
 }
 
-void CorrelationDb::add_recent(int uid, int delta)
+void CorrelationDb::add_recent(int uid, time_t skipped_at, int flags)
 {
     if (uid > -1)
     {
         try {
-            Q q("INSERT INTO Journal VALUES (?, ?, ?);");
-            q << uid << delta << time(0);
+            Q q("INSERT INTO Journal VALUES (?, ?, ?, ?);");
+            q << uid << skipped_at << flags << time(0);
             q.execute();
         }
         WARNIFFAILED();
@@ -108,17 +109,23 @@ void CorrelationDb::expire_recent(time_t cutoff)
 
         while (1)
         {
-            Q q("SELECT Library.sid, Journal.delta, Journal.time "
-                    "FROM 'Journal' INNER JOIN 'Library' "
+            Q q("SELECT Library.sid, Journal.played, "
+                    "Journal.flags, Journal.time "
+                    "FROM Journal INNER JOIN Library "
                     "ON Journal.uid = Library.uid "
                     "WHERE Journal.time > ? ORDER BY Journal.time ASC;");
             q << correlate_from;
 
+            DEBUGVAL(correlate_from);
+
             if (!q.next())
                 break;
 
-            time_t next;
-            q >> from >> from_weight >> next;
+            int flags;
+            time_t next, played;
+
+            q >> from >> played >> flags >> next;
+            from_weight = Flags::deltify(played, flags);
 
             if (next > cutoff) 
                 break;
@@ -130,7 +137,8 @@ void CorrelationDb::expire_recent(time_t cutoff)
 
             while (q.next())
             {
-                q >> to >> to_weight;
+                q >> to >> played >> flags;
+                to_weight = Flags::deltify(played, flags);
                 expire_recent_helper();
             }
         }

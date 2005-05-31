@@ -60,8 +60,17 @@ string get_imms_root(const string &file)
     static string dotimms;
     if (dotimms == "")
     {
-        dotimms = getenv("HOME");
-        dotimms.append("/.imms/");
+        char *immsroot = getenv("IMMSROOT");
+        if (immsroot)
+        {
+            dotimms = immsroot;
+            dotimms.append("/");
+        }
+        else
+        {
+            dotimms = getenv("HOME");
+            dotimms.append("/.imms/");
+        }
     }
     return dotimms + file;
 }

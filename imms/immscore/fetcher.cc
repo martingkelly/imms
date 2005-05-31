@@ -20,9 +20,8 @@ InfoFetcher::SongData::SongData(int _position, const string &_path)
 
 void InfoFetcher::SongData::reset()
 {
-    bpmrating = specrating = rating = relation = 0;
-    composite_rating = newness = 0;
-    trend_scale = 0;
+    bpmrating = specrating = effective_rating = relation = 0;
+    tickets = 0;
     identified = false;
     last_played = 0;
 }
@@ -70,8 +69,11 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     else if ((data.identified = parse_song_info(data, info)))
         data.set_info(info);
 
-    data.rating = data.get_rating();
+    data.rating = data.get_raw_rating();
+    data.effective_rating = data.rating.sample();
 
+    // FIXME:
+    /*
     if (data.rating < 1)
     {
         data.rating = ImmsDb::avg_rating(data.get_info().first, title);
@@ -80,6 +82,7 @@ bool InfoFetcher::fetch_song_info(SongData &data)
 
         data.set_rating(data.rating);
     }
+    */
 
 #if defined(DEBUG) && 0
     cerr << "path:\t" << data.get_path() << endl;
@@ -89,16 +92,6 @@ bool InfoFetcher::fetch_song_info(SongData &data)
 
     data.last_played = (data.get_sid() != next_sid) ?
                             time(0) - data.get_last() : 0;
-
-    data.newness = 0;
-
-    if (data.get_playcounter() <
-            std::min(BasicDb::avg_playcounter(), NEW_PLAYS))
-        data.newness = NEW_BONUS / (data.get_playcounter() + 1);
-
-    int trend = data.get_trend();
-    data.trend_scale = 1 + (1 / TREND_FACTOR) *
-        (trend ? trend * TREND_FACTOR / MAX_TREND : 0);
 
     return true;
 }

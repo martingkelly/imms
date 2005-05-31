@@ -2,12 +2,14 @@
 #include <unistd.h>
 #include <math.h>
 
+#include "flags.h"
 #include "strmanip.h"
 #include "immsdb.h"
 #include "immsutil.h"
 
 using std::endl;
 using std::cerr; 
+using Flags::undeltify; 
 
 BasicDb::BasicDb()
 {
@@ -16,12 +18,6 @@ BasicDb::BasicDb()
 
 BasicDb::~BasicDb()
 {
-    try {
-        Q q("DELETE FROM Journal WHERE time < ?;");
-        q << time(0) - 30 * DAY ;
-        q.execute();
-    }
-    WARNIFFAILED();
 }
 
 void BasicDb::sql_set_pragma()
@@ -30,46 +26,7 @@ void BasicDb::sql_set_pragma()
         QueryCacheDisabler qdb;
 
         Q("PRAGMA cache_size = 5000").execute();
-        //Q("PRAGMA synchronous = OFF;").execute();
         Q("PRAGMA temp_store = MEMORY;").execute();
-    }
-    WARNIFFAILED();
-}
-
-void BasicDb::sql_create_v7_tables()
-{
-    QueryCacheDisabler qcd;
-    RuntimeErrorBlocker reb;
-    try
-    {
-        Q("CREATE TABLE Library ("
-                "'uid' INTEGER NOT NULL, "
-                "'sid' INTEGER DEFAULT -1, "
-                "'path' VARCHAR(4096) UNIQUE NOT NULL, "
-                "'modtime' TIMESTAMP NOT NULL, "
-                "'checksum' TEXT NOT NULL);").execute();
-
-        Q("CREATE TABLE Rating ("
-                "'uid' INTEGER UNIQUE NOT NULL, "
-                "'rating' INTEGER NOT NULL);").execute();
-
-        Q("CREATE TABLE Acoustic ("
-                "'uid' INTEGER UNIQUE NOT NULL, "
-                "'spectrum' TEXT, 'bpm' TEXT);").execute();
-
-        Q("CREATE TABLE Info ("
-                "'sid' INTEGER UNIQUE NOT NULL," 
-                "'artist' TEXT NOT NULL, "
-                "'title' TEXT NOT NULL);").execute();
-
-        Q("CREATE TABLE Last ("
-                "'sid' INTEGER UNIQUE NOT NULL, " 
-                "'last' TIMESTAMP);").execute();
-
-        Q("CREATE TABLE Journal ("
-                "'uid' INTEGER NOT NULL, " 
-                "'delta' INTEGER NOT NULL, " 
-                "'time' TIMESTAMP NOT NULL);").execute();
     }
     WARNIFFAILED();
 }
@@ -138,16 +95,12 @@ void BasicDb::sql_create_tables()
                 "'lastseen' TIMESTAMP DEFAULT 0, "
                 "'firstseen' TIMESTAMP DEFAULT 0);").execute();
 
-        Q("CREATE TABLE Rating ("
+        Q("CREATE TABLE Ratings ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'rating' INTEGER NOT NULL, "
-                "'trend' INTEGER DEFAULT 0);").execute();
+                "'dev' INTEGER DEFAULT 0);").execute();
 
         Q("CREATE TABLE A.Acoustic ("
-                "'uid' INTEGER UNIQUE NOT NULL, "
-                "'spectrum' TEXT, 'bpm' TEXT);").execute();
-
-        Q("CREATE TABLE A.AcousticNG ("
                 "'uid' INTEGER UNIQUE NOT NULL, "
                 "'mfcc' BLOB DEFAULT NULL, "
                 "'bpm' BLOB DEFAULT NULL);").execute();
@@ -182,11 +135,17 @@ void BasicDb::sql_create_tables()
 
         Q("CREATE TABLE Journal ("
                 "'uid' INTEGER NOT NULL, " 
-                "'delta' INTEGER NOT NULL, " 
+                "'played' TIME NOT NULL, " 
+                "'flags' INTEGER NOT NULL, " 
                 "'time' TIMESTAMP NOT NULL);").execute();
+
+        Q("CREATE INDEX Jouranl_uid_i "
+                "ON Journal (uid);").execute();
     }
     WARNIFFAILED();
 }
+
+void update_rating(int uid);
 
 int BasicDb::avg_rating(const string &artist, const string &title)
 {
@@ -196,7 +155,7 @@ int BasicDb::avg_rating(const string &artist, const string &title)
         {
             Q q("SELECT avg(rating) FROM Library AS L "
                     "INNER JOIN Info AS I ON L.sid = I.sid "
-                    "INNER JOIN Rating AS R ON L.uid = R.uid "
+                    "INNER JOIN Ratings AS R ON L.uid = R.uid "
                     "INNER JOIN Artists AS A ON I.aid = A.aid "
                     "WHERE A.artist = ? AND I.title = ?;");
 
@@ -214,7 +173,7 @@ int BasicDb::avg_rating(const string &artist, const string &title)
         {
             Q q("SELECT avg(rating) FROM Library AS L"
                     "INNER JOIN Info AS I on L.sid = I.sid "
-                    "INNER JOIN Rating AS R ON R.uid = L.uid "
+                    "INNER JOIN Ratings AS R ON R.uid = L.uid "
                     "INNER JOIN Artists AS A ON I.aid = A.aid "
                     "WHERE A.artist = ?;");
             q << artist;
@@ -295,26 +254,10 @@ void BasicDb::sql_schema_upgrade(int from)
         return;
     }
 
-    QueryCacheDisabler qcd;
     try 
     {
+        QueryCacheDisabler qcd;
         AutoTransaction a;
-        if (from < 4)
-        {
-            // Backup the existing tables
-            Q("CREATE TEMP TABLE Library_backup "
-                    "AS SELECT * FROM Library;").execute();
-            Q("DROP TABLE Library;").execute();
-
-            // Create new tables
-            sql_create_v7_tables();
-
-            // Copy the data into new tables, and drop the backups
-            Q("INSERT INTO Library (uid, sid, path, modtime, checksum) "
-                    "SELECT uid, sid, path, modtime, checksum "
-                    "FROM Library_backup;").execute();
-            Q("DROP TABLE Library_backup;").execute();
-        }
         if (from < 7)
         {
             Q("DROP TABLE Acoustic;").execute();
@@ -379,10 +322,214 @@ void BasicDb::sql_schema_upgrade(int from)
         }
         if (from < 12)
         {
+            Q("CREATE TEMP TABLE Journal_backup "
+                    "AS SELECT * FROM Journal;").execute();
+            Q("DROP TABLE Journal;").execute();
+
+            Q("CREATE TEMP TABLE Rating_backup "
+                    "AS SELECT * FROM Rating;").execute();
+
+            Q("DROP TABLE Rating;").execute();
+            Q("DROP TABLE A.Acoustic;").execute();
+
             sql_create_tables();
+
+            Q("INSERT INTO Ratings "
+                    "SELECT uid, rating, 0 FROM Rating_backup").execute();
+
+            string query =
+                "INSERT INTO Journal ('uid', 'played', 'flags', 'time') "
+                "SELECT uid, "
+                "CASE "
+                    "WHEN delta > 0 THEN 10 "
+                    "ELSE 5 "
+                "END, "
+                "CASE"
+                    " WHEN delta = -8 THEN " + itos(undeltify(-8)) +
+                    " WHEN delta = -7 THEN " + itos(undeltify(-7)) +
+                    " WHEN delta = -6 THEN " + itos(undeltify(-6)) +
+                    " WHEN delta = -5 THEN " + itos(undeltify(-5)) +
+                    " WHEN delta = -4 THEN " + itos(undeltify(-4)) + 
+                    " WHEN delta = -1 THEN " + itos(undeltify(-1)) +
+                    " WHEN delta = 1 THEN " + itos(undeltify(1)) +
+                    " WHEN delta = 2 THEN " + itos(undeltify(2)) +
+                    " WHEN delta = 3 THEN " + itos(undeltify(3)) +
+                    " WHEN delta = 5 THEN " + itos(undeltify(5)) +
+                    " WHEN delta = 6 THEN " + itos(undeltify(6)) +
+                    " WHEN delta = 7 THEN " + itos(undeltify(7)) +
+                    " WHEN delta = 8 THEN " + itos(undeltify(8)) +
+                    " WHEN delta = 9 THEN " + itos(undeltify(9)) +
+                " END, time "
+                "FROM Journal_backup WHERE delta != 0;";
+
+            Q(query).execute();
+            Q("DROP TABLE Journal_backup;").execute();
         }
 
         a.commit();
+    }
+    WARNIFFAILED();
+
+    if (from < 12)
+        mass_rating_update();
+}
+
+void fake_encounter(int uid, int delta, time_t time)
+{
+    Q q("INSERT INTO Journal ('uid', 'played', 'flags', 'time') "
+            "VALUES (?, ?, ?, ?)");
+
+    time_t played = delta > 0 ? 10 : 5;
+    int flags = undeltify(delta);
+
+    q << uid << played << flags << time << execute;
+}
+
+void BasicDb::mass_rating_update()
+{
+    try
+    {
+        AutoTransaction at;
+
+        Q q("SELECT L.uid, playcounter FROM Library as L NATURAL JOIN Ratings "
+                "WHERE rating <= ? AND RATING > ?;");
+
+        time_t start_at = time(0) - 30*DAY;
+        time_t current = start_at;
+
+        int uid, playcounter;
+
+        q << 250 << 140;
+
+        while (q.next())
+        {
+            current = start_at;
+            q >> uid >> playcounter;
+            for (int i = 0; i < std::min(playcounter, 5); ++i)
+            {
+                fake_encounter(uid, +9, --current);
+                fake_encounter(uid, +1, --current);
+            }
+        }
+
+        q << 140 << 130;
+
+        while (q.next())
+        {
+            current = start_at;
+            q >> uid >> playcounter;
+            for (int i = 0; i < std::min(playcounter, 5); ++i)
+            {
+                fake_encounter(uid, +9, --current);
+                fake_encounter(uid, -1, --current);
+            }
+        }
+
+        q << 130 << 120;
+
+        while (q.next())
+        {
+            current = start_at;
+            q >> uid >> playcounter;
+            for (int i = 0; i < std::min(playcounter, 5); ++i)
+            {
+                fake_encounter(uid, +8, --current);
+                fake_encounter(uid, -1, --current);
+                fake_encounter(uid, -1, --current);
+            }
+        }
+
+        q << 120 << 110;
+
+        while (q.next())
+        {
+            current = start_at;
+            q >> uid >> playcounter;
+            for (int i = 0; i < std::min(playcounter, 5); ++i)
+            {
+                fake_encounter(uid, +7, --current);
+                fake_encounter(uid, -1, --current);
+                fake_encounter(uid, -1, --current);
+                fake_encounter(uid, -1, --current);
+            }
+        }
+
+        q << 110 << 100;
+
+        while (q.next())
+        {
+            current = start_at;
+            q >> uid >> playcounter;
+            for (int i = 0; i < std::min(playcounter, 5); ++i)
+            {
+                fake_encounter(uid, +6, --current);
+                fake_encounter(uid, -4, --current);
+            }
+        }
+
+        q << 100 << 90;
+
+        while (q.next())
+        {
+            current = start_at;
+            q >> uid >> playcounter;
+            for (int i = 0; i < std::min(playcounter, 5); ++i)
+            {
+                fake_encounter(uid, +5, --current);
+                fake_encounter(uid, -4, --current);
+                fake_encounter(uid, -1, --current);
+            }
+        }
+
+        q << 90 << 80;
+
+        while (q.next())
+        {
+            current = start_at;
+            q >> uid >> playcounter;
+            for (int i = 0; i < std::min(playcounter, 5); ++i)
+            {
+                fake_encounter(uid, -6, --current);
+                fake_encounter(uid, +3, --current);
+                fake_encounter(uid, +1, --current);
+            }
+        }
+
+        q << 80 << 0;
+
+        while (q.next())
+        {
+            current = start_at;
+            q >> uid >> playcounter;
+            for (int i = 0; i < std::min(playcounter, 5); ++i)
+            {
+                fake_encounter(uid, -8, --current);
+                fake_encounter(uid, +2, --current);
+            }
+        }
+
+        at.commit();
+    }
+    WARNIFFAILED();
+
+    try 
+    {
+        AutoTransaction at;
+
+        Q q("SELECT DISTINCT uid FROM Library;");
+        int uid;
+
+        while (q.next())
+        {
+            q >> uid;
+            Song song("", uid);
+            song.update_rating();
+        }
+
+        Q("UPDATE Ratings SET rating = 50, dev = 10 "
+                "WHERE rating > 100 or rating < 1").execute();
+
+        at.commit();
     }
     WARNIFFAILED();
 }

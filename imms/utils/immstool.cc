@@ -20,6 +20,7 @@
 #include <immsutil.h>
 #include <strmanip.h>
 #include <picker.h>
+#include <normal.h>
 #include <appname.h>
 
 #include <classifier/distance.h>
@@ -44,11 +45,10 @@ int rating_usage();
 void do_help();
 void do_missing();
 void do_purge(const string &path);
-time_t get_last(const string &path);
 void do_closest(const string &path);
 void do_lint();
+void do_random(int mean, int var);
 void do_identify(const string &path);
-int do_rate(const string &path, char *rating);
 void do_update_distances();
 
 int main(int argc, char *argv[])
@@ -68,7 +68,17 @@ int main(int argc, char *argv[])
 
         do_update_distances();
     }
-    if (!strcmp(argv[1], "closest"))
+    else if (!strcmp(argv[1], "random"))
+    {
+        if (argc != 4)
+        {
+            cout << "huh??" << endl;
+            return -1;
+        }
+
+        do_random(atoi(argv[2]), atoi(argv[3]));
+    }
+    else if (!strcmp(argv[1], "closest"))
     {
         if (argc != 3)
         {
@@ -77,14 +87,6 @@ int main(int argc, char *argv[])
         }
 
         do_closest(argv[2]);
-    }
-    else if (!strcmp(argv[1], "rate"))
-    {
-        if (argc < 4 || strlen(argv[2]) < 2)
-            return rating_usage();
-
-        for (int i = 3; i < argc; ++i)
-            do_rate(argv[i], argv[2]);
     }
     else if (!strcmp(argv[1], "identify"))
     {
@@ -112,20 +114,40 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        cutoff = time(0) - cutoff*24*60*60;
 
         string path;
+        vector<string> paths;
         while (getline(cin, path))
+            paths.push_back(path);
+
+        time_t lastseen;
+        cutoff = time(0) - cutoff*24*60*60;
+
+        try
         {
-            if (get_last(path) < cutoff)
-            {   
-                do_purge(path);
-                cout << " [X]";
+            Q q("SELECT lastseen FROM Library NATURAL JOIN Identify "
+                    "WHERE path = ?;");
+
+            for (unsigned i = 0; i < paths.size(); ++i)
+            {
+                q << paths[i];
+                if (!q.next())
+                    continue;
+
+                q >> lastseen;
+                q.execute();
+
+                if (lastseen < cutoff)
+                {   
+                    do_purge(paths[i]);
+                    cout << " [X]";
+                }
+                else
+                    cout << " [_]"; 
+                cout << " >> " << path_get_filename(paths[i]) << endl;
             }
-            else
-                cout << " [_]"; 
-            cout << " >> " << path_get_filename(path) << endl;
         }
+        WARNIFFAILED();
         
         do_lint();
     }
@@ -157,15 +179,9 @@ int main(int argc, char *argv[])
 int usage()
 {
     cout << "End user functionality: " << endl;
-    cout << " immstool rate|missing|purge|lint|identify|help" << endl;
+    cout << " immstool missing|purge|lint|identify|help" << endl;
     cout << "Debug functionality: " << endl;
     cout << " immstool distances|graph" << endl;
-    return -1;
-}
-
-int rating_usage()
-{
-    cout << "immstool rate [+|-]<rating> <filename> [<filename>]*" << endl;
     return -1;
 }
 
@@ -242,21 +258,6 @@ void do_identify(const string &path)
     }
 }
 
-time_t get_last(const string &path)
-{
-    Q q("SELECT last FROM 'Last' "
-                "INNER JOIN 'Library' ON Last.sid = Library.sid "
-                "JOIN 'Identify' ON Identify.uid = Library.uid "
-                "WHERE Identify.path = ?;");
-    q << path;
-    if (!q.next())
-        return 0;
-
-    time_t last;
-    q >> last;
-    return last;
-} 
-
 void do_purge(const string &path)
 {
     Q q("DELETE FROM 'Identify' WHERE path = ?;");
@@ -325,7 +326,7 @@ void do_lint()
         Q("DELETE FROM Last "
                 "WHERE sid NOT IN (SELECT sid FROM Library);").execute();
 
-        Q("DELETE FROM Rating "
+        Q("DELETE FROM Ratings "
                 "WHERE uid NOT IN (SELECT uid FROM Library);").execute();
 
         Q("DELETE FROM A.Acoustic "
@@ -365,49 +366,13 @@ void do_missing()
     }
 }
 
-int do_rate(const string &path, char *rating)
-{
-    Song s(path_normalize(path));
-
-    if (!s.isok())
-    {
-        cerr << "Could not identify file: " << path << endl;
-        return -1;
-    }
-
-    int r = s.get_rating();
-
-    if (r < 0)
-        r = 100;
-
-    if (rating[0] == '-' || rating[0] == '+')
-    {
-        int mod = atoi(rating + 1);
-        if (!mod)
-            return rating_usage();
-        r = r + (rating[0] == '-' ? - mod : mod);
-    }
-    else
-    {
-        r = atoi(rating);
-        if (!r)
-            return rating_usage();
-    }
-
-    r = std::min(MAX_RATING, std::max(MIN_RATING, r));
-
-    cout << "New rating: " << r << endl;
-    s.set_rating(r);
-    return 0;
-}
-
 void do_update_distances()
 {
     vector<int> uids;
     int uid;
     try
     {
-        Q q("SELECT uid FROM A.AcousticNG WHERE mfcc NOTNULL;");
+        Q q("SELECT uid FROM A.Acoustic WHERE mfcc NOTNULL;");
         while (q.next())
         {
             q >> uid;
@@ -521,4 +486,11 @@ void do_closest(const string &path)
         }
     }
     WARNIFFAILED();
+}
+
+
+void do_random(int mean, int var)
+{
+    for (int i = 0; i < 20; ++i)
+        cout << ROUND(normal(mean, var)) << endl;
 }

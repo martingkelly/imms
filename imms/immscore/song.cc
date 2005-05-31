@@ -1,19 +1,32 @@
-#include "song.h"
-#include "md5digest.h"
-#include "sqlite++.h"
-#include "strmanip.h"
-#include "songinfo.h"
-#include "appname.h"
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <math.h>
 #include <ctype.h>
 
 #include <iostream>
 
+#include "song.h"
+#include "flags.h"
+#include "md5digest.h"
+#include "immsutil.h"
+#include "sqlite++.h"
+#include "strmanip.h"
+#include "songinfo.h"
+#include "normal.h"
+#include "appname.h"
+
+#define DELTA_SCALE     2.22
+#define DECAY_LIMIT     100
+
 using std::cerr;
 using std::endl;
+
+int Rating::sample()
+{
+    int rating = ROUND(normal(mean, dev));
+    return std::min(100, std::max(0, rating));
+}
 
 int evaluate_artist(const string &artist, const string &album,
         const string &title, int count)
@@ -98,7 +111,7 @@ void Song::get_tag_info(string &artist, string &album, string &title) const
 bool Song::isanalyzed()
 {
     try {
-        Q q("SELECT * FROM A.AcousticNG WHERE mfcc NOTNULL "
+        Q q("SELECT * FROM A.Acoustic WHERE mfcc NOTNULL "
                "AND bpm NOTNULL AND uid = ?;");
         q << uid;
         if (q.next())
@@ -112,7 +125,7 @@ void Song::set_acoustic(const void *mfccdat, size_t mfccsize,
         const void *bpmdat, size_t bpmsize)
 {
     try {
-        Q q("INSERT OR REPLACE INTO A.AcousticNG "
+        Q q("INSERT OR REPLACE INTO A.Acoustic "
                 "('uid', 'mfcc', 'bpm') "
                 "VALUES (?, ?, ?);");
         q << uid;
@@ -131,7 +144,7 @@ bool Song::get_acoustic(void *mfccdat, size_t mfccsize,
 
     try
     {
-        Q q("SELECT mfcc, bpm FROM A.AcousticNG WHERE uid = ?;");
+        Q q("SELECT mfcc, bpm FROM A.Acoustic WHERE uid = ?;");
         q << uid;
 
         if (q.next())
@@ -366,31 +379,17 @@ void Song::increment_playcounter()
     WARNIFFAILED();
 }
 
-void Song::set_rating(int rating)
+void Song::set_rating(const Rating &rating)
 {
     if (uid < 0)
         return;
 
     try
     {
-        int trend = get_trend();
-
-        Q("INSERT OR REPLACE INTO Rating "
-               "('uid', 'rating', 'trend') VALUES (?, ?, ?);")
-            << uid << rating << trend << execute;
-    }
-    WARNIFFAILED();
-}
-
-void Song::set_trend(int trend)
-{
-    if (uid < 0)
-        return;
-
-    try
-    {
-        Q("UPDATE Rating SET trend = ? WHERE uid = ?;")
-            << trend << uid << execute;
+        Q q("INSERT OR REPLACE INTO Ratings "
+               "('uid', 'rating', 'dev') VALUES (?, ?, ?);");
+        q << uid << rating.mean << rating.dev;
+        q.execute();
     }
     WARNIFFAILED();
 }
@@ -473,42 +472,30 @@ time_t Song::get_last()
     return result;
 }
 
-int Song::get_rating()
+Rating Song::get_raw_rating()
 {
-    if (uid < 0)
-        return -1;
+    Rating r;
 
-    int rating = -1;
+    if (uid < 0)
+        return r;
 
     try
     {
-        Q q("SELECT rating FROM Rating WHERE uid = ?;");
+        Q q("SELECT rating, dev FROM Ratings WHERE uid = ?;");
         q << uid;
 
         if (q.next())
-            q >> rating;
+            q >> r.mean >> r.dev;
     }
     WARNIFFAILED();
-    return rating;
+
+    return r;
 }
 
-int Song::get_trend()
+int Song::get_rating(Rating *r_)
 {
-    if (uid < 0)
-        return 0;
-
-    int trend = 0;
-
-    try
-    {
-        Q q("SELECT trend FROM Rating WHERE uid = ?;");
-        q << uid;
-
-        if (q.next())
-            q >> trend;
-    }
-    WARNIFFAILED();
-    return trend;
+    Rating r = r_ ? *r_ : get_raw_rating();
+    return r.sample();
 }
 
 StringPair Song::get_info()
@@ -562,4 +549,47 @@ void Song::register_new_sid()
     cerr << __func__ << ": registered sid = " << sid << " for uid = "
         << uid << endl;
 #endif
+}
+
+static float decay(float delta, float sum)
+{
+    if (sum > DECAY_LIMIT)
+        return 0;
+    float scale = log(DECAY_LIMIT + 1 - sum) / log(DECAY_LIMIT);
+    return scale * delta;
+} 
+
+void Song::update_rating()
+{
+    if (uid < 0)
+        return;
+
+    try
+    {
+        Q q("SELECT played, flags FROM Journal WHERE uid = ? "
+                "ORDER BY time DESC;");
+        q << uid;
+
+        float sum = 0, ones = 0;
+
+        while (q.next())
+        {
+            int flags;
+            time_t played;
+            q >> played >> flags;
+            float delta = Flags::deltify(played, flags) * DELTA_SCALE;
+            if (delta > 0)
+                ones += decay(delta, sum);
+            sum += fabs(delta);
+        }
+
+        sum += 2;
+        ones += 1;
+
+        float p = ones / sum;
+        int mean = ROUND(100.0 * p);
+        int var = ROUND(100.0 * sqrt(p * (1 - p) / sum));
+        set_rating(Rating(mean, var));
+    }
+    WARNIFFAILED();
 }

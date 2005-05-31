@@ -9,6 +9,13 @@ using std::string;
 
 typedef pair<string, string> StringPair;
 
+struct Rating
+{
+    Rating(int mean = -1, int dev = 0) : mean(mean), dev(dev) {}
+    int sample();
+    int mean, dev;
+};
+
 class Song
 {
 public:
@@ -16,12 +23,11 @@ public:
 
     void set_last(time_t last);
     void set_info(const StringPair &info);
-    void set_rating(int rating);
-    void set_trend(int trend);
+    void set_rating(const Rating &rating);
     void increment_playcounter();
 
-    int get_rating();
-    int get_trend();
+    int get_rating(Rating *r = 0);
+    Rating get_raw_rating();
     time_t get_last();
     int get_playcounter();
 
@@ -39,6 +45,8 @@ public:
             const void *bpmdat, size_t bpmsize);
     bool get_acoustic(void *mfccdat, size_t mfccsize,
             void *bpmdat, size_t bpmsize);
+
+    void update_rating();
 
     void reset() { playcounter = uid = sid = -1; artist = title = ""; }
 protected:
