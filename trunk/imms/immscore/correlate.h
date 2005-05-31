@@ -16,7 +16,7 @@ public:
     CorrelationDb();
 
     float correlate(int sid1, int sid2);
-    void add_recent(int uid, int delta);
+    void add_recent(int uid, time_t skipped_at, int flags);
     void clear_recent() { expire_recent(INT_MAX); }
     void expire_recent(time_t cutoff);
     void maybe_expire_recent();

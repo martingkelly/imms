@@ -5,12 +5,6 @@
 #include "immsdb.h"
 #include "song.h"
 
-#define     NEW_PLAYS               2
-#define     NEW_BONUS               20
-
-#define     TREND_FACTOR            3.0
-#define     MAX_TREND               20
-
 class InfoFetcher : virtual protected ImmsDb
 {
 public:
@@ -26,11 +20,11 @@ protected:
         void reset();
         bool get_song_from_playlist();
 
-        int position, rating, composite_rating;
-        int relation, bpmrating, specrating, newness;
+        Rating rating;
+        int position, effective_rating, tickets;
+        int relation, bpmrating, specrating;
         time_t last_played;
         bool identified;
-        float trend_scale;
     };
 
     virtual bool fetch_song_info(SongData &data);

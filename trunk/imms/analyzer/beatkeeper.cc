@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
-#include <utility>
+#include <map>
 
 #include "beatkeeper.h"
 #include "immsutil.h"
@@ -10,7 +10,7 @@
 using std::string;
 using std::endl;
 using std::vector;
-using std::pair;
+using std::map;
 
 using std::cerr;
 
@@ -35,22 +35,23 @@ void BeatKeeper::extract_features(float *beats, vector<float> &features)
     features.push_back(min / max);                          // relative min
     features.push_back(sum / ((max - min) * BEATSSIZE));    // relative area
 
-    vector< pair<int, int> > peaks;
+    map<int, int> allpeaks;
 
     float cutoff = max - (max - min) * 0.2;
     float localmax = 0; 
     int maxindex = 0, width = 0;
-    for (int i = 0; i < BEATSSIZE; ++i)
+    for (int i = BEATSSIZE - 1; i >= 0; --i)
     {
         if (beats[i] < cutoff)
         {
             if (!width)
                 continue;
 
-            int realwidth = offset2bpm(i) - offset2bpm(i - width);
-            peaks.push_back(pair<int, int>(maxindex, realwidth));
+            int realwidth = offset2bpm(i - width) - offset2bpm(i);
+            allpeaks[realwidth] = offset2bpm(maxindex);
             localmax = 0;
             width = 0;
+            continue;
         }
 
         if (beats[i] > localmax)
@@ -61,15 +62,24 @@ void BeatKeeper::extract_features(float *beats, vector<float> &features)
         ++width;
     }
 
+    map<int, int> peaks;
+    map<int, int>::reverse_iterator i = allpeaks.rbegin();
+    for (int j = 0; j < 3; ++j, ++i)
+    {
+        if (i == allpeaks.rend())
+            break;
+        peaks[i->first] = i->second;
+    }
+
     int first_peak = 0; 
-    for (int i = 0; i < std::min((int)peaks.size(), 3); ++i)
+    for (map<int, int>::iterator i = peaks.begin(); i != peaks.end(); ++i)
     {
         if (!first_peak)
-            features.push_back(first_peak = peaks[i].first);
+            features.push_back(first_peak = i->second);
         else
-            features.push_back(peaks[i].first / (float)first_peak);
-        features.push_back(beats[peaks[i].first] / max);
-        features.push_back(peaks[i].second);
+            features.push_back(i->second / (float)first_peak);
+        features.push_back(beats[i->second] / max);
+        features.push_back(i->first);
     }
 
     for (int i = peaks.size(); i < 3; ++i)
@@ -79,10 +89,10 @@ void BeatKeeper::extract_features(float *beats, vector<float> &features)
         features.push_back(0);
     }
 
-#ifdef DEBUG
-    cerr << "Found peaks" << endl;
-    for (unsigned i = 0; i < peaks.size(); ++i)
-        cerr << " -> @ " << peaks[i].first << " = " << peaks[i].second << endl;
+#if defined(DEBUG) && 0
+    cerr << "Kept peaks" << endl;
+    for (map<int, int>::iterator i = peaks.begin(); i != peaks.end(); ++i)
+        cerr << " -> @ " << i->second << " = " << i->first << endl;
 #endif
 }
 

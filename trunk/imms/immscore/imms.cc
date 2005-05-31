@@ -6,6 +6,7 @@
 #include <iomanip>
 
 #include "imms.h"
+#include "flags.h"
 #include "strmanip.h"
 #include "immsutil.h"
 
@@ -18,26 +19,11 @@ using std::ofstream;
 //////////////////////////////////////////////
 // Constants
 
-#define     FIRST_SKIP_RATE         -6
-#define     CONS_SKIP_RATE          -4
-#define     FIRST_NON_SKIP_RATE     5
-#define     CONS_NON_SKIP_RATE      1
-#define     JUMPED_TO_FINNISHED     7
-#define     NO_XIDLE_BONUS          1
-#define     JUMPED_FROM             -1
-#define     JUMPED_TO_SKIPPED       1
-#define     INTERACTIVE_BONUS       2
-
 #define     MAX_TIME                21*DAY
 
 #define     MAX_CORRELATION         12.0
 #define     SECONDARY               0.3
 #define     CORRELATION_IMPACT      40
-
-#define     BPM_IMPACT              25
-#define     SPECTRUM_IMPACT         10
-#define     SPECTRUM_RADIUS         3.75
-#define     BPM_RADIUS              2.5
 
 #define     LAST_EXPIRE             HOUR
 
@@ -151,12 +137,11 @@ void Imms::print_song_info()
     else
         fout << path;
 
-    fout << "]\n  [Rating: " << current.rating;
+    fout << "]\n  [Rating: " << current.rating.mean;
+    fout << "(" << current.rating.dev << ")";
     fout << setiosflags(std::ios::showpos);
     if (current.relation)
         fout << current.relation << "r";
-    if (current.newness)
-        fout << current.newness << "n";
     if (current.bpmrating)
         fout << current.bpmrating << "b";
     if (current.specrating)
@@ -166,9 +151,6 @@ void Imms::print_song_info()
     fout << "] [Last: " << strtime(current.last_played) <<
         (current.last_played == local_max ?  "!" : "");
 
-    if (current.trend_scale != 1)
-        fout << "*" << current.trend_scale;
-       
     fout << "] ";
 
     fout << (!current.identified ? "[Unknown] " : "");
@@ -187,95 +169,53 @@ void Imms::set_lastinfo(LastInfo &last)
 
 void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 {
-    int mod;
+    time_t played = at_the_end ? 10 : 5;
+    int flags = 0;
 
-    if (at_the_end)
+    if (bad)
     {
-        if (last_jumped)
-            mod = JUMPED_TO_FINNISHED;
-        else if (last_skipped)
-            mod = FIRST_NON_SKIP_RATE;
-        else
-            mod = CONS_NON_SKIP_RATE;
-
-        if (XIdle::is_active())
-            mod += INTERACTIVE_BONUS;
-        else if (!xidle_enabled)
-            mod += NO_XIDLE_BONUS;
+        played = 50;
+        flags |= Flags::bad;
     }
-    else
-    {
-        if (last_jumped && !jumped)
-            mod = JUMPED_TO_SKIPPED;
-        else if (jumped)
-            mod = JUMPED_FROM;
-        else if (last_skipped)
-            mod = CONS_SKIP_RATE;
-        else
-            mod = FIRST_SKIP_RATE;
 
-        if (mod < JUMPED_FROM)
-        {
-            if (XIdle::is_active())
-                mod -= INTERACTIVE_BONUS;
-            else if (!xidle_enabled)
-                mod -= NO_XIDLE_BONUS;
-        }
+    if (jumped)
+        flags |= Flags::jumped_from;
+    else if (last_jumped)
+        flags |= Flags::jumped_to;
+    else if ((!at_the_end && !last_skipped)
+            || (at_the_end && last_skipped))
+        flags |= Flags::first;
+
+    if (xidle_enabled)
+    {
+        flags |= Flags::idleness;
+        if (XIdle::is_active())
+            flags |= Flags::active;
     }
 
     last_skipped = !at_the_end;
-
-    if (bad)
-        mod = 0;
 
 #ifdef DEBUG
     cerr << " *** " << path_get_filename(current.get_path()) << endl;
 #endif
 
-    if (mod >= CONS_NON_SKIP_RATE)
+    if (at_the_end && !xidle_enabled || flags & Flags::active)
         set_lastinfo(last);
 
-    if (mod > CONS_NON_SKIP_RATE + INTERACTIVE_BONUS)
+    if (at_the_end && (flags & Flags::first || flags & Flags::jumped_to))
         set_lastinfo(handpicked);
 
     fout << (jumped ? "[Jumped] " : "");
     fout << (!jumped && last_skipped ? "[Skipped] " : "");
-    fout << "[Delta " << setiosflags(std::ios::showpos) << mod <<
-        resetiosflags(std::ios::showpos) << "] ";
     fout << endl;
 
     last_jumped = jumped;
 
-    int new_rating = std::min(
-            std::max(current.rating + mod, MIN_RATING), MAX_RATING);
-
-    int trend = current.get_trend();
-
-    if (abs(mod) > CONS_NON_SKIP_RATE + INTERACTIVE_BONUS)
-    {
-        if ((trend >= 0 && mod > 0) || (trend <= 0 && mod < 0))
-        {
-            trend += mod;
-            if (abs(trend) > MAX_TREND)
-                trend = trend > 0 ? MAX_TREND : - MAX_TREND;
-        }
-        else 
-            trend = mod;
-    }
-    else
-    {
-        if (abs(trend) < 3)
-            trend = 0;
-        else
-            trend += (trend > 0 ? -3 : 3);
-    }
-
     AutoTransaction at;
 
-    ImmsDb::add_recent(current.get_uid(), mod);
-    current.set_trend(trend);
+    ImmsDb::add_recent(current.get_uid(), played, flags);
+    current.update_rating();
     current.set_last(time(0));
-    current.set_rating(new_rating);
     current.increment_playcounter();
 
     at.commit();

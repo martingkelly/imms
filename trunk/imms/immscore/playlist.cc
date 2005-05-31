@@ -39,7 +39,7 @@ int PlaylistDb::install_filter(const string &filter)
             QueryCacheDisabler qcd;
             Q("INSERT INTO 'Matches' "
                     "SELECT DISTINCT(Library.uid) FROM 'Library' "
-                    "INNER JOIN 'Rating' USING(uid) "
+                    "INNER JOIN 'Ratings' USING(uid) "
                     "LEFT OUTER JOIN 'Last' ON Last.sid = Library.sid "
                     "LEFT OUTER JOIN 'Info' ON Info.sid = Library.sid "
                     "WHERE " + filter + ";").execute();

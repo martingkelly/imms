@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[2.2-pre1],[mag@luminal.org])
+AC_INIT([IMMS],[2.99-pre1],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 

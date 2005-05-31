@@ -8,9 +8,6 @@
 #include "immsconf.h"
 #include "fetcher.h"
 
-#define     MAX_RATING              150
-#define     MIN_RATING              75
-
 class SongPicker : protected InfoFetcher
 {
 public:

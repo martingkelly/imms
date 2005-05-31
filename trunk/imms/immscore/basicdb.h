@@ -25,7 +25,7 @@ protected:
     virtual void sql_schema_upgrade(int from = 0);
 
 private:
-    void sql_create_v7_tables();
+    void mass_rating_update();
     void sql_create_v8_tables();
 };
 
