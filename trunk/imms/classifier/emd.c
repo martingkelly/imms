@@ -105,7 +105,7 @@ float emd(signature_t *Signature1, signature_t *Signature2,
   double totalCost;
   float w;
   node2_t *XP;
-  flow_t *FlowP;
+  flow_t *FlowP = 0;
   node1_t U[MAX_SIG_SIZE1], V[MAX_SIG_SIZE1];
 
   w = init(Signature1, Signature2, Dist);
@@ -407,7 +407,7 @@ static void findBasicVariables(node1_t *U, node1_t *V)
 static int isOptimal(node1_t *U, node1_t *V)
 {    
   double delta, deltaMin;
-  int i, j, minI, minJ;
+  int i, j, minI = 0, minJ = 0;
 
   /* FIND THE MINIMAL Cij-Ui-Vj OVER ALL i,j */
   deltaMin = EMDINF;
@@ -454,7 +454,7 @@ static void newSol()
     int i, j, k;
     double xMin;
     int steps;
-    node2_t *Loop[2*MAX_SIG_SIZE1], *CurX, *LeaveX;
+    node2_t *Loop[2*MAX_SIG_SIZE1], *CurX, *LeaveX = 0;
  
 #if DEBUG_LEVEL > 3
     printf("EnterX = (%d,%d)\n", _EnterX->i, _EnterX->j);
@@ -623,13 +623,13 @@ static int findLoop(node2_t **Loop)
 **********************/
 static void russel(double *S, double *D)
 {
-  int i, j, found, minI, minJ;
+  int i, j, found, minI = 0, minJ = 0;
   double deltaMin, oldVal, diff;
   double Delta[MAX_SIG_SIZE1][MAX_SIG_SIZE1];
   node1_t Ur[MAX_SIG_SIZE1], Vr[MAX_SIG_SIZE1];
   node1_t uHead, *CurU, *PrevU;
   node1_t vHead, *CurV, *PrevV;
-  node1_t *PrevUMinI, *PrevVMinJ, *Remember;
+  node1_t *PrevUMinI = 0, *PrevVMinJ = 0, *Remember;
 
   /* INITIALIZE THE ROWS LIST (Ur), AND THE COLUMNS LIST (Vr) */
   uHead.Next = CurU = Ur;

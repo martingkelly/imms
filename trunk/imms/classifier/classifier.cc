@@ -37,7 +37,7 @@ void usage()
     exit(-1);
 }
 
-void build_feature_vector(int uid1, int uid2, vector<float> &features)
+bool build_feature_vector(int uid1, int uid2, vector<float> &features)
 {
     Song song1("", uid1), song2("", uid2);
 
@@ -49,23 +49,22 @@ void build_feature_vector(int uid1, int uid2, vector<float> &features)
                 beats1, sizeof(beats2)))
     {
         cerr << "warning: failed to load acoustic data uid " << uid1 << endl;
-        return;
+        return false;
     }
 
     if (!song2.get_acoustic(&m2, sizeof(MixtureModel),
                 beats2, sizeof(beats2)))
     {
         cerr << "warning: failed to load acoustic data uid " << uid2 << endl;
-        return;
+        return false;
     }
 
     features.push_back(EMD::distance(m1, m2));
 
     BeatKeeper::extract_features(beats1, features);
     BeatKeeper::extract_features(beats2, features);
+    return true;
 }
-
-typedef map< vector<float> , int > DataMap;
 
 bool load_examples_from_file(const string &path, DataMap &data, int type)
 {
@@ -75,8 +74,8 @@ bool load_examples_from_file(const string &path, DataMap &data, int type)
     while (in >> uid1 && in >> uid2)
     {
         vector<float> features;
-        build_feature_vector(uid1, uid2, features);
-        data[features] = type;
+        if (build_feature_vector(uid1, uid2, features))
+            data[features] = type;
     }
 
     return true;
@@ -167,6 +166,6 @@ int main(int argc, char *argv[])
     LOG(INFO) << "loaded " << data.size() << " examples" << endl;
 
     Model model(name);
-    //float accuracy = model.train(data);
+    model.train(data);
     return 0;
 }

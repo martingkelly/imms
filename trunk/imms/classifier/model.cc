@@ -12,11 +12,12 @@
 #include <torch/MemoryXFile.h>
 #include <torch/DiskXFile.h>
 #include <torch/KFold.h>
+#include <torch/Kernel.h>
+#include <torch/MeanVarNorm.h>
 
 #include <immsutil.h>
 
 #include "model.h"
-#include "kernel.h"
 
 using namespace Torch;
 
@@ -26,7 +27,7 @@ using std::endl;
 
 Model::Model(const std::string &name) : name(name) { }
 
-float Model::train(const map<int, int> &data)
+float Model::train(const DataMap &data)
 {
     Random::seed();
 
@@ -36,11 +37,13 @@ float Model::train(const map<int, int> &data)
     Sequence **outputs = new (Sequence*)[size];
 
     int index = 0;
-    for (map<int, int>::const_iterator i = data.begin();
+    for (DataMap::const_iterator i = data.begin();
             i != data.end(); ++i, ++index)
     {
-        inputs[index] = new Sequence(1, 1);
-        inputs[index]->frames[0][0] = i->first;
+        int frame_size = i->first.size();
+        inputs[index] = new Sequence(1, frame_size);
+        for (int j = 0; j < frame_size; ++j)
+            inputs[index]->frames[0][j] = i->first[j];
         outputs[index] = new Sequence(1, 1);
         outputs[index]->frames[0][0] = i->second;
     }
@@ -49,7 +52,17 @@ float Model::train(const map<int, int> &data)
     dataset.setInputs(inputs, size);
     dataset.setTargets(outputs, size);
 
-    EMDKernel kernel;
+    MeanVarNorm norm(&dataset);
+    for (int i = 0; i < size; ++i)
+    {
+        norm.preProcessInputs(*(inputs + i));
+        Sequence *s = *(inputs + i);
+        for (int j = 0; j < s->frame_size; ++j)
+            cerr << s->frames[0][j] << " ";
+        cerr << endl;
+    }
+
+    GaussianKernel kernel(1./10.);
     SVMRegression svm(&kernel);
     svm.setROption("C", 100);
     svm.setROption("eps regression", 0.7);

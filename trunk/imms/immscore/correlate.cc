@@ -116,8 +116,6 @@ void CorrelationDb::expire_recent(time_t cutoff)
                     "WHERE Journal.time > ? ORDER BY Journal.time ASC;");
             q << correlate_from;
 
-            DEBUGVAL(correlate_from);
-
             if (!q.next())
                 break;
 
