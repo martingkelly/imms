@@ -16,8 +16,9 @@
 #include "normal.h"
 #include "appname.h"
 
-#define DELTA_SCALE     2.22
-#define DECAY_LIMIT     100
+#define DELTA_SCALE     1.5
+#define DECAY_LIMIT     60
+#define MIN_TRIALS      30
 
 using std::cerr;
 using std::endl;
@@ -482,10 +483,23 @@ Rating Song::get_raw_rating()
     try
     {
         Q q("SELECT rating, dev FROM Ratings WHERE uid = ?;");
-        q << uid;
 
+        q << uid;
+        if (q.next())
+        {
+            q >> r.mean >> r.dev;
+            return r;
+        }
+
+        AutoTransaction a;
+
+        update_rating();
+
+        q << uid;
         if (q.next())
             q >> r.mean >> r.dev;
+
+        a.commit();
     }
     WARNIFFAILED();
 
@@ -532,18 +546,15 @@ StringPair Song::get_info()
 
 void Song::register_new_sid()
 {
+    Q q("SELECT max(sid) FROM Library;");
+    if (q.next())
     {
-        Q q("SELECT max(sid) FROM Library;");
-        if (q.next())
-            q >> sid;
-        ++sid;
-    }
-
-    {
-        Q q("UPDATE 'Library' SET sid = ? WHERE uid = ?;");
-        q << sid << uid;
+        q >> sid;
         q.execute();
     }
+    ++sid;
+
+    Q("UPDATE Library SET sid = ? WHERE uid = ?;") << sid << uid << execute;
 
 #ifdef DEBUG
     cerr << __func__ << ": registered sid = " << sid << " for uid = "
@@ -555,41 +566,85 @@ static float decay(float delta, float sum)
 {
     if (sum > DECAY_LIMIT)
         return 0;
-    float scale = log(DECAY_LIMIT + 1 - sum) / log(DECAY_LIMIT);
-    return scale * delta;
+
+    return delta * log(DECAY_LIMIT + 1 - sum) / log(DECAY_LIMIT);
 } 
 
-void Song::update_rating()
+Rating Song::update_rating()
 {
+    Rating r;
+
     if (uid < 0)
-        return;
+        return r;
 
     try
     {
+        float biasmean = 0.5, biastrials = 0;
+        {
+            Q q("SELECT sum(mean * trials) / sum(trials), sum(trials) "
+                    "FROM Bias WHERE uid = ? GROUP BY uid;");
+            q << uid;
+
+            if (q.next())
+            {
+                q >> biasmean >> biastrials;
+                biasmean /= 100.0;
+            }
+        }
+
         Q q("SELECT played, flags FROM Journal WHERE uid = ? "
                 "ORDER BY time DESC;");
         q << uid;
 
-        float sum = 0, ones = 0;
+        double total = 0, ones = 0, zeros = 0;
 
         while (q.next())
         {
             int flags;
             time_t played;
             q >> played >> flags;
-            float delta = Flags::deltify(played, flags) * DELTA_SCALE;
+            double delta = Flags::deltify(played, flags) * DELTA_SCALE;
             if (delta > 0)
-                ones += decay(delta, sum);
-            sum += fabs(delta);
+                ones += decay(delta, total);
+            else
+                zeros += decay(-delta, total);
+            total += fabs(delta);
         }
 
-        sum += 2;
-        ones += 1;
+        ones = std::max(ones, 1.0);
+        zeros = std::max(zeros, 1.0);
 
-        float p = ones / sum;
-        int mean = ROUND(100.0 * p);
-        int var = ROUND(100.0 * sqrt(p * (1 - p) / sum));
-        set_rating(Rating(mean, var));
+        double biasmass = 0;
+        double sum = ones + zeros;
+
+        if (total < MIN_TRIALS)
+        {
+            biasmass = (MIN_TRIALS - total);
+            sum += biastrials * biasmass / MIN_TRIALS;
+
+        }
+
+        ones += biasmass * biasmean;
+        zeros += biasmass * (1 - biasmean);
+
+        double p = ones / (ones + zeros);
+        r.mean = ROUND(100.0 * p);
+        r.dev = ROUND(100.0 * sqrt(p * (1 - p) / sum));
+
+#if 0
+        DEBUGVAL(biasmass);
+        DEBUGVAL(biasmean);
+        DEBUGVAL(total);
+        DEBUGVAL(sum);
+        DEBUGVAL(ones);
+        DEBUGVAL(zeros);
+        DEBUGVAL(r.mean);
+        DEBUGVAL(r.dev);
+#endif
+
+        set_rating(r);
     }
     WARNIFFAILED();
+
+    return r;
 }

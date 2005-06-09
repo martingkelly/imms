@@ -139,13 +139,17 @@ void BasicDb::sql_create_tables()
                 "'flags' INTEGER NOT NULL, " 
                 "'time' TIMESTAMP NOT NULL);").execute();
 
-        Q("CREATE INDEX Jouranl_uid_i "
-                "ON Journal (uid);").execute();
+        Q("CREATE INDEX Jouranl_uid_i ON Journal (uid);").execute();
+
+        Q("CREATE TABLE Bias ("
+                "'uid' INTEGER NOT NULL, " 
+                "'mean' INTEGER NOT NULL, " 
+                "'trials' INTEGER NOT NULL);").execute();
+
+        Q("CREATE INDEX Bias_uid_i ON Bias (uid);").execute();
     }
     WARNIFFAILED();
 }
-
-void update_rating(int uid);
 
 int BasicDb::avg_rating(const string &artist, const string &title)
 {
@@ -371,11 +375,14 @@ void BasicDb::sql_schema_upgrade(int from)
     WARNIFFAILED();
 
     if (from < 12)
-        mass_rating_update();
+        mass_rating_upgrade();
 }
 
-void fake_encounter(int uid, int delta, time_t time)
+void BasicDb::fake_encounter(int uid, int delta, time_t time)
 {
+    if (!delta)
+        return;
+
     Q q("INSERT INTO Journal ('uid', 'played', 'flags', 'time') "
             "VALUES (?, ?, ?, ?)");
 
@@ -385,133 +392,57 @@ void fake_encounter(int uid, int delta, time_t time)
     q << uid << played << flags << time << execute;
 }
 
-void BasicDb::mass_rating_update()
+void BasicDb::mass_rating_upgrade()
 {
+    using std::max;
+    using std::min;
     try
     {
         AutoTransaction at;
+        time_t maxfirstseen = 0;
 
-        Q q("SELECT L.uid, playcounter FROM Library as L NATURAL JOIN Ratings "
-                "WHERE rating <= ? AND RATING > ?;");
-
-        time_t start_at = time(0) - 30*DAY;
-        time_t current = start_at;
-
-        int uid, playcounter;
-
-        q << 250 << 140;
-
-        while (q.next())
+        Q q("SELECT avg(firstseen) FROM Library;");
+        if (q.next())
         {
-            current = start_at;
-            q >> uid >> playcounter;
-            for (int i = 0; i < std::min(playcounter, 5); ++i)
-            {
-                fake_encounter(uid, +9, --current);
-                fake_encounter(uid, +1, --current);
-            }
+            q >> maxfirstseen;
+            maxfirstseen = (maxfirstseen - time(0)) * 2 / 5;
         }
+        q.execute();
 
-        q << 140 << 130;
+        Q select("SELECT Library.uid, rating, playcounter, firstseen "
+                "FROM Library NATURAL JOIN Ratings;");
+        Q insert("INSERT INTO Bias ('uid', 'mean', 'trials') "
+                "VALUES (?, ?, ?);");
 
-        while (q.next())
+        int uid, rating, playcounter;
+        time_t firstseen;
+        int mean, trials;
+
+        while (select.next())
         {
-            current = start_at;
-            q >> uid >> playcounter;
-            for (int i = 0; i < std::min(playcounter, 5); ++i)
-            {
-                fake_encounter(uid, +9, --current);
-                fake_encounter(uid, -1, --current);
-            }
-        }
+            select >> uid >> rating >> playcounter >> firstseen;
+            mean = ROUND((rating - 75) * 100 / 75.0);
+            firstseen -= time(0);
+            int confidence = std::min(firstseen / maxfirstseen, 5L);
+            confidence += std::min(playcounter, 5);
+            trials = confidence * 5;
 
-        q << 130 << 120;
+            if (!trials)
+                continue;
 
-        while (q.next())
-        {
-            current = start_at;
-            q >> uid >> playcounter;
-            for (int i = 0; i < std::min(playcounter, 5); ++i)
-            {
-                fake_encounter(uid, +8, --current);
-                fake_encounter(uid, -1, --current);
-                fake_encounter(uid, -1, --current);
-            }
-        }
-
-        q << 120 << 110;
-
-        while (q.next())
-        {
-            current = start_at;
-            q >> uid >> playcounter;
-            for (int i = 0; i < std::min(playcounter, 5); ++i)
-            {
-                fake_encounter(uid, +7, --current);
-                fake_encounter(uid, -1, --current);
-                fake_encounter(uid, -1, --current);
-                fake_encounter(uid, -1, --current);
-            }
-        }
-
-        q << 110 << 100;
-
-        while (q.next())
-        {
-            current = start_at;
-            q >> uid >> playcounter;
-            for (int i = 0; i < std::min(playcounter, 5); ++i)
-            {
-                fake_encounter(uid, +6, --current);
-                fake_encounter(uid, -4, --current);
-            }
-        }
-
-        q << 100 << 90;
-
-        while (q.next())
-        {
-            current = start_at;
-            q >> uid >> playcounter;
-            for (int i = 0; i < std::min(playcounter, 5); ++i)
-            {
-                fake_encounter(uid, +5, --current);
-                fake_encounter(uid, -4, --current);
-                fake_encounter(uid, -1, --current);
-            }
-        }
-
-        q << 90 << 80;
-
-        while (q.next())
-        {
-            current = start_at;
-            q >> uid >> playcounter;
-            for (int i = 0; i < std::min(playcounter, 5); ++i)
-            {
-                fake_encounter(uid, -6, --current);
-                fake_encounter(uid, +3, --current);
-                fake_encounter(uid, +1, --current);
-            }
-        }
-
-        q << 80 << 0;
-
-        while (q.next())
-        {
-            current = start_at;
-            q >> uid >> playcounter;
-            for (int i = 0; i < std::min(playcounter, 5); ++i)
-            {
-                fake_encounter(uid, -8, --current);
-                fake_encounter(uid, +2, --current);
-            }
+            insert << uid << mean << trials;
+            insert.execute();
         }
 
         at.commit();
     }
     WARNIFFAILED();
 
+    update_all_ratings();
+}
+
+void BasicDb::update_all_ratings()
+{
     try 
     {
         AutoTransaction at;
@@ -526,7 +457,7 @@ void BasicDb::mass_rating_update()
             song.update_rating();
         }
 
-        Q("UPDATE Ratings SET rating = 50, dev = 10 "
+        Q("UPDATE Ratings SET rating = 50, dev = 16 "
                 "WHERE rating > 100 or rating < 1").execute();
 
         at.commit();

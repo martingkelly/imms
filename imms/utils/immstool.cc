@@ -50,6 +50,7 @@ void do_lint();
 void do_random(int mean, int var);
 void do_identify(const string &path);
 void do_update_distances();
+void do_test_deltas(ImmsDb &immsdb, const vector<int> &v);
 
 int main(int argc, char *argv[])
 {
@@ -77,6 +78,30 @@ int main(int argc, char *argv[])
         }
 
         do_random(atoi(argv[2]), atoi(argv[3]));
+    }
+    else if (!strcmp(argv[1], "testdeltas"))
+    {
+        if (argc < 3)
+        {
+            cout << "huh??" << endl;
+            return -1;
+        }
+
+        vector<int> v;
+        for (int i = 2; i < argc; ++i)
+            v.push_back(atoi(argv[i]));
+
+        do_test_deltas(immsdb, v);
+    }
+    else if (!strcmp(argv[1], "updateratings"))
+    {
+        if (argc != 2)
+        {
+            cout << "huh??" << endl;
+            return -1;
+        }
+
+        immsdb.update_all_ratings();
     }
     else if (!strcmp(argv[1], "closest"))
     {
@@ -488,9 +513,23 @@ void do_closest(const string &path)
     WARNIFFAILED();
 }
 
-
 void do_random(int mean, int var)
 {
     for (int i = 0; i < 20; ++i)
         cout << ROUND(normal(mean, var)) << endl;
+}
+
+void do_test_deltas(ImmsDb &immsdb, const vector<int> &v)
+{
+    AutoTransaction at;
+
+    time_t timestamp = time(0) - 30*DAY;
+    for (unsigned i = 0; i < v.size(); ++i)
+        immsdb.fake_encounter(10000, v[i], --timestamp);
+    
+    Song song("", 10000);
+    Rating r = song.update_rating();
+
+    DEBUGVAL(r.mean);
+    DEBUGVAL(r.dev);
 }

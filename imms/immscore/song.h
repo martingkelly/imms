@@ -46,7 +46,7 @@ public:
     bool get_acoustic(void *mfccdat, size_t mfccsize,
             void *bpmdat, size_t bpmsize);
 
-    void update_rating();
+    Rating update_rating();
 
     void reset() { playcounter = uid = sid = -1; artist = title = ""; }
 protected:

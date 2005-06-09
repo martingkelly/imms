@@ -137,7 +137,9 @@ void Imms::print_song_info()
     else
         fout << path;
 
-    fout << "]\n  [Rating: " << current.rating.mean;
+    fout << "]\n  ";
+    fout << "[" << current.get_uid() << "] ";
+    fout << "[Rating: " << current.rating.mean;
     fout << "(" << current.rating.dev << ")";
     fout << setiosflags(std::ios::showpos);
     if (current.relation)
@@ -205,20 +207,24 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     if (at_the_end && (flags & Flags::first || flags & Flags::jumped_to))
         set_lastinfo(handpicked);
 
-    fout << (jumped ? "[Jumped] " : "");
-    fout << (!jumped && last_skipped ? "[Skipped] " : "");
-    fout << endl;
-
     last_jumped = jumped;
+
+    Rating r;
 
     AutoTransaction at;
 
     ImmsDb::add_recent(current.get_uid(), played, flags);
-    current.update_rating();
+    r = current.update_rating();
     current.set_last(time(0));
     current.increment_playcounter();
 
     at.commit();
+
+    fout << (jumped ? "[Jumped] " : "");
+    fout << (!jumped && last_skipped ? "[Skipped] " : "");
+    fout << "[After: " << r.mean << "(" << r.dev << ")]";
+    fout << endl;
+
 }
 
 void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)

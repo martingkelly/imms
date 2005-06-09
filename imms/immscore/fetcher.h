@@ -21,7 +21,7 @@ protected:
         bool get_song_from_playlist();
 
         Rating rating;
-        int position, effective_rating, tickets;
+        int position, effective_rating;
         int relation, bpmrating, specrating;
         time_t last_played;
         bool identified;

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <map>
 
 #include <math.h>
 
@@ -10,10 +11,14 @@
 #define     SAMPLE_SIZE             100
 #define     MIN_SAMPLE_SIZE         35
 #define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
-#define     TICKETS(x)              ROUND(pow(2.5, x/20) * 100 / pow(2.5, 5))
+
+#define     EXP                     1.09
+#define     _TICKETS(x)             pow(EXP, x) * 99.0 / pow(EXP, 100)
+#define     TICKETS(x)              ROUND(_TICKETS(x) + 1)
 
 using std::endl;
 using std::cerr;
+using std::map;
 
 SongPicker::SongPicker()
     : current(0, "current"), acquired(0), winner(0, "winner")
@@ -102,7 +107,7 @@ bool SongPicker::add_candidate(bool urgent)
     {
         ++acquired;
         candidates.push_back(data);
-        if (urgent && data.tickets > 80)
+        if (urgent && data.effective_rating > 80)
             attempts = MAX_ATTEMPTS + 1;
     }
 
@@ -156,8 +161,10 @@ int SongPicker::select_next()
         return 0;
     }
 
+    typedef map<int, vector<SongData *> > Ratings;
+    Ratings ratings;
+
     Candidates::iterator i;
-    unsigned total = 0;
     float max_last_played = 0;
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
@@ -166,37 +173,46 @@ int SongPicker::select_next()
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
-        i->tickets = TICKETS(i->effective_rating) + i->relation +
-            i->specrating + i->bpmrating;
-
-        i->tickets = ROUND(i->tickets * i->last_played / max_last_played);
-        total += i->tickets;
+        i->effective_rating += i->relation + i->specrating + i->bpmrating;
+        i->effective_rating = ROUND(i->effective_rating
+                * i->last_played / max_last_played);
+        int tickets = TICKETS(i->effective_rating);
+        ratings[tickets].push_back(&*i);
     }
 
-#ifdef DEBUG
-    cerr << string(80 - 15, '-') << endl;
-    cerr << " >> ";
-#endif
+    unsigned total = 0;
+    for (Ratings::iterator i = ratings.begin(); i != ratings.end(); ++i)
+    {
+        total += i->first;
+    }
 
     int winning_ticket = imms_random(total);
 
-    for (i = candidates.begin(); i != candidates.end(); ++i)
+#ifdef DEBUG
+    cerr << string(80, '-') << endl;
+    cerr << " >>> ";
+#endif
+    for (Ratings::iterator i = ratings.begin(); i != ratings.end(); ++i)
     {
-        winning_ticket -= i->tickets;
+#ifdef DEBUG
+        cerr << i->first << ":" << i->second.size();
+#endif
+        winning_ticket -= i->first;
         if (winning_ticket < 0)
         {
-            winner = *i;
+            cerr << "* ";
+            winner = *i->second[imms_random(i->second.size())];
 #ifndef DEBUG
             break;
         }
-    }
 #else
             winning_ticket = INT_MAX;
-            cerr << "{" << i->tickets << "} ";
         }
-        else if (i->tickets)
-            cerr << i->tickets << " ";
+        else
+            cerr << " ";
+#endif
     }
+#ifdef DEBUG
     cerr << endl;
 #endif
 
