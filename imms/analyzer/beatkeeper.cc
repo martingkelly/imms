@@ -19,7 +19,7 @@ static inline int offset2bpm(int offset)
     return ROUND(60 * WINPERSEC / (float)(MINBEATLENGTH + offset));
 }
 
-void BeatKeeper::extract_features(float *beats, vector<float> &features)
+bool BeatKeeper::extract_features(float *beats, vector<float> &features)
 {
     float sum = 0, min = 1e100, max = 0;
     for (int i = 0; i < BEATSSIZE; ++i)
@@ -30,6 +30,9 @@ void BeatKeeper::extract_features(float *beats, vector<float> &features)
             max = beats[i];
         sum += beats[i];
     }
+   
+    if (max == 0 || max == min)
+        return false;
 
     features.push_back(max);                                // max
     features.push_back(min / max);                          // relative min
@@ -94,6 +97,8 @@ void BeatKeeper::extract_features(float *beats, vector<float> &features)
     for (map<int, int>::iterator i = peaks.begin(); i != peaks.end(); ++i)
         cerr << " -> @ " << i->second << " = " << i->first << endl;
 #endif
+
+    return true;
 }
 
 void BeatKeeper::reset()

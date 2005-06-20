@@ -20,6 +20,7 @@ public:
         { return get_text_frame(ID3FID_TITLE); }
     virtual string get_album()
         { return get_text_frame(ID3FID_ALBUM); }
+    virtual time_t get_length() { return 0; }
 protected:
     string get_text_frame(ID3_FrameID id);
     ID3_Tag id3tag;
@@ -53,6 +54,7 @@ public:
         { return get_comment("title"); }
     virtual string get_album()
         { return get_comment("album"); }
+    virtual time_t get_length() { return 0; }
 
     ~OggInfo();
 private:
@@ -120,6 +122,12 @@ class TagInfo : public InfoSlave
             return !fileref.isNull() && fileref.tag() ? 
                     fileref.tag()->album().toCString() : "";
         }
+        virtual time_t get_length()
+        {
+            return !fileref.isNull() && fileref.audioProperties()
+                ? fileref.audioProperties()->length() : 0;
+
+        }
     private:
         FileRef fileref;
 };
@@ -167,3 +175,6 @@ string SongInfo::get_title()
 
 string SongInfo::get_album()
     { return trim(myslave->get_album()); }
+
+time_t SongInfo::get_length()
+    { return myslave->get_length(); }

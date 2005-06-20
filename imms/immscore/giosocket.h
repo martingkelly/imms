@@ -14,7 +14,14 @@
 
 using std::string;
 
-class GIOSocket
+class LineProcessor
+{
+public:
+    virtual void process_line(const string &line) = 0;
+    virtual ~LineProcessor() {}
+};
+
+class GIOSocket : public LineProcessor
 {
 public:
     GIOSocket() : con(0), read_tag(0), write_tag(0), outp(0) {}
@@ -58,7 +65,6 @@ public:
         con = 0;
     }
 
-    virtual void process_line(const string &line) = 0;
     virtual void connection_lost() = 0;
 
     static gboolean _read_event(GIOChannel *source,

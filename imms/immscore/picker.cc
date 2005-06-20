@@ -149,7 +149,7 @@ void SongPicker::revalidate_current(int pos, const string &path)
 
 int SongPicker::select_next()
 {
-    if (PlaylistDb::get_effective_playlist_length(true) < pl_length)
+    if (PlaylistDb::get_real_playlist_length() < pl_length)
         return -1;
 
     if (candidates.size() < MIN_SAMPLE_SIZE)
@@ -182,9 +182,7 @@ int SongPicker::select_next()
 
     unsigned total = 0;
     for (Ratings::iterator i = ratings.begin(); i != ratings.end(); ++i)
-    {
         total += i->first;
-    }
 
     int winning_ticket = imms_random(total);
 

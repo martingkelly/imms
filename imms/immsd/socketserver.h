@@ -8,17 +8,26 @@
 
 using std::string;
 
-class SocketServer : public GIOSocket
+class SocketListenerBase
 {
 public:
-    SocketServer(const string &sockpath);
-    virtual ~SocketServer();
+    SocketListenerBase(const string &sockpath);
+    virtual ~SocketListenerBase();
 
-    virtual void connection_established() = 0;
+    static gboolean incoming_connection_helper(GIOChannel *source,
+            GIOCondition condition, gpointer data);
 
-    void _connection_established();
+    virtual void incoming_connection(int fd) = 0;
 protected:
     GIOChannel *listener;
+};
+
+template <typename Connection>
+class SocketListener : public SocketListenerBase
+{
+public:
+    SocketListener(const string &sockpath) : SocketListenerBase(sockpath) {};
+    virtual void incoming_connection(int fd) { new Connection(fd); }
 };
 
 #endif

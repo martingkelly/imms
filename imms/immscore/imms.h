@@ -26,11 +26,9 @@ public:
     void start_song(int position, std::string path);
     void end_song(bool at_the_end, bool jumped, bool bad);
 
-    // get the last song played
-    int  get_previous();
-
     virtual void request_playlist_item(int index);
     void playlist_changed(int length);
+    virtual void playlist_ready();
 
     // process internal events - call this periodically
     void do_events();
@@ -38,7 +36,7 @@ public:
     // configure imms
     void setup(bool use_xidle);
 
-    friend class ImmsDFilter;
+    friend class ImmsProcessor;
 
 protected:
     struct LastInfo {

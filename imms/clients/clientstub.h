@@ -27,7 +27,9 @@ public:
         if (fd > 0)
         {
             init(fd);
-            return connected = true;
+            connected = true;
+            write_command("IMMS");
+            return true;
         }
         cerr << "Connection failed: " << strerror(errno) << endl;
         return false;

@@ -61,9 +61,8 @@ bool build_feature_vector(int uid1, int uid2, vector<float> &features)
 
     features.push_back(EMD::distance(m1, m2));
 
-    BeatKeeper::extract_features(beats1, features);
-    BeatKeeper::extract_features(beats2, features);
-    return true;
+    return BeatKeeper::extract_features(beats1, features) &&
+        BeatKeeper::extract_features(beats2, features);
 }
 
 bool load_examples_from_file(const string &path, DataMap &data, int type)
@@ -98,6 +97,7 @@ bool load_examples(const string &path, DataMap &data, int type)
 
 int main(int argc, char *argv[])
 {
+    bool testmode = false;
     string name, positive, negative;
 
     while (1)
@@ -105,6 +105,7 @@ int main(int argc, char *argv[])
         int option_index = 0;
         static struct option long_options[] = {
             {"help", 0, 0, 'h'},
+            {"test", 0, 0, 't'},
             {"model", 1, 0, 'm'},
             {"positive", 1, 0, 'p'},
             {"negative", 1, 0, 'n'},
@@ -124,6 +125,9 @@ int main(int argc, char *argv[])
         {
             case 'm':
                 name = optarg; 
+                break;
+            case 't':
+                testmode = true; 
                 break;
             case 'p':
                 positive = optarg; 
@@ -166,6 +170,10 @@ int main(int argc, char *argv[])
     LOG(INFO) << "loaded " << data.size() << " examples" << endl;
 
     Model model(name);
-    model.train(data);
+
+    if (testmode)
+        model.test(data);
+    else
+        model.train(data);
     return 0;
 }
