@@ -16,19 +16,6 @@ string extradelims;
 #define DELIM "[-\\s_\\.'\\(\\)\\[\\]]"
 #define NUMRE "(^|" DELIM "+)(\\d+)($|" DELIM "+)"
 
-void string_split(list<string> &store, const string &s, const string &delims)
-{
-    string expr("(?>[^" + delims + "]+)");
-    rex.exec(s, expr, Regexx::global);
-    store.insert(store.end(), rex.match.begin(), rex.match.end());
-}
-
-string trim(const string &s)
-{
-    size_t p = s.find_last_not_of(" ");
-    return p == string::npos ? s : s.substr(0, p + 1);
-}
-
 string escape_char(char c)
 {
     string s(1, c);
@@ -44,6 +31,22 @@ string escape_char(char c)
             break;
     }
     return s;
+}
+
+void string_split(list<string> &store, const string &s, const string &delims)
+{
+    string escaped;
+    for (unsigned i = 0; i < delims.length(); ++i)
+        escaped += escape_char(delims[i]);
+    string expr("(?>[^" + escaped + "]+)");
+    rex.exec(s, expr, Regexx::global);
+    store.insert(store.end(), rex.match.begin(), rex.match.end());
+}
+
+string trim(const string &s)
+{
+    size_t p = s.find_last_not_of(" ");
+    return p == string::npos ? s : s.substr(0, p + 1);
 }
 
 bool imms_magic_preprocess_filename(string &filename)

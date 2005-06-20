@@ -13,7 +13,7 @@ class SongPicker : protected InfoFetcher
 public:
     SongPicker();
     virtual int select_next();
-    void playlist_ready() { playlist_known = 1; }
+    virtual void playlist_ready() { playlist_known = 1; }
     virtual void playlist_changed(int length);
 
 protected:

@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <iostream>
 #include <string>
-#include <sstream>
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
@@ -16,6 +15,7 @@
 #include "strmanip.h"
 #include "melfilter.h"
 #include "fftprovider.h"
+#include "soxprovider.h"
 #include "mfcckeeper.h"
 #include "beatkeeper.h"
 #include "hanning.h"
@@ -23,8 +23,6 @@
 using std::cout;
 using std::cerr;
 using std::endl;
-using std::string;
-using std::ostringstream;
 
 typedef uint16_t sample_t;
 
@@ -65,19 +63,7 @@ int Analyzer::analyze(const string &path)
         return 0;
     }
 
-    string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
-    string extension = string_tolower(path_get_extension(path));
-
-    ostringstream command;
-    command << "nice -n 15 sox ";
-    if (extension == "mp3" || extension == "ogg")
-        command << "-t ." << extension << " ";
-    command << "\'" << epath << "\' ";
-    command << "-t .raw -w -u -c 1 -r " << SAMPLERATE << " -";
-#ifdef DEBUG
-    cout << "analyzer: Executing: " << command.str() << endl;
-#endif
-    FILE *p = popen(command.str().c_str(), "r");
+    FILE *p = run_sox(path, SAMPLERATE);
 
     if (!p)
     {

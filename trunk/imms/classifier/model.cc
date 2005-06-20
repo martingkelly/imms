@@ -5,7 +5,6 @@
 #include <iostream>
 
 #include <torch/Random.h>
-#include <torch/MemoryDataSet.h>
 #include <torch/SVMRegression.h>
 #include <torch/QCTrainer.h>
 #include <torch/MSEMeasurer.h>
@@ -25,16 +24,17 @@ using std::map;
 using std::cerr;
 using std::endl;
 
-Model::Model(const std::string &name) : name(name) { }
-
-float Model::train(const DataMap &data)
+Model::Model(const std::string &name) : name(name)
 {
     Random::seed();
+}
 
-    int size = data.size();
+void Model::prepare_data(const DataMap &data)
+{
+    size = data.size();
 
-    Sequence **inputs = new (Sequence*)[size];
-    Sequence **outputs = new (Sequence*)[size];
+    inputs = new (Sequence*)[size];
+    outputs = new (Sequence*)[size];
 
     int index = 0;
     for (DataMap::const_iterator i = data.begin();
@@ -48,21 +48,54 @@ float Model::train(const DataMap &data)
         outputs[index]->frames[0][0] = i->second;
     }
 
-    MemoryDataSet dataset;
     dataset.setInputs(inputs, size);
     dataset.setTargets(outputs, size);
 
     MeanVarNorm norm(&dataset);
-    for (int i = 0; i < size; ++i)
-    {
+    for (unsigned i = 0; i < size; ++i)
         norm.preProcessInputs(*(inputs + i));
-        Sequence *s = *(inputs + i);
-        for (int j = 0; j < s->frame_size; ++j)
-            cerr << s->frames[0][j] << " ";
-        cerr << endl;
+}
+
+void Model::cleanup()
+{
+    for (unsigned i = 0; i < size; ++i)
+    {
+        delete inputs[i];
+        delete outputs[i];
     }
 
-    GaussianKernel kernel(1./10.);
+    delete[] inputs;
+    delete[] outputs;
+}
+
+void Model::test(const DataMap &data)
+{
+    prepare_data(data);
+
+    GaussianKernel kernel(1./100.);
+    SVMRegression svm(&kernel);
+    svm.setROption("C", 100);
+    svm.setROption("eps regression", 0.7);
+
+    DiskXFile modelfile(get_imms_root("models/" + name).c_str(), "r");
+    svm.loadXFile(&modelfile);
+
+    DiskXFile xfile(get_imms_root("error").c_str(), "w");
+    MeasurerList measurers;
+    MSEMeasurer msemes(svm.outputs, &dataset, &xfile);
+    measurers.addNode(&msemes);
+
+    QCTrainer trainer(&svm);
+    trainer.test(&measurers);
+
+    cleanup();
+}
+
+void Model::train(const DataMap &data)
+{
+    prepare_data(data);
+
+    GaussianKernel kernel(1./100.);
     SVMRegression svm(&kernel);
     svm.setROption("C", 100);
     svm.setROption("eps regression", 0.7);
@@ -90,13 +123,5 @@ float Model::train(const DataMap &data)
     DiskXFile modelfile(get_imms_root("models/" + name).c_str(), "w");
     svm.saveXFile(&modelfile);
 
-    for (int i = 0; i < size; ++i)
-    {
-        delete inputs[i];
-        delete outputs[i];
-    }
-
-    delete[] inputs;
-    delete[] outputs;
-    return 0;
+    cleanup();
 }

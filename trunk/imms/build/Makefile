@@ -19,6 +19,10 @@ analyzer: $(call objects,../analyzer)
 analyzer: libimmscore.a
 analyzer-LIBS=`pkg-config fftw3 --libs` -ltorch
 
+autotag: $(call objects,../autotag)
+autotag: libimmscore.a
+autotag-LIBS=-lmusicbrainz
+
 classifier: $(call objects,../classifier)
 classifier: beatkeeper.o libimmscore.a
 classifier-LIBS=-ltorch

@@ -155,7 +155,7 @@ void CorrelationDb::expire_recent_helper()
         return;
 
 #ifdef DEBUG
-    cerr << string(55, '-') << endl;
+    //cerr << string(55, '-') << endl;
     cerr << "processing update between " << std::min(from, to) <<
         " and " << std::max(from, to) << endl;
 #endif
@@ -222,7 +222,7 @@ void CorrelationDb::update_correlation(int from, int to, float weight)
     if (fabs(weight) < 0.25)
         return;
 
-#ifdef DEBUG
+#if defined(DEBUG) && 0
     cerr << " >> Updating link from " << std::min(from, to) << " to "
         << std::max(from, to) << " by " << weight << endl;
 #endif

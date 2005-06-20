@@ -21,11 +21,11 @@ namespace Flags
 
         int bonus = ((flags & idleness) ? ((flags & active) ? 2 : 0) : 1);
 
-        if (flags & jumped_from)
+        if (skipped && (flags & jumped_from))
             return -1;
 
         if (flags & jumped_to)
-            return skipped ? 1 : 7 + bonus;
+            return skipped ? 1 : (7 + bonus);
 
         if (skipped)
             return ((flags & first) ? -6 : -4) - bonus;

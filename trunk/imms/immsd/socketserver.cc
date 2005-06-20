@@ -11,15 +11,7 @@
 using std::endl;
 using std::cerr;
 
-static gboolean incoming_connection(GIOChannel *source,
-        GIOCondition condition, gpointer data)
-{
-    SocketServer *ss = (SocketServer*)data;
-    ss->_connection_established();
-    return true;
-}
-
-SocketServer::SocketServer(const string &sockpath)
+SocketListenerBase::SocketListenerBase(const string &sockpath)
 {
     int fd = socket(PF_UNIX, SOCK_STREAM, 0);
     if (fd < 0)
@@ -46,10 +38,10 @@ SocketServer::SocketServer(const string &sockpath)
 
     listener = g_io_channel_unix_new(fd);
     g_io_add_watch(listener, (GIOCondition)(G_IO_IN | G_IO_PRI),
-            ::incoming_connection, this);
+            incoming_connection_helper, this);
 }
 
-SocketServer::~SocketServer()
+SocketListenerBase::~SocketListenerBase()
 {
     if (listener)
     {
@@ -59,19 +51,22 @@ SocketServer::~SocketServer()
     }
 }
 
-void SocketServer::_connection_established()
+gboolean SocketListenerBase::incoming_connection_helper(
+        GIOChannel *source, GIOCondition condition, gpointer data)
 {
+    SocketListenerBase *ss = (SocketListenerBase*)data;
+
     struct sockaddr_un sun;
     memset(&sun, 0, sizeof(sun));
     socklen_t size = 0;
-    int fd = accept(g_io_channel_unix_get_fd(listener),
+    int fd = accept(g_io_channel_unix_get_fd(ss->listener),
             (sockaddr*)&sun, &size);
-
-    init(fd);
 
 #ifdef DEBUG
     cerr << "Incoming connection!" << endl;
 #endif
 
-    connection_established();
+    if (fd != -1)
+        ss->incoming_connection(fd);
+    return true;
 }

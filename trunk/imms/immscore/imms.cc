@@ -66,10 +66,17 @@ void Imms::get_metacandidates()
         CorrelationDb::get_related(metacandidates, handpicked.sid, 30);
 }
 
+void Imms::playlist_ready()
+{
+    SongPicker::playlist_ready();
+    PlaylistDb::update_filter();
+}
+
 void Imms::do_events()
 {
     if (!SongPicker::do_events())
         CorrelationDb::maybe_expire_recent();
+    PlaylistDb::do_events();
     XIdle::query();
 }
 
@@ -182,9 +189,10 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     if (jumped)
         flags |= Flags::jumped_from;
-    else if (last_jumped)
+    if (last_jumped)
         flags |= Flags::jumped_to;
-    else if ((!at_the_end && !last_skipped)
+
+    if ((!at_the_end && !last_skipped)
             || (at_the_end && last_skipped))
         flags |= Flags::first;
 

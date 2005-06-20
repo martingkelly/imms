@@ -1,8 +1,8 @@
 #include <assert.h>
 #include <iostream>
 
-#include <analyzer/beatkeeper.h>
 #include <song.h>
+#include <immsutil.h>
 
 #include "distance.h"
 #include "emd.h"
@@ -10,7 +10,7 @@
 using std::cerr;
 using std::endl;
 
-float KL_Distance(const Gaussian &g1, const Gaussian &g2)
+float KL_Divergence(const Gaussian &g1, const Gaussian &g2)
 {
     float total = 0;
     for (int i = 0; i < NUMCEPSTR; ++i)
@@ -27,14 +27,6 @@ float KL_Distance(const Gaussian &g1, const Gaussian &g2)
     return total;
 }
 
-float Eucleadian_Distance(const Gaussian &g1, const Gaussian &g2)
-{
-    float total = 0;
-    for (int i = 0; i < NUMCEPSTR; ++i)
-        total += pow(g1.means[i] - g2.means[i], 2);
-    return sqrt(total);
-}
-
 float EMD::cost[NUMGAUSS][NUMGAUSS];
 
 float EMD::distance(const MixtureModel &m1, const MixtureModel &m2)
@@ -49,25 +41,53 @@ float EMD::distance(const MixtureModel &m1, const MixtureModel &m2)
         w2[i] = m2.gauss[i].weight;
 
         for (int j = 0; j < NUMGAUSS; ++j)
-            cost[i][j] = KL_Distance(m1.gauss[i], m2.gauss[j]);
+            cost[i][j] = KL_Divergence(m1.gauss[i], m2.gauss[j]);
     }
 
     signature_t s1 = { NUMGAUSS, features, w1 };
     signature_t s2 = { NUMGAUSS, features, w2 };
-    return emd(&s1, &s2, EMD::dist, 0, 0);
+    return emd(&s1, &s2, EMD::gauss_dist, 0, 0);
 }
 
-struct TRIV {
-    static float distance(const MixtureModel &m1, const MixtureModel &m2)
+bool normalize(float beats[BEATSSIZE])
+{
+    float max = 0, min = 1e100, range;
+
+    for (int i = 0; i < BEATSSIZE; ++i)
     {
-        float total = 0;
-        for (int i = 0; i < NUMGAUSS; ++i)
-            for (int j = 0; j < NUMGAUSS; ++j)
-                total += Eucleadian_Distance(m1.gauss[i], m2.gauss[j])
-                    * m1.gauss[i].weight * m2.gauss[j].weight;
-        return total;
+        if (beats[i] > max)
+            max = beats[i];
+        if (beats[i] < min)
+            min = beats[i];
     }
-};
+
+    range = max - min;
+
+    if (range == 0)
+        return false;
+
+    for (int i = 0; i < BEATSSIZE; ++i)
+        beats[i] = 100 * (beats[i] - min) / range;
+
+    return true;
+}
+
+float EMD::distance(float beats1[BEATSSIZE], float beats2[BEATSSIZE])
+{
+    feature_t features[BEATSSIZE];
+
+    for (int i = 0; i < BEATSSIZE; ++i)
+        features[i] = i;
+
+    if (!normalize(beats1))
+        return -1;
+    if (!normalize(beats2))
+        return -1;
+
+    signature_t s1 = { BEATSSIZE, features, beats1 };
+    signature_t s2 = { BEATSSIZE, features, beats2 };
+    return emd(&s1, &s2, EMD::linear_dist, 0, 0);
+}
 
 float song_cepstr_distance(int uid1, int uid2)
 {
@@ -79,16 +99,44 @@ float song_cepstr_distance(int uid1, int uid2)
     if (!song1.get_acoustic(&m1, sizeof(MixtureModel),
             beats, sizeof(beats)))
     {
-        cerr << "warning: failed to load cepstrum data uid " << uid1 << endl;
+        LOG(ERROR) << "warning: failed to load cepstrum data for uid "
+            << uid1 << endl;
         return -1;
     }
 
     if (!song2.get_acoustic(&m2, sizeof(MixtureModel),
             beats, sizeof(beats)))
     {
-        cerr << "warning: failed to load cepstrum data uid " << uid2 << endl;
+        LOG(ERROR) << "warning: failed to load cepstrum data for uid "
+            << uid2 << endl;
         return -1;
     }
 
     return EMD::distance(m1, m2);
+}
+
+float song_bpm_distance(int uid1, int uid2)
+{
+    Song song1("", uid1), song2("", uid2);
+
+    MixtureModel m;
+    float beats1[BEATSSIZE], beats2[BEATSSIZE];
+
+    if (!song1.get_acoustic(&m, sizeof(MixtureModel),
+            beats1, sizeof(beats1)))
+    {
+        LOG(ERROR) << "warning: failed to load bpm data for uid "
+            << uid1 << endl;
+        return -1;
+    }
+
+    if (!song2.get_acoustic(&m, sizeof(MixtureModel),
+            beats2, sizeof(beats2)))
+    {
+        LOG(ERROR) << "warning: failed to load bpm data for uid "
+            << uid2 << endl;
+        return -1;
+    }
+
+    return EMD::distance(beats1, beats2);
 }

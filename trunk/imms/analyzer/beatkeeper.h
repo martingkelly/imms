@@ -24,7 +24,7 @@ public:
     void dump(const std::string &filename);
     const BeatKeeper &operator +=(const BeatKeeper &other);
 
-    static void extract_features(float *beats, std::vector<float> &features);
+    static bool extract_features(float *beats, std::vector<float> &features);
 
 protected:
     void process_window();
