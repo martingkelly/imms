@@ -4,8 +4,6 @@
 #include "strmanip.h"
 #include "immsutil.h" 
 
-#define UPDATE_DELAY    20
-
 using std::endl;
 using std::cerr;
 
@@ -13,52 +11,23 @@ void PlaylistDb::sql_create_tables()
 {
     RuntimeErrorBlocker reb;
     try {
+        Q("CREATE TABLE DiskPlaylist ("
+                "'uid' INTEGER NOT NULL);").execute();
+
+        Q("CREATE TABLE DiskMatches "
+                "('uid' INTEGER UNIQUE NOT NULL);").execute();
+
         Q("CREATE TEMPORARY TABLE Playlist ("
                 "'pos' INTEGER PRIMARY KEY, "
                 "'path' VARCHAR(4096) NOT NULL, "
                 "'uid' INTEGER DEFAULT -1);").execute();
 
-        Q("CREATE TEMPORARY TABLE Matches ("
-                "'uid' INTEGER UNIQUE NOT NULL);").execute();
+        Q("CREATE TEMPORARY TABLE Matches "
+                "('uid' INTEGER UNIQUE NOT NULL);").execute();
 
         Q("CREATE TEMPORARY VIEW Filter AS "
-                "SELECT * FROM Playlist WHERE uid IN Matches").execute();
-    }
-    WARNIFFAILED();
-}
-
-int PlaylistDb::install_filter(const string &filter)
-{ 
-    string old_filter = filter_clause;
-    filter_clause = filter;
-
-    update_filter();
-
-    int l = get_effective_playlist_length();
-    if (l)
-        return l;
-
-    filter_clause = old_filter;
-    update_filter();
-    return -1;
-}
-
-void PlaylistDb::update_filter()
-{
-    string where_clause = (filter_clause == "") ? "1" : filter_clause;
-
-    filter_update_requested = 0;
-
-    try {
-        Q("DELETE FROM Matches;").execute();
-
-        QueryCacheDisabler qcd;
-        Q("INSERT INTO Matches "
-                "SELECT DISTINCT(P.uid) FROM Playlist P "
-                "INNER JOIN Library L USING(uid) "
-                "INNER JOIN Ratings USING(uid) "
-                "LEFT OUTER JOIN Info I ON I.sid = L.sid "
-                "WHERE " + where_clause + ";").execute();
+                "SELECT * FROM Playlist WHERE uid IN Matches "
+                "OR NOT EXISTS (SELECT * FROM Matches LIMIT 1);").execute();
     }
     WARNIFFAILED();
 }
@@ -105,28 +74,18 @@ void PlaylistDb::playlist_update_identity(int pos, int uid)
         Q q("UPDATE Playlist SET uid = ? WHERE pos = ?;");
         q << uid << pos;
         q.execute();
-
-        filter_update_requested = UPDATE_DELAY;
     }
     WARNIFFAILED();
-}
-
-void PlaylistDb::do_events()
-{
-    if (filter_update_requested && !--filter_update_requested)
-        update_filter();
 }
 
 void PlaylistDb::playlist_insert_item(int pos, const string &path)
 {
     try {
         Q q("INSERT OR REPLACE INTO Playlist ('pos', 'path', 'uid') "
-                "VALUES (?, ?, "
-                "ifnull((SELECT uid FROM Identify WHERE path = ?), -1));");
+                "VALUES (?, ?, coalesce((SELECT uid FROM Identify "
+                    "WHERE path = ?), -1));");
         q << pos << path << path;
         q.execute();
-
-        filter_update_requested = UPDATE_DELAY;
     }
     WARNIFFAILED();
 }
@@ -196,6 +155,20 @@ void PlaylistDb::playlist_clear()
     try {
         Q("DELETE FROM Playlist;").execute();
         Q("DELETE FROM Matches;").execute();
+        Q("DELETE FROM DiskPlaylist;").execute();
+        Q("DELETE FROM DiskMatches;").execute();
+    }
+    WARNIFFAILED();
+}
+
+void PlaylistDb::sync()
+{
+    try {
+        Q("DELETE FROM DiskPlaylist;").execute();
+        Q("INSERT INTO DiskPlaylist "
+                "SELECT uid FROM Playlist;").execute();
+        Q("DELETE FROM Matches;").execute();
+        Q("INSERT INTO Matches SELECT uid FROM DiskMatches;").execute();
     }
     WARNIFFAILED();
 }

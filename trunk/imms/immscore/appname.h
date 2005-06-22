@@ -9,5 +9,6 @@ extern const std::string AppName;
 #define ANALYZER_APP    "analyzer"
 #define CLASSIFIER_APP  "classifier"
 #define IMMSTOOL_APP    "immstool"
+#define CLIENT_APP      "imms client"
 
 #endif  // __APPNAME_H
