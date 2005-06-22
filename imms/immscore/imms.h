@@ -27,8 +27,9 @@ public:
     void end_song(bool at_the_end, bool jumped, bool bad);
 
     virtual void request_playlist_item(int index);
-    void playlist_changed(int length);
     virtual void playlist_ready();
+
+    void playlist_changed(int length);
 
     // process internal events - call this periodically
     void do_events();

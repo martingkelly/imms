@@ -46,7 +46,7 @@ void SocketConnection::process_line(const string &line)
     }
     if (command == "IMMS")
     {
-#if defined(DEBUG)
+#ifdef DEBUG
         LOG(ERROR) << "IMMS Processor created!" << endl;
 #endif
         processor = new ImmsProcessor(this);
@@ -78,8 +78,8 @@ void ImmsProcessor::check_playlist_item(int pos, const string &path)
     {
         if (oldpath != path)
         {
-            cerr << "IMMSd: playlist triggered refresh: "
-                << oldpath << " != " << path << endl;
+            LOG(ERROR) << "playlist triggered refresh: " << oldpath
+                << " != " << path << endl;
             write_command("PlaylistChanged");
         }
     }
@@ -154,7 +154,7 @@ void ImmsProcessor::process_line(const string &line)
         int length;
         sstr >> length;
 #ifdef DEBUG
-        cerr << "got playlist length = " << length << endl;
+        LOG(ERROR) << "got playlist length = " << length << endl;
 #endif
         imms->playlist_changed(length);
         write_command("GetEntirePlaylist");
@@ -172,7 +172,7 @@ void ImmsProcessor::process_line(const string &line)
         write_command("EnqueueNext " + itos(pos));
         return;
     }
-    cerr << "IMMSd: Unknown command: " << command << endl;
+    LOG(ERROR) << "Unknown command: " << command << endl;
 }
 
 GMainLoop *loop = 0;
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
     int r = mkdir(get_imms_root().c_str(), 0700);
     if (r < 0 && errno != EEXIST)
     {
-        cerr << "IMMSd: could not create directory " 
+        LOG(ERROR) << "could not create directory " 
             << get_imms_root() << ": " << strerror(errno) << endl;
         exit(r);
     }
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
     StackLockFile lock(get_imms_root(".immsd_lock"));
     if (!lock.isok())
     {
-        cerr << "IMMSd: another instance already active - exiting." << endl;
+        LOG(ERROR) << "another instance already active - exiting." << endl;
         exit(1);
     }
 
@@ -218,7 +218,7 @@ int main(int argc, char **argv)
 
     SocketListener<SocketConnection> listener(get_imms_root("socket"));
 
-    cout << "IMMSd version " << PACKAGE_VERSION << " ready..." << endl;
+    LOG(INFO) << "version " << PACKAGE_VERSION << " ready..." << endl;
 
     g_main_loop_run(loop);
     return 0;

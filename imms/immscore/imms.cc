@@ -66,17 +66,10 @@ void Imms::get_metacandidates()
         CorrelationDb::get_related(metacandidates, handpicked.sid, 30);
 }
 
-void Imms::playlist_ready()
-{
-    SongPicker::playlist_ready();
-    PlaylistDb::update_filter();
-}
-
 void Imms::do_events()
 {
     if (!SongPicker::do_events())
         CorrelationDb::maybe_expire_recent();
-    PlaylistDb::do_events();
     XIdle::query();
 }
 
@@ -93,9 +86,14 @@ void Imms::playlist_changed(int length)
         local_max = MAX_TIME;
 
     ImmsDb::clear_recent();
-    PlaylistDb::playlist_clear();
     SongPicker::playlist_changed(length);
 } 
+
+void Imms::playlist_ready()
+{
+    PlaylistDb::playlist_ready();
+    SongPicker::playlist_ready();
+}
 
 void Imms::reset_selection()
 {
@@ -124,14 +122,14 @@ void Imms::start_song(int position, string path)
             set_lastinfo(handpicked);
 
         at.commit();
-
-        // FIXME:
-        if (0) {
-            string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
-            system(string("analyzer '" + epath + "' &").c_str());
-        }
     } 
     WARNIFFAILED();
+
+    // FIXME:
+    if (0) {
+        string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
+        system(string("analyzer '" + epath + "' &").c_str());
+    }
 }
 
 void Imms::print_song_info()
@@ -145,7 +143,9 @@ void Imms::print_song_info()
         fout << path;
 
     fout << "]\n  ";
+#ifdef DEBUG
     fout << "[" << current.get_uid() << "] ";
+#endif
     fout << "[Rating: " << current.rating.mean;
     fout << "(" << current.rating.dev << ")";
     fout << setiosflags(std::ios::showpos);
@@ -209,7 +209,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
     cerr << " *** " << path_get_filename(current.get_path()) << endl;
 #endif
 
-    if (at_the_end && !xidle_enabled || flags & Flags::active)
+    if (at_the_end && (!xidle_enabled || flags & Flags::active))
         set_lastinfo(last);
 
     if (at_the_end && (flags & Flags::first || flags & Flags::jumped_to))

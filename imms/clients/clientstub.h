@@ -31,7 +31,7 @@ public:
             write_command("IMMS");
             return true;
         }
-        cerr << "Connection failed: " << strerror(errno) << endl;
+        LOG(ERROR) << "Connection failed: " << strerror(errno) << endl;
         return false;
     }
     virtual void write_command(const string &line)
@@ -85,7 +85,7 @@ public:
             return;
         }
 
-        cerr << "IMMS: Unknown command: " << command << endl;
+        LOG(ERROR) << "Unknown command: " << command << endl;
     }
     virtual void connection_lost() { connected = false; }
 

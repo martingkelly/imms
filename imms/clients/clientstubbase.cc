@@ -1,5 +1,3 @@
-#include "clientstubbase.h"
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -9,9 +7,15 @@
 #include <sstream>
 #include <iostream>
 
+#include "clientstubbase.h"
+#include "appname.h"
+#include "immsutil.h"
+
 using std::ostringstream;
 using std::cerr;
 using std::endl;
+
+const std::string AppName = CLIENT_APP;
 
 void IMMSClientStub::setup(bool use_xidle)
 {
@@ -35,7 +39,7 @@ void IMMSClientStub::select_next() { write_command("SelectNext"); }
 void IMMSClientStub::playlist_changed(int length)
 {
 #ifdef DEBUG
-    cerr << "sending out pl len = " << length << endl;
+    LOG(ERROR) << "sending out pl len = " << length << endl;
 #endif
 
     ostringstream osstr;
@@ -53,7 +57,7 @@ int socket_connect(const string &sockname)
     if (connect(fd, (sockaddr*)&sun, sizeof(sun)))
     {
         close(fd);
-        cerr << "IMMS: connection failed: " << strerror(errno) << endl;
+        LOG(ERROR) << "connection failed: " << strerror(errno) << endl;
         return -1;
     }
     return fd;

@@ -157,7 +157,7 @@ int SongPicker::select_next()
 
     if (candidates.empty())
     {
-        cerr << "IMMS: warning: no candidates!" << endl;
+        LOG(ERROR) << "warning: no candidates!" << endl;
         return 0;
     }
 
@@ -198,7 +198,9 @@ int SongPicker::select_next()
         winning_ticket -= i->first;
         if (winning_ticket < 0)
         {
+#ifdef DEBUG
             cerr << "* ";
+#endif
             winner = *i->second[imms_random(i->second.size())];
 #ifndef DEBUG
             break;
