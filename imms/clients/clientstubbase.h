@@ -6,8 +6,6 @@
 
 using std::string;
 
-int socket_connect(const string &sockname);
-
 class IMMSClientStub
 {
 public:

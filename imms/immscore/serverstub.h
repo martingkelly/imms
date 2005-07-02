@@ -12,6 +12,8 @@ public:
     void request_playlist_item(int index);
     void request_entire_playlist();
     void reset_selection();
+
+    virtual void playlist_updated() = 0;
 protected:
     virtual void write_command(const string &line) = 0;
 

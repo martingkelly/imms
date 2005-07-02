@@ -42,6 +42,7 @@ void SongPicker::playlist_changed(int length)
 
 int SongPicker::next_candidate()
 {
+    StackTimer t;
     int pos = -1;
     if (!metacandidates.empty())
     {
@@ -82,7 +83,7 @@ bool SongPicker::add_candidate(bool urgent)
     ++attempts;
 
     int want = urgent ? MIN_SAMPLE_SIZE : SAMPLE_SIZE;
-    if (acquired >= std::min(want, pl_length))
+    if (acquired >= std::min(want, PlaylistDb::get_effective_playlist_length()))
         return false;
 
     int position = next_candidate();

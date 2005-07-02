@@ -19,6 +19,18 @@ protected:
     LineProcessor *processor;
 };
 
+class RemoteProcessor : public LineProcessor
+{
+public:
+    RemoteProcessor(SocketConnection *connection);
+    ~RemoteProcessor();
+    void write_command(const string &command)
+        { connection->write(command + "\n"); }
+    void process_line(const string &line);
+protected:
+    SocketConnection *connection;
+};
+
 class ImmsProcessor : public IMMSServer, public LineProcessor
 {
 public:
@@ -28,6 +40,8 @@ public:
         { connection->write(command + "\n"); }
     void check_playlist_item(int pos, const string &path);
     void process_line(const string &line);
+
+    void playlist_updated();
 protected:
     SocketConnection *connection;
 };

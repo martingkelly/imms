@@ -47,6 +47,11 @@ AC_ARG_ENABLE(analyzer,
                            [Disable acoustic song similarity analyzer]),
             [enable_analyzer=$enableval])
 
+AC_ARG_ENABLE(immsremote,
+            AC_HELP_STRING([--disable-immsremote],
+                           [Disable building of immsremote]),
+            [enable_immsremote=$enableval])
+
 AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -226,6 +231,19 @@ if test "$with_screensaver" = "no"; then
 else
     AC_DEFINE(WITH_XSCREENSAVER,, [XScreenSaver extension])
     AC_APPEND(LIBS, -L/usr/X11R6/lib)
+fi
+
+if test "$enable_immsremote" != "no"; then
+    PKG_CHECK_MODULES([IMMSREMOTE], [libglade-2.0 >= 2.0 gtk+-2.0 >= 2.4],
+                      [], [enable_immsremote=no])
+    if test "$enable_immsremote" = "no"; then
+        AC_MSG_WARN([******************************************************]);
+        AC_MSG_WARN("immsremote analyzer will not be built");
+        AC_MSG_WARN([******************************************************]);
+        immsremote=no
+    else
+        AC_APPEND(OPTIONAL, immsremote)
+    fi
 fi
 
 saved_cppflags="$CPPFLAGS"

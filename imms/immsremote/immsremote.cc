@@ -9,6 +9,8 @@
 #include "immsutil.h"
 #include "appname.h"
 #include "sqlite++.h"
+#include "giosocket.h"
+#include "clientstubbase.h"
 
 #define GLADE_FILE "immsremote/immsremote.glade"
 #define MISC_NAME "<Misc>"
@@ -20,10 +22,14 @@ using std::vector;
 
 const string AppName = REMOTE_APP;
 
+class RemoteClient;
+
 GtkTreeView *tree;
+RemoteClient *client = 0;
 GladeXML *mwxml, *cmxml;
 int sel_aid = -1;
 bool limit_requested = false;
+bool refresh_requested = false;
 
 int fold = 10;
 
@@ -36,10 +42,43 @@ enum
   NUM_COLS
 };
 
+class RemoteClient : public GIOSocket
+{
+public:
+    RemoteClient() : connected(false) { }
+    bool connect()
+    {
+        int fd = socket_connect(get_imms_root("socket"));
+        if (fd > 0)
+        {
+            init(fd);
+            connected = true;
+            write_command("Remote");
+            return true;
+        }
+        LOG(ERROR) << "Connection failed: " << strerror(errno) << endl;
+        return false;
+    }
+    virtual void process_line(const string &line)
+    {
+        if (line == "Refresh")
+        {
+            refresh_requested = true;
+            return;
+        }
+        LOG(ERROR) << "Unknown command: " << line << endl;
+    }
+    virtual void write_command(const string &line)
+        { if (isok()) GIOSocket::write(line + "\n"); }
+    virtual void connection_lost() { connected = false; }
+    bool isok() { return connected; }
+private:
+    bool connected;
+};
+
 extern "C" {
     void on_window_destroy(GtkWindow *window, gpointer user_data);
     void on_refreshitem_activate(GtkButton *button, gpointer user_data);
-    void on_limitbutton_clicked(GtkButton *button, gpointer user_data);
     void on_folditem_activate(GtkWidget *item, gpointer user_data);
     void on_rename_activate(GtkWidget *item, gpointer user_data);
     void on_markitem_activate(GtkWidget *menuitem, gpointer userdata);
@@ -388,6 +427,8 @@ void apply_limit()
         }
     }
     WARNIFFAILED();
+
+    client->write_command("Sync");
 }
 
 void rename(int aid, unsigned alternative)
@@ -508,8 +549,17 @@ void item_toggled(GtkCellRendererToggle *cell, gchar *path_str, gpointer data)
 gboolean limit_action(void *unused)
 {
     if (limit_requested)
+    {
         apply_limit();
-    limit_requested = false;
+        limit_requested = false;
+    }
+    if (refresh_requested)
+    {
+        refresh();
+        refresh_requested = false;
+    }
+    if (client && !client->isok())
+        client->connect();
     return TRUE;
 }
 
@@ -585,6 +635,9 @@ int main(int argc, char **argv)
     mi = GTK_CHECK_MENU_ITEM(glade_xml_get_widget(cmxml, "25fold"));
     g_signal_connect(mi, "activate",
             (GCallback)on_folditem_activate, (void*)25);
+
+    RemoteClient remoteclient;
+    client = &remoteclient;
 
     GSource* ts = g_timeout_source_new(500);
     g_source_attach(ts, NULL);

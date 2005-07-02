@@ -27,6 +27,8 @@ using std::vector;
 int imms_random(int max);
 uint64_t usec_diff(struct timeval &tv1, struct timeval &tv2);
 
+int socket_connect(const string &sockname);
+
 class StackTimer
 {
 public:

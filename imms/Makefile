@@ -16,8 +16,7 @@ immsconf.h: configure
 .PHONY: clean distclean dist
 
 clean:
-	rm -f $(wildcard build/*.o)
-	rm -f $(wildcard build/lib*imms*.* build/analyzer build/classifier build/immstool build/immsd build/imms-*.tar.* build/imms*.o core* build/.*.d)
+	rm -f $(wildcard build/[^M]* core* build/.*.d)
 
 distclean: clean
 	rm -f $(wildcard .\#* config.* configure immsconf.h* aclocal.m4* vars.mk)
