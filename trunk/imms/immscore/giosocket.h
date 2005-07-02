@@ -118,8 +118,8 @@ public:
 
         if (condition & G_IO_HUP)
         {
-            connection_lost();
             close();
+            connection_lost();
 #ifdef DEBUG
             std::cerr << "Connection terminated." << std::endl;
 #endif

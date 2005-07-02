@@ -62,7 +62,7 @@ void CorrelationDb::add_recent(int uid, time_t skipped_at, int flags)
 void CorrelationDb::get_related(vector<int> &out, int pivot_sid, int limit)
 {
     string query =
-        "SELECT pos FROM Playlist NATURAL INNER JOIN Library "
+        "SELECT pos FROM Filter NATURAL INNER JOIN Library "
             "WHERE sid IN ("
             "SELECT L.sid FROM C.Correlations AS C INNER JOIN Last AS L "
                 "ON CASE WHEN C.x = ? THEN C.y ELSE C.x END = L.sid "

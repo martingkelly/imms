@@ -23,8 +23,14 @@ public:
     int get_effective_playlist_length();
 
     void playlist_clear();
-    void playlist_ready() { sync(); }
+    void playlist_ready()
+    {
+        sync();
+        playlist_updated();
+    }
     void sync();
+
+    virtual void playlist_updated() {};
 
 protected:
     virtual void sql_create_tables();

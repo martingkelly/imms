@@ -8,12 +8,16 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include "immsconf.h"
 #include "immsutil.h"
 
 using std::ifstream;
 using std::ofstream;
+using std::endl;
 using std::ios_base;
 
 // Random
@@ -168,4 +172,20 @@ int listdir(const string &dirname, vector<string> &files)
         files.push_back(de->d_name);
     closedir(dir);
     return 0;
+}
+
+int socket_connect(const string &sockname)
+{
+    int fd = socket(PF_UNIX, SOCK_STREAM, 0);
+
+    struct sockaddr_un sun;
+    sun.sun_family = AF_UNIX;
+    strncpy(sun.sun_path, sockname.c_str(), sizeof(sun.sun_path));
+    if (connect(fd, (sockaddr*)&sun, sizeof(sun)))
+    {
+        close(fd);
+        LOG(ERROR) << "connection failed: " << strerror(errno) << endl;
+        return -1;
+    }
+    return fd;
 }

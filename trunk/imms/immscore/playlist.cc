@@ -164,11 +164,13 @@ void PlaylistDb::playlist_clear()
 void PlaylistDb::sync()
 {
     try {
+        AutoTransaction a;
         Q("DELETE FROM DiskPlaylist;").execute();
         Q("INSERT INTO DiskPlaylist "
                 "SELECT uid FROM Playlist;").execute();
         Q("DELETE FROM Matches;").execute();
         Q("INSERT INTO Matches SELECT uid FROM DiskMatches;").execute();
+        a.commit();
     }
     WARNIFFAILED();
 }

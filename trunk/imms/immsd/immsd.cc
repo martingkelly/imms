@@ -1,9 +1,11 @@
 #include <glib.h>
+#include <errno.h>
 #include <signal.h>
 #include <unistd.h>
+
 #include <iostream>
 #include <sstream>
-#include <errno.h>
+#include <list>
 
 #include "immsd.h"
 #include "appname.h"
@@ -15,11 +17,13 @@
 using std::cerr;
 using std::cout;
 using std::endl;
+using std::list;
 using std::stringstream;
 
 const string AppName = IMMSD_APP;
 
 static Imms *imms;
+static list<RemoteProcessor*> remotes;
 
 gboolean do_events(void *unused)
 {
@@ -46,15 +50,50 @@ void SocketConnection::process_line(const string &line)
     }
     if (command == "IMMS")
     {
-#ifdef DEBUG
-        LOG(ERROR) << "IMMS Processor created!" << endl;
-#endif
         processor = new ImmsProcessor(this);
+        return;
+    }
+    if (command == "Remote")
+    {
+        processor = new RemoteProcessor(this);
         return;
     }
     LOG(ERROR) << "Unknown command: " << command << endl;
 
 };
+
+RemoteProcessor::RemoteProcessor(SocketConnection *connection)
+    : connection(connection)
+{
+    remotes.push_back(this);
+    write_command("Refresh");
+}
+
+RemoteProcessor::~RemoteProcessor()
+{
+    remotes.remove(this);
+}
+
+void RemoteProcessor::process_line(const string &line)
+{
+    stringstream sstr;
+    sstr << line;
+
+    string command;
+    sstr >> command;
+
+#ifdef DEBUG
+    LOG(ERROR) << "RemoteProcessor: " << command << endl;
+#endif
+
+    if (command == "Sync")
+    {
+        if (imms)
+            imms->sync();
+        return;
+    }
+    LOG(ERROR) << "Unknown command: " << command << endl;
+}
 
 ImmsProcessor::ImmsProcessor(SocketConnection *connection)
     : connection(connection)
@@ -69,6 +108,13 @@ ImmsProcessor::~ImmsProcessor()
     imms = 0;
 
     exit(0);
+}
+
+void ImmsProcessor::playlist_updated()
+{
+    for (list<RemoteProcessor *>::iterator i = remotes.begin();
+            i != remotes.end(); ++i)
+        (*i)->write_command("Refresh");
 }
 
 void ImmsProcessor::check_playlist_item(int pos, const string &path)

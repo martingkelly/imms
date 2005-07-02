@@ -37,6 +37,12 @@ public:
     // configure imms
     void setup(bool use_xidle);
 
+    void sync()
+    {
+        PlaylistDb::sync();
+        reset_selection();
+    }
+
     friend class ImmsProcessor;
 
 protected:
@@ -47,8 +53,10 @@ protected:
         StringPair acoustic;
     };
 
-    void reset_selection();
+    virtual void playlist_updated() { server->playlist_updated(); }
+
     void get_metacandidates();
+    void reset_selection();
 
     // Helper functions
     bool fetch_song_info(SongData &data);
