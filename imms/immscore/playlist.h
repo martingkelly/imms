@@ -10,6 +10,7 @@
 class PlaylistDb
 {
 public:
+    PlaylistDb() : effective_length_cache(-1) {}
     virtual ~PlaylistDb() {};
     void playlist_insert_item(int pos, const string &path);
     void playlist_update_identity(int pos, int uid);
@@ -18,9 +19,9 @@ public:
     string get_item_from_playlist(int pos);
     int get_unknown_playlist_item();
 
-    int random_playlist_position();
     int get_real_playlist_length();
     int get_effective_playlist_length();
+    void get_random_sample(std::vector<int> &metacandidates, int size);
 
     void playlist_clear();
     void playlist_ready()
@@ -35,6 +36,9 @@ public:
 protected:
     virtual void sql_create_tables();
     virtual void sql_schema_upgrade(int from = 0) {};
+
+private:
+    int effective_length_cache;
 };
 
 #endif

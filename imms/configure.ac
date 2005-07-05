@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[2.99-pre3],[mag@luminal.org])
+AC_INIT([IMMS],[2.99-pre4],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -85,10 +85,10 @@ if test "$have_sqlites" = "no"; then
     AC_MSG_WARN([******************************************************]);
 fi
 
-AC_CHECK_LIB(sqlite3, sqlite3_open,, [with_sqlite=no])
+AC_CHECK_LIB(sqlite3, sqlite3_get_autocommit,, [with_sqlite=no])
 AC_CHECK_HEADERS(sqlite3.h,, [with_sqlite=no])
 if test "$with_sqlite" = "no"; then
-    AC_MSG_ERROR([sqlite >= 3.0 required and missing.])
+    AC_MSG_ERROR([sqlite >= 3.2.2 required and missing.])
 fi
 
 AC_CHECK_LIB(pcre, pcre_compile,, [with_pcre=no])

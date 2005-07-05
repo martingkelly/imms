@@ -131,8 +131,11 @@ void AttachedDatabase::detach()
 
 // AutoTransaction
 
-AutoTransaction::AutoTransaction(bool exclusive) : commited(false)
+AutoTransaction::AutoTransaction(bool exclusive) : commited(true)
 {
+    if (!sqlite3_get_autocommit(SQLDatabase::db()))
+        return;
+
     int r;
     string exclusive_term = exclusive ? "EXCLUSIVE " : "";
     string query = "BEGIN " + exclusive_term + " TRANSACTION;";
@@ -140,11 +143,9 @@ AutoTransaction::AutoTransaction(bool exclusive) : commited(false)
     while (r == SQLITE_BUSY);
 
     if (r)
-    {
-        commited = true;
-        if (r != SQLITE_ERROR)
-            throw SQLStandardException();
-    }
+        throw SQLStandardException();
+
+    commited = false;
 }
 
 AutoTransaction::~AutoTransaction()
@@ -155,22 +156,23 @@ AutoTransaction::~AutoTransaction()
 
 void AutoTransaction::commit()
 {
-    if (!commited)
-    {
-        int r;
-        while (1)
-        {
-            r = sqlite3_exec(SQLDatabase::db(), "COMMIT TRANSACTION;", 0, 0, 0);
-            if (r != SQLITE_BUSY)
-                break;
-#ifdef DEBUG
-            cerr << "database busy at commit time - sleeping" << endl;
-#endif
-            struct timespec t = { 0, 250000000 };
-            nanosleep(&t, 0);
-        }
-    }
+    if (commited)
+        return;
+
     commited = true;
+
+    while (1)
+    {
+        int r = sqlite3_exec(SQLDatabase::db(),
+                "COMMIT TRANSACTION;", 0, 0, 0);
+        if (r != SQLITE_BUSY)
+            break;
+#ifdef DEBUG
+        cerr << "database busy at commit time - sleeping" << endl;
+#endif
+        struct timespec t = { 0, 250000000 };
+        nanosleep(&t, 0);
+    }
 }
 
 // SQLQueryManager

@@ -55,7 +55,7 @@ protected:
 
     virtual void playlist_updated() { server->playlist_updated(); }
 
-    void get_metacandidates();
+    void get_metacandidates(int size);
     void reset_selection();
 
     // Helper functions
