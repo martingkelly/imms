@@ -1,5 +1,6 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
+#include <signal.h>
 
 #include <list>
 #include <string>
@@ -521,6 +522,12 @@ gboolean on_maintreeview_button_press_event(GtkWidget *treeview,
 
 void on_window_destroy(GtkWindow *window, gpointer user_data)
 {
+    try
+    {
+        AutoTransaction a(true);
+        Q("DELETE FROM DiskMatches;").execute();
+    }
+    WARNIFFAILED();
     gtk_main_quit();
 }
 
@@ -565,6 +572,7 @@ gboolean limit_action(void *unused)
 
 int main(int argc, char **argv)
 {
+    signal(SIGPIPE, SIG_IGN);
     gtk_init(&argc, &argv);
     glade_init();
 

@@ -105,34 +105,36 @@ int PlaylistDb::get_real_playlist_length()
 
 int PlaylistDb::get_effective_playlist_length()
 {
-    int result = 0;
+    if (effective_length_cache != -1)
+        return effective_length_cache;
+
     try {
         Q q("SELECT count(1) FROM Filter;");
         if (q.next())
-            q >> result;
+            q >> effective_length_cache;
     }
     WARNIFFAILED();
 
-    return result;
+    return effective_length_cache;
 }
 
-int PlaylistDb::random_playlist_position()
+void PlaylistDb::get_random_sample(vector<int> &metacandidates, int size)
 {
-    int result = -1;
-
     try {
-        AutoTransaction a;
         int total = get_effective_playlist_length();
 
-        Q q("SELECT pos FROM Filter LIMIT 1 OFFSET ?;");
-        q << imms_random(total);
+        Q q("SELECT pos FROM Filter WHERE (abs(random()) % ?) < ?;");
+        q << total << (size + 5);
 
-        if (q.next())
+        int result;
+        while (q.next())
+        {
             q >> result;
+            metacandidates.push_back(result);
+        }
+
     }
     WARNIFFAILED();
-
-    return result;
 }
 
 string PlaylistDb::get_item_from_playlist(int pos)
@@ -163,6 +165,7 @@ void PlaylistDb::playlist_clear()
 
 void PlaylistDb::sync()
 {
+    effective_length_cache = -1;
     try {
         AutoTransaction a;
         Q("DELETE FROM DiskPlaylist;").execute();

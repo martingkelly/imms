@@ -72,6 +72,8 @@ RemoteProcessor::RemoteProcessor(SocketConnection *connection)
 RemoteProcessor::~RemoteProcessor()
 {
     remotes.remove(this);
+    if (imms)
+        imms->sync();
 }
 
 void RemoteProcessor::process_line(const string &line)

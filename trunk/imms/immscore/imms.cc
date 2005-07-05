@@ -57,13 +57,20 @@ void Imms::setup(bool use_xidle)
     xidle_enabled = use_xidle;
 }
 
-void Imms::get_metacandidates()
+void Imms::get_metacandidates(int size)
 {
-    AutoTransaction a;
-    if (last.sid != -1)
-        CorrelationDb::get_related(metacandidates, last.sid, 20);
+    metacandidates.clear();
+
     if (handpicked.sid != -1)
         CorrelationDb::get_related(metacandidates, handpicked.sid, 30);
+    if (last.sid != -1)
+        CorrelationDb::get_related(metacandidates, last.sid, 20);
+
+    if ((int)metacandidates.size() < size)
+        PlaylistDb::get_random_sample(metacandidates,
+                size - metacandidates.size());
+
+    reverse(metacandidates.begin(), metacandidates.end());
 }
 
 void Imms::do_events()
