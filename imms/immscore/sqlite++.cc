@@ -184,7 +184,12 @@ sqlite3_stmt *SQLQueryManager::get(const string &query)
     StmtMap::iterator i = statements.find(query);
 
     if (i != statements.end())
-        return i->second;
+    {
+        if (!sqlite3_expired(i->second))
+            return i->second;
+        sqlite3_finalize(i->second);
+        statements.erase(query);
+    }
 
     sqlite3_stmt *statement = 0;
     int qr = sqlite3_prepare(SQLDatabase::db(), query.c_str(),

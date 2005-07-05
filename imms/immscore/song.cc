@@ -151,7 +151,8 @@ bool Song::get_acoustic(void *mfccdat, size_t mfccsize,
         if (q.next())
         {
             q.load(mfccdat, mfccsize);  
-            q.load(bpmdat, bpmsize);  
+            if (bpmdat)
+                q.load(bpmdat, bpmsize);  
             return true;
         }
     }
@@ -611,8 +612,8 @@ Rating Song::update_rating()
             total += fabs(delta);
         }
 
-        ones = std::max(ones, 1.0);
-        zeros = std::max(zeros, 1.0);
+        if (!ones && !zeros)
+            zeros = ones = 1;
 
         double biasmass = 0;
         double sum = ones + zeros;

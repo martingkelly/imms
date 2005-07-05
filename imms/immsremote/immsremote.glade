@@ -168,7 +168,7 @@
 	  <child>
 	    <widget class="GtkMenuItem" id="allitem">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Select _All</property>
+	      <property name="label" translatable="yes">Mark _All</property>
 	      <property name="use_underline">True</property>
 	      <signal name="activate" handler="on_allitem_activate" last_modification_time="Wed, 22 Jun 2005 17:57:56 GMT"/>
 	      <accelerator key="a" modifiers="GDK_CONTROL_MASK" signal="activate"/>
