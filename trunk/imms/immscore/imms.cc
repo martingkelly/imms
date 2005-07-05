@@ -10,6 +10,8 @@
 #include "strmanip.h"
 #include "immsutil.h"
 
+#include <analyzer/distance.h>
+
 using std::string;
 using std::endl;
 using std::cerr;
@@ -179,8 +181,7 @@ void Imms::set_lastinfo(LastInfo &last)
 {
     last.set_on = time(0);
     last.sid = current.get_sid();
-    // FIXME:
-    // last.acoustic = current.get_acoustic();
+    last.avalid = current.get_acoustic(&last.mm, sizeof(MixtureModel), 0, 0);
 }
 
 void Imms::end_song(bool at_the_end, bool jumped, bool bad)
@@ -254,6 +255,15 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     float rel = ImmsDb::correlate(data.get_sid(), last.sid) / MAX_CORRELATION;
     rel = std::max(std::min(rel, (float)1), (float)-1);
     data.relation += ROUND(rel * weight * CORRELATION_IMPACT);
+
+    if (!last.avalid)
+        return;
+
+    MixtureModel thismm;
+    if (!data.get_acoustic(&thismm, sizeof(MixtureModel), 0, 0))
+        return;
+    
+    float d = EMD::distance(last.mm, thismm);
 }
 
 bool Imms::fetch_song_info(SongData &data)

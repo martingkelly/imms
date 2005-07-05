@@ -23,7 +23,7 @@
 #include <normal.h>
 #include <appname.h>
 
-#include <classifier/distance.h>
+#include <analyzer/distance.h>
 #include <analyzer/beatkeeper.h>
 
 using std::string;

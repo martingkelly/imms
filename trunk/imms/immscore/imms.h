@@ -8,6 +8,7 @@
 #include "picker.h"
 #include "xidle.h"
 #include "serverstub.h"
+#include <analyzer/mfcckeeper.h>
 
 // IMMS, UMMS, we all MMS for XMMS?
 
@@ -47,10 +48,11 @@ public:
 
 protected:
     struct LastInfo {
-        LastInfo() : sid(-1) {}
+        LastInfo() : sid(-1), avalid(false) {}
         time_t set_on;
         int sid;
-        StringPair acoustic;
+        bool avalid;
+        MixtureModel mm;
     };
 
     virtual void playlist_updated() { server->playlist_updated(); }

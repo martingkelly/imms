@@ -37,6 +37,7 @@ socketserver-CPPFLAGS=$(GLIB2CPPFLAGS)
 
 immsd: libimmscore.a
 immsd: $(call objects,../immsd)
+immsd: distance.o emd.o
 immsd-CPPFLAGS=$(GLIB2CPPFLAGS)
 immsd-LIBS=$(GLIB2LDFLAGS)
 
