@@ -13,7 +13,6 @@
 #include "giosocket.h"
 #include "clientstubbase.h"
 
-#define GLADE_FILE "immsremote/immsremote.glade"
 #define MISC_NAME "<Misc>"
 
 using std::string;
@@ -377,6 +376,8 @@ void view_popup_menu(GtkWidget *treeview,
 
 void refresh()
 {
+    if (client && !client->isok())
+        return;
     ArtistList al;
     al.filllist(fold);
     limit_requested = true;
@@ -413,11 +414,11 @@ void apply_limit()
             }
         }
 
-        {
-            string where_clause = "WHERE (A.aid IN Selected)";
-            if (unknown)
-                where_clause += " OR uid = -1 OR aid ISNULL";
+        string where_clause = "WHERE (A.aid IN Selected)";
+        if (unknown)
+            where_clause += " OR uid = -1 OR aid ISNULL";
 
+        {
             AutoTransaction a(true);
             Q q("INSERT INTO DiskMatches SELECT DISTINCT uid "
                     "FROM DiskPlaylist INNER JOIN Library USING(uid) "
@@ -583,8 +584,21 @@ int main(int argc, char **argv)
     }
     WARNIFFAILED();
 
-    mwxml = glade_xml_new(GLADE_FILE, "mainwindow", NULL);
-    cmxml = glade_xml_new(GLADE_FILE, "contextmenu", NULL);
+    char *glades[] =
+    {   
+        DATADIR "/imms/immsremote.glade",
+        "immsremote/immsremote.glade",
+        "immsremote.glade",
+        NULL
+    };
+
+    int i = 0;
+    while (glades[i] && !mwxml && !cmxml)
+    { 
+        mwxml = glade_xml_new(glades[i], "mainwindow", NULL);
+        cmxml = glade_xml_new(glades[i], "contextmenu", NULL);
+        ++i;
+    }
 
     if (!mwxml || !cmxml)
     {

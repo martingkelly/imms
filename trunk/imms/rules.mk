@@ -23,24 +23,9 @@ objects=$(sort $(notdir $(foreach type,c cc,$(call objects_$(type),$1))))
 objects_c=$(patsubst %.c,%.o,$(wildcard $(addsuffix /*.c,$1)))
 objects_cc=$(patsubst %.cc,%.o,$(wildcard $(addsuffix /*.cc,$1)))
 
-.PHONY: install install-user install-system user-message system-message
+.PHONY: install analyzer_install immsremote_install
 
-ifeq ($(shell id -u), 0)
-    install: system-message do_install
-else
-    install: user-message do_install
-endif
+install: all plugins_install programs_install
 
-system-message:
-	$(warning Defaulting to installing for all users.)
-	$(warning Use 'make install-user' to install for the current user only.)
-
-
-user-message:
-	$(warning Defaulting to installing for current user only.)
-	$(warning Use 'make install-system' to install for all users.)
-
-do_install: all plugins_install programs_install
-
-programs_install:
-	${INSTALL_PROGRAM} -D immsd immstool $(OPTIONAL) $(bindir)
+programs_install: $(patsubst %,%_install,$(OPTIONAL))
+	${INSTALL} -D immsd immstool $(bindir)

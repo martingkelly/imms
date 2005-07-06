@@ -31,6 +31,8 @@ using std::ofstream;
 
 #define     TERM_WIDTH              80
 
+#define     SPECAVG                 20
+
 //////////////////////////////////////////////
 
 // Imms
@@ -134,11 +136,8 @@ void Imms::start_song(int position, string path)
     } 
     WARNIFFAILED();
 
-    // FIXME:
-    if (0) {
-        string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
-        system(string("analyzer '" + epath + "' &").c_str());
-    }
+    string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
+    system(string("analyzer '" + epath + "' &").c_str());
 }
 
 void Imms::print_song_info()
@@ -163,7 +162,7 @@ void Imms::print_song_info()
     if (current.bpmrating)
         fout << current.bpmrating << "b";
     if (current.specrating)
-        fout << current.specrating << "s";
+        fout << current.specrating << "c";
     fout << resetiosflags(std::ios::showpos);
 
     fout << "] [Last: " << strtime(current.last_played) <<
@@ -263,7 +262,9 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     if (!data.get_acoustic(&thismm, sizeof(MixtureModel), 0, 0))
         return;
     
-    float d = EMD::distance(last.mm, thismm);
+    float dist = EMD::distance(last.mm, thismm);
+
+    data.specrating = ROUND(SPECAVG - dist);
 }
 
 bool Imms::fetch_song_info(SongData &data)
