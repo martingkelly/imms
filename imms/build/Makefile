@@ -25,7 +25,7 @@ autotag-LIBS=-lmusicbrainz
 
 immsremote: $(call objects,../immsremote)
 immsremote: libimmscore.a
-immsremote-CPPFLAGS=`pkg-config --cflags gtk+-2.0 libglade-2.0`
+immsremote-CPPFLAGS=`pkg-config --cflags gtk+-2.0 libglade-2.0` -DDATADIR=\"$(datadir)\"
 immsremote-LIBS=`pkg-config --libs gtk+-2.0 libglade-2.0`
 
 classifier: $(call objects,../classifier)
@@ -43,3 +43,12 @@ immsd-LIBS=$(GLIB2LDFLAGS)
 
 PLUGINS_INSTALL=$(patsubst %,%_install,$(PLUGINS))
 plugins_install: $(PLUGINS_INSTALL)
+
+analyzer_install: analyzer
+	${INSTALL} -D $< $(bindir)/$<
+
+immsremote_install: immsremote glade_install
+	${INSTALL} -D $< $(bindir)/$<
+
+glade_install: ../immsremote/immsremote.glade
+	${INSTALL} -D $< $(datadir)/imms/immsremote.glade

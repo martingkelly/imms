@@ -19,7 +19,7 @@ else
 endif
 
 libxmmsimms.so_install: libxmmsimms.so
-	${INSTALL_PROGRAM} -D $^ $(DESTDIR)/libxmmsimms.so
+	${INSTALL} -D $^ $(DESTDIR)/libxmmsimms.so
 
 libxmmsimms2.so_install: libxmmsimms2.so
-	${INSTALL_PROGRAM} -D $^ $(DESTDIR)/libxmmsimms.so
+	${INSTALL} -D $^ $(DESTDIR)/libxmmsimms.so

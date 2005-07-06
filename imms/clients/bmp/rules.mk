@@ -23,7 +23,7 @@ else
 endif
 
 libbmpimms.so_install: libbmpimms.so
-	${INSTALL_PROGRAM} -D $^ $(BMPDESTDIR)/libbmpimms.so
+	${INSTALL} -D $^ $(BMPDESTDIR)/libbmpimms.so
 
 libbmpimms2.so_install: libbmpimms2.so
-	${INSTALL_PROGRAM} -D $^ $(BMPDESTDIR)/libbmpimms.so
+	${INSTALL} -D $^ $(BMPDESTDIR)/libbmpimms.so

@@ -182,6 +182,8 @@ if test "$with_taglib" != "no"; then
         [LIBS=$saved_libs; AC_MSG_RESULT(no)])
 fi
 
+CPPFLAGS=$saved_cppflags
+
 if test "$with_taglib" = "yes"; then
     AC_DEFINE(WITH_TAGLIB,, [Tag support using TagLib])
 else
