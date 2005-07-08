@@ -26,7 +26,7 @@ autotag-LIBS=-lmusicbrainz
 immsremote: $(call objects,../immsremote)
 immsremote: libimmscore.a
 immsremote-CPPFLAGS=`pkg-config --cflags gtk+-2.0 libglade-2.0` -DDATADIR=\"$(datadir)\"
-immsremote-LIBS=`pkg-config --libs gtk+-2.0 libglade-2.0`
+immsremote-LIBS=`pkg-config --libs gtk+-2.0 libglade-2.0` -rdynamic
 
 classifier: $(call objects,../classifier)
 classifier: beatkeeper.o libimmscore.a
