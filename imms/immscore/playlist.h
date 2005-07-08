@@ -10,7 +10,7 @@
 class PlaylistDb
 {
 public:
-    PlaylistDb() : effective_length_cache(-1) {}
+    PlaylistDb() : effective_length_cache(-1) { clear_matches(); }
     virtual ~PlaylistDb() {};
     void playlist_insert_item(int pos, const string &path);
     void playlist_update_identity(int pos, int uid);
@@ -30,6 +30,7 @@ public:
         playlist_updated();
     }
     void sync();
+    void clear_matches();
 
     virtual void playlist_updated() {};
 

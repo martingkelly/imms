@@ -27,7 +27,6 @@ public:
     void start_song(int position, std::string path);
     void end_song(bool at_the_end, bool jumped, bool bad);
 
-    virtual void request_playlist_item(int index);
     virtual void playlist_ready();
 
     void playlist_changed(int length);
@@ -38,11 +37,7 @@ public:
     // configure imms
     void setup(bool use_xidle);
 
-    void sync()
-    {
-        PlaylistDb::sync();
-        reset_selection();
-    }
+    void sync(bool incharge);
 
     friend class ImmsProcessor;
 
@@ -57,8 +52,10 @@ protected:
 
     virtual void playlist_updated() { server->playlist_updated(); }
 
-    void get_metacandidates(int size);
-    void reset_selection();
+    // Implementations for SongPicker
+    virtual void request_playlist_item(int index);
+    virtual void get_metacandidates(int size);
+    virtual void reset_selection();
 
     // Helper functions
     bool fetch_song_info(SongData &data);

@@ -42,6 +42,14 @@ enum
   NUM_COLS
 };
 
+void set_status_message(const string &msg)
+{
+    GtkStatusbar *sb = GTK_STATUSBAR(
+            glade_xml_get_widget(mwxml, "statusbar"));
+    gtk_statusbar_pop(sb, 1);
+    gtk_statusbar_push(sb, 1, msg.c_str());
+}
+
 class RemoteClient : public GIOSocket
 {
 public:
@@ -54,9 +62,10 @@ public:
             init(fd);
             connected = true;
             write_command("Remote");
+            set_status_message("Connected");
             return true;
         }
-        LOG(ERROR) << "Connection failed: " << strerror(errno) << endl;
+        set_status_message(string("Connection failed: ") + strerror(errno));
         return false;
     }
     virtual void process_line(const string &line)
@@ -70,7 +79,11 @@ public:
     }
     virtual void write_command(const string &line)
         { if (isok()) GIOSocket::write(line + "\n"); }
-    virtual void connection_lost() { connected = false; }
+    virtual void connection_lost()
+    {
+        connected = false;
+        set_status_message("Disconnected!");
+    }
     bool isok() { return connected; }
 private:
     bool connected;
@@ -226,7 +239,8 @@ public:
 
             char *utf8name = g_locale_to_utf8(i->name.c_str(), -1, 0, 0, 0);
 
-            gtk_tree_store_set(model, &iter, COL_ARTIST, utf8name,
+            gtk_tree_store_set(model, &iter, COL_ARTIST,
+                    utf8name ? utf8name : i->name.c_str(),
                     COL_COUNT, i->count, COL_SEL, true,
                     COL_AID, i->aid, -1);
 
@@ -355,7 +369,8 @@ void view_popup_menu(GtkWidget *treeview,
                 {
                     char *utf8name = g_locale_to_utf8(choices[i].c_str(),
                             -1, 0, 0, 0);
-                    GtkWidget *item = gtk_menu_item_new_with_label(utf8name);
+                    GtkWidget *item = gtk_menu_item_new_with_label(
+                            utf8name ? utf8name : choices[i].c_str());
                     gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
                     g_signal_connect(item, "activate",
                             (GCallback)on_rename_activate, (void*)i);
@@ -586,9 +601,8 @@ int main(int argc, char **argv)
 
     char *glades[] =
     {   
-        DATADIR "/imms/immsremote.glade",
         "immsremote/immsremote.glade",
-        "immsremote.glade",
+        DATADIR "/imms/immsremote.glade",
         NULL
     };
 
@@ -657,6 +671,8 @@ int main(int argc, char **argv)
     mi = GTK_CHECK_MENU_ITEM(glade_xml_get_widget(cmxml, "25fold"));
     g_signal_connect(mi, "activate",
             (GCallback)on_folditem_activate, (void*)25);
+
+    set_status_message("Not connected!");
 
     RemoteClient remoteclient;
     client = &remoteclient;

@@ -92,9 +92,7 @@ void Imms::request_playlist_item(int index)
 void Imms::playlist_changed(int length)
 {
     pl_length = length;
-    local_max = pl_length * 8 * 60;
-    if (local_max > MAX_TIME)
-        local_max = MAX_TIME;
+    local_max = std::min(MAX_TIME, pl_length * 8 * 60);
 
     ImmsDb::clear_recent();
     SongPicker::playlist_changed(length);
@@ -106,13 +104,20 @@ void Imms::playlist_ready()
     SongPicker::playlist_ready();
 }
 
+void Imms::sync(bool incharge)
+{
+    if (!incharge)
+        PlaylistDb::clear_matches();
+    PlaylistDb::sync();
+    SongPicker::reset();
+    local_max = std::min(MAX_TIME,
+            ImmsDb::get_effective_playlist_length() * 8 * 60);
+    reset_selection();
+}
+
 void Imms::reset_selection()
 {
-    SongPicker::reset();
     server->reset_selection();
-
-    local_max = ImmsDb::get_effective_playlist_length() * 8 * 60;
-        local_max = MAX_TIME;
 }
 
 void Imms::start_song(int position, string path)
@@ -130,14 +135,20 @@ void Imms::start_song(int position, string path)
         print_song_info();
 
         if (last_jumped)
+        {
             set_lastinfo(handpicked);
+            SongPicker::request_reschedule();
+        }
 
         at.commit();
     } 
     WARNIFFAILED();
 
-    string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
-    system(string("analyzer '" + epath + "' &").c_str());
+    if (!current.get_acoustic(0, 0, 0, 0))
+    {
+        string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
+        system(string("analyzer '" + epath + "' &").c_str());
+    }
 }
 
 void Imms::print_song_info()
@@ -264,7 +275,7 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     
     float dist = EMD::distance(last.mm, thismm);
 
-    data.specrating = ROUND(SPECAVG - dist);
+    data.specrating = ROUND((SPECAVG - dist) * weight);
 }
 
 bool Imms::fetch_song_info(SongData &data)
