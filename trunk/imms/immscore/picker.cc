@@ -23,7 +23,7 @@ using std::map;
 SongPicker::SongPicker()
     : current(0, "current"), acquired(0), winner(0, "winner")
 {
-    playlist_known = 0;
+    reschedule_requested = playlist_known = 0;
     reset();
 }
 
@@ -32,6 +32,9 @@ void SongPicker::reset()
     candidates.clear();
     metacandidates.clear();
     acquired = attempts = 0;
+    selection_ready = false;
+    if (reschedule_requested)
+        --reschedule_requested;
 }
 
 void SongPicker::playlist_changed(int length)
@@ -85,7 +88,16 @@ bool SongPicker::do_events()
     if (!playlist_known || !pl_length)
         return true;
 
-    for (int i = 0; i < 5 && add_candidate(); ++i);
+    for (int i = 0; i < 5 && !selection_ready ; ++i)
+        if (!add_candidate())
+        {
+            selection_ready = true;
+            if (reschedule_requested)
+            {
+                reschedule_requested = 0;
+                reset_selection();
+            }
+        }
 
     if (playlist_known == 2)
         return false;
@@ -118,6 +130,8 @@ int SongPicker::select_next()
     if (PlaylistDb::get_real_playlist_length() < pl_length)
         return -1;
 
+    if (add_candidate())
+        request_reschedule();
     if (candidates.size() < MIN_SAMPLE_SIZE)
         while (add_candidate(true));
 

@@ -150,7 +150,8 @@ bool Song::get_acoustic(void *mfccdat, size_t mfccsize,
 
         if (q.next())
         {
-            q.load(mfccdat, mfccsize);  
+            if (mfccdat)
+                q.load(mfccdat, mfccsize);  
             if (bpmdat)
                 q.load(bpmdat, bpmsize);  
             return true;

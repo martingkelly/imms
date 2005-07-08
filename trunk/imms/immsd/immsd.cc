@@ -73,7 +73,7 @@ RemoteProcessor::~RemoteProcessor()
 {
     remotes.remove(this);
     if (imms)
-        imms->sync();
+        imms->sync(false);
 }
 
 void RemoteProcessor::process_line(const string &line)
@@ -91,7 +91,7 @@ void RemoteProcessor::process_line(const string &line)
     if (command == "Sync")
     {
         if (imms)
-            imms->sync();
+            imms->sync(true);
         return;
     }
     LOG(ERROR) << "Unknown command: " << command << endl;

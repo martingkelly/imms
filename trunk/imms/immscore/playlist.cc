@@ -137,6 +137,14 @@ void PlaylistDb::get_random_sample(vector<int> &metacandidates, int size)
     WARNIFFAILED();
 }
 
+void PlaylistDb::clear_matches()
+{
+    try {
+        Q("DELETE FROM DiskMatches;").execute();
+    }
+    WARNIFFAILED();
+}
+
 string PlaylistDb::get_item_from_playlist(int pos)
 {
     string path;

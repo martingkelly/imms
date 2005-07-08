@@ -184,7 +184,6 @@ int socket_connect(const string &sockname)
     if (connect(fd, (sockaddr*)&sun, sizeof(sun)))
     {
         close(fd);
-        LOG(ERROR) << "connection failed: " << strerror(errno) << endl;
         return -1;
     }
     return fd;
