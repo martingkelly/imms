@@ -70,7 +70,7 @@ class SQLQueryManager
 {
 public:
     SQLQueryManager() : cache(true), block(false) {}
-    sqlite3_stmt *get(const string &query);
+    sqlite3_stmt *get(const string &query, bool &cached);
     ~SQLQueryManager();
 
     static SQLQueryManager *self();
@@ -111,7 +111,7 @@ class SQLQuery
 {
 public:
     SQLQuery(const string &query);
-    ~SQLQuery() { reset(); }
+    ~SQLQuery();
 
     void reset();
     bool next();
@@ -137,6 +137,7 @@ public:
 
 private:
     int curbind;
+    bool cached;
 
     sqlite3_stmt *stmt;
 };

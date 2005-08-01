@@ -24,15 +24,24 @@ using std::ios_base;
 int imms_random(int max)
 {
     int rand_num;
+    static bool initialized = false;
+#ifndef RANDOM_BUG
     static struct random_data rand_data;
     static char rand_state[256];
-    static bool initialized = false;
     if (!initialized)
     {
         initstate_r(time(0), rand_state, sizeof(rand_state), &rand_data);
         initialized = true;
     }
     random_r(&rand_data, &rand_num);
+#else
+    if (!initialized)
+    {
+        srandom(time(0));
+        initialized = true;
+    }
+    rand_num = random();
+#endif
     double cof = rand_num / (RAND_MAX + 1.0);
     return (int)(max * cof);
 }

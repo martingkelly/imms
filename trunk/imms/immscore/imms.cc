@@ -144,11 +144,13 @@ void Imms::start_song(int position, string path)
     } 
     WARNIFFAILED();
 
+#ifdef ANALYZER_ENABLED
     if (!current.get_acoustic(0, 0, 0, 0))
     {
         string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
         system(string("analyzer '" + epath + "' &").c_str());
     }
+#endif
 }
 
 void Imms::print_song_info()

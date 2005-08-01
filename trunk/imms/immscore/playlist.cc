@@ -140,7 +140,9 @@ void PlaylistDb::get_random_sample(vector<int> &metacandidates, int size)
 void PlaylistDb::clear_matches()
 {
     try {
+        AutoTransaction a(AppName != IMMSD_APP);
         Q("DELETE FROM DiskMatches;").execute();
+        a.commit();
     }
     WARNIFFAILED();
 }

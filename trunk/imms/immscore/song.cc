@@ -499,7 +499,10 @@ Rating Song::get_raw_rating()
 
         q << uid;
         if (q.next())
+        {
             q >> r.mean >> r.dev;
+            q.execute();
+        }
 
         a.commit();
     }

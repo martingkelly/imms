@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[2.99-pre6],[mag@luminal.org])
+AC_INIT([IMMS],[3.00-pre1],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -240,7 +240,7 @@ if test "$enable_immsremote" != "no"; then
                       [], [enable_immsremote=no])
     if test "$enable_immsremote" = "no"; then
         AC_MSG_WARN([******************************************************]);
-        AC_MSG_WARN("immsremote analyzer will not be built");
+        AC_MSG_WARN("immsremote will not be built");
         AC_MSG_WARN([******************************************************]);
         immsremote=no
     else
@@ -316,6 +316,7 @@ fi
 
 if test "$enable_analyzer" != "no"; then
     AC_APPEND(OPTIONAL, analyzer)
+    AC_DEFINE(ANALYZER_ENABLED,, [Analyzer enabled])
 fi
 
 LIBS=$saved_libs

@@ -161,12 +161,15 @@ void AutoTransaction::commit()
 
     commited = true;
 
+    int r;
     while (1)
     {
-        int r = sqlite3_exec(SQLDatabase::db(),
+        r = sqlite3_exec(SQLDatabase::db(),
                 "COMMIT TRANSACTION;", 0, 0, 0);
-        if (r != SQLITE_BUSY)
+        if (!r)
             break;
+        if (r != SQLITE_BUSY)
+            throw SQLStandardException();
 #ifdef DEBUG
         cerr << "database busy at commit time - sleeping" << endl;
 #endif
@@ -179,7 +182,7 @@ void AutoTransaction::commit()
 
 SQLQueryManager *SQLQueryManager::instance;
 
-sqlite3_stmt *SQLQueryManager::get(const string &query)
+sqlite3_stmt *SQLQueryManager::get(const string &query, bool &cached)
 {
     StmtMap::iterator i = statements.find(query);
 
@@ -204,6 +207,7 @@ sqlite3_stmt *SQLQueryManager::get(const string &query)
         throw except;
     }
 
+    cached = cache;
     if (cache)
         statements[query] = statement;
     return statement;
@@ -230,9 +234,17 @@ SQLQueryManager::~SQLQueryManager()
 
 // SQLQuery
 
-SQLQuery::SQLQuery(const string &query) : curbind(0), stmt(0)
+SQLQuery::SQLQuery(const string &query) : curbind(0), cached(true), stmt(0)
 {
-    stmt = SQLQueryManager::self()->get(query);
+    stmt = SQLQueryManager::self()->get(query, cached);
+}
+
+SQLQuery::~SQLQuery()
+{
+    reset();
+
+    if (stmt && !cached)
+        sqlite3_finalize(stmt);
 }
 
 bool SQLQuery::next()
