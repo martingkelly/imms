@@ -321,8 +321,7 @@ void get_aid(GtkTreeModel *model, GtkTreePath *path,
 void selection_action(GtkTreeModel *model, GtkTreePath *path,
         GtkTreeIter *iter, gpointer data)
 {
-    int value = (int)data;
-    toggle(iter, value);
+    toggle(iter, GPOINTER_TO_UINT(data));
 }
 
 void get_name_alternatives(vector<string> &alternatives, int aid)
@@ -471,7 +470,7 @@ void rename(int aid, unsigned alternative)
 
 void on_rename_activate(GtkWidget *item, gpointer user_data)
 {
-    rename(sel_aid, (unsigned)user_data);
+    rename(sel_aid, GPOINTER_TO_UINT(user_data));
     refresh();
 }
 
@@ -543,7 +542,7 @@ void on_window_destroy(GtkWindow *window, gpointer user_data)
 
 void on_folditem_activate(GtkWidget *item, gpointer user_data)
 {
-    fold = (int)user_data;
+    fold = GPOINTER_TO_UINT(user_data);
     refresh();
 }
 
