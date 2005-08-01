@@ -161,10 +161,9 @@ void AutoTransaction::commit()
 
     commited = true;
 
-    int r;
     while (1)
     {
-        r = sqlite3_exec(SQLDatabase::db(),
+        int r = sqlite3_exec(SQLDatabase::db(),
                 "COMMIT TRANSACTION;", 0, 0, 0);
         if (!r)
             break;
