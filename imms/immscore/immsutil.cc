@@ -25,7 +25,7 @@ int imms_random(int max)
 {
     int rand_num;
     static bool initialized = false;
-#ifndef RANDOM_BUG
+#ifndef INITSTATE_BUG
     static struct random_data rand_data;
     static char rand_state[256];
     if (!initialized)

@@ -47,6 +47,7 @@ public:
             void *bpmdat, size_t bpmsize);
 
     Rating update_rating();
+    void infer_rating();
 
     void reset() { playcounter = uid = sid = -1; artist = title = ""; }
 protected:

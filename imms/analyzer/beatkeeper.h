@@ -13,6 +13,9 @@
 #define MAXBEATLENGTH   (WINPERSEC*60/MINBPM)
 #define BEATSSIZE       (MAXBEATLENGTH-MINBEATLENGTH)
 
+#define OFFSET2BPM(offset)  \
+    ROUND(60 * WINPERSEC / (float)(MINBEATLENGTH + offset))
+
 class BeatKeeper
 {
     friend class BeatManager;

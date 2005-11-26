@@ -9,6 +9,7 @@
 #include "xidle.h"
 #include "serverstub.h"
 #include <analyzer/mfcckeeper.h>
+#include <analyzer/beatkeeper.h>
 
 // IMMS, UMMS, we all MMS for XMMS?
 
@@ -48,6 +49,7 @@ protected:
         int sid;
         bool avalid;
         MixtureModel mm;
+        float beats[BEATSSIZE];
     };
 
     virtual void playlist_updated() { server->playlist_updated(); }

@@ -14,11 +14,6 @@ using std::map;
 
 using std::cerr;
 
-static inline int offset2bpm(int offset)
-{
-    return ROUND(60 * WINPERSEC / (float)(MINBEATLENGTH + offset));
-}
-
 bool BeatKeeper::extract_features(float *beats, vector<float> &features)
 {
     float sum = 0, min = 1e100, max = 0;
@@ -50,8 +45,8 @@ bool BeatKeeper::extract_features(float *beats, vector<float> &features)
             if (!width)
                 continue;
 
-            int realwidth = offset2bpm(i - width) - offset2bpm(i);
-            allpeaks[realwidth] = offset2bpm(maxindex);
+            int realwidth = OFFSET2BPM(i - width) - OFFSET2BPM(i);
+            allpeaks[realwidth] = OFFSET2BPM(maxindex);
             localmax = 0;
             width = 0;
             continue;
@@ -115,7 +110,7 @@ void BeatKeeper::dump(const string &filename)
     std::ofstream bstats(filename.c_str(), std::ios::trunc);
 
     for (int i = 0; i < BEATSSIZE; ++i)
-        bstats << offset2bpm(i) << " " << ROUND(beats[i]) << endl;
+        bstats << OFFSET2BPM(i) << " " << ROUND(beats[i]) << endl;
 
     bstats.close();
 }
