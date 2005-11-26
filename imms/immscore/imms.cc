@@ -33,8 +33,8 @@ using std::ofstream;
 
 #define     SPEC_AVG                 20
 #define     SPEC_IMPACT              20
-#define     BPM_AVG                  0.75
-#define     BPM_IMPACT               20
+#define     BPM_AVG                  0.70
+#define     BPM_IMPACT               15
 
 //////////////////////////////////////////////
 
@@ -196,6 +196,7 @@ void Imms::print_song_info()
 void Imms::set_lastinfo(LastInfo &last)
 {
     last.set_on = time(0);
+    last.uid = current.get_uid();
     last.sid = current.get_sid();
     last.avalid = current.get_acoustic(&last.mm, sizeof(MixtureModel),
             last.beats, sizeof(last.beats));
@@ -285,10 +286,23 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     if (!data.get_acoustic(&mm, sizeof(MixtureModel), beats, sizeof(beats)))
         return;
     
-    float spectdist = cap((SPEC_AVG - EMD::distance(last.mm, mm)) / SPEC_AVG);
-    data.specrating += ROUND(spectdist * SPEC_IMPACT * weight);
-    float bpmdist = cap((BPM_AVG - EMD::distance(last.beats, beats)) / BPM_AVG);
-    data.bpmrating += ROUND(bpmdist * BPM_IMPACT * weight);
+    float specdist = EMD::distance(last.mm, mm);
+    if (specdist >= 0)
+    {
+        specdist = cap((SPEC_AVG - specdist) / SPEC_AVG);
+        data.specrating += ROUND(specdist * SPEC_IMPACT * weight);
+    }
+
+    float bpmdist = EMD::distance(last.beats, beats);
+    DEBUGVAL(data.get_uid());
+    DEBUGVAL(last.uid);
+    DEBUGVAL(bpmdist);
+    if (bpmdist >= 0)
+    {
+        bpmdist = cap((BPM_AVG - bpmdist) / BPM_AVG);
+        data.bpmrating += ROUND(bpmdist * BPM_IMPACT * weight);
+        DEBUGVAL(ROUND(bpmdist * BPM_IMPACT));
+    }
 }
 
 bool Imms::fetch_song_info(SongData &data)

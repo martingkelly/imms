@@ -46,7 +46,7 @@ protected:
     struct LastInfo {
         LastInfo() : sid(-1), avalid(false) {}
         time_t set_on;
-        int sid;
+        int uid, sid;
         bool avalid;
         MixtureModel mm;
         float beats[BEATSSIZE];

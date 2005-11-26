@@ -49,7 +49,7 @@ float EMD::distance(const MixtureModel &m1, const MixtureModel &m2)
     return emd(&s1, &s2, EMD::gauss_dist, 0, 0);
 }
 
-static bool normalize(float beats[BEATSSIZE], int comb)
+static bool normalize(float beats[BEATSSIZE], float *output, int comb)
 {
     float sum = 0, min = 1e100;
 
@@ -66,30 +66,32 @@ static bool normalize(float beats[BEATSSIZE], int comb)
     // scale to keep the total area under the curve to be fixed
     float scale = 100.0 / sum;
     for (int i = 0; i < BEATSSIZE; ++i)
-    {
-        float cur = beats[i];
-        beats[i] = 0;
-        beats[i / comb] += cur * scale;
-    }
+        output[i / comb] += beats[i] * scale;
 
     return true;
 }
 
 float EMD::distance(float beats1[BEATSSIZE], float beats2[BEATSSIZE])
 {
-    static const int comb = 3;
-    feature_t features[BEATSSIZE / comb];
+    static const int comb = 5;
+    static const int OUTSIZE = DIVROUNDUP(BEATSSIZE, comb);
 
-    for (int i = 0; i < BEATSSIZE / comb; ++i)
+    feature_t features[OUTSIZE];
+
+    for (int i = 0; i < OUTSIZE; ++i)
         features[i] = i;
 
-    if (!normalize(beats1, comb))
+    float b1[OUTSIZE], b2[OUTSIZE];
+    memset(b1, 0, sizeof(b1));
+    memset(b2, 0, sizeof(b2));
+
+    if (!normalize(beats1, b1, comb))
         return -1;
-    if (!normalize(beats2, comb))
+    if (!normalize(beats2, b2, comb))
         return -1;
 
-    signature_t s1 = { BEATSSIZE / comb, features, beats1 };
-    signature_t s2 = { BEATSSIZE / comb, features, beats2 };
+    signature_t s1 = { OUTSIZE, features, b1 };
+    signature_t s2 = { OUTSIZE, features, b2 };
     return emd(&s1, &s2, EMD::linear_dist, 0, 0);
 }
 
@@ -98,18 +100,15 @@ float song_cepstr_distance(int uid1, int uid2)
     Song song1("", uid1), song2("", uid2);
 
     MixtureModel m1, m2;
-    float beats[BEATSSIZE];
 
-    if (!song1.get_acoustic(&m1, sizeof(MixtureModel),
-            beats, sizeof(beats)))
+    if (!song1.get_acoustic(&m1, sizeof(MixtureModel), 0, 0))
     {
         LOG(ERROR) << "warning: failed to load cepstrum data for uid "
             << uid1 << endl;
         return -1;
     }
 
-    if (!song2.get_acoustic(&m2, sizeof(MixtureModel),
-            beats, sizeof(beats)))
+    if (!song2.get_acoustic(&m2, sizeof(MixtureModel), 0, 0))
     {
         LOG(ERROR) << "warning: failed to load cepstrum data for uid "
             << uid2 << endl;
