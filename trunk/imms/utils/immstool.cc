@@ -190,13 +190,33 @@ int main(int argc, char *argv[])
     }
     else if (!strcmp(argv[1], "graph"))
     {
-        string str;
-        if (argc > 1)
-            str = argv[2];
-        else
-            cin >> str;
-        for (unsigned i = 0; i < str.length(); ++i)
-            cout << i << " " << (int)str[i] << endl;
+        if (argc < 3)
+        {
+            cout << "immstool graph <filename>" << endl;
+            return -1;
+        }
+
+        Song s(path_normalize(argv[2]));
+
+        if (!s.isok())
+        {
+            cerr << "identify failed!" << endl;
+            cout << "path       : " << s.get_path() << endl;
+            return -1;
+        }
+
+        MixtureModel m;
+        float beats[BEATSSIZE];
+
+        if (!s.get_acoustic(&m, sizeof(m), beats, sizeof(beats)))
+        {
+            LOG(ERROR) << "failed to load acoustic data for file "
+                << argv[2] << endl;
+            return -1;
+        }
+
+        for (unsigned i = 0; i < BEATSSIZE; ++i)
+            cout << OFFSET2BPM(i) << " " << beats[i] << endl;
         return 0;
     }
     else if (!strcmp(argv[1], "lint"))

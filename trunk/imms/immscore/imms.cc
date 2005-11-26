@@ -31,7 +31,10 @@ using std::ofstream;
 
 #define     TERM_WIDTH              80
 
-#define     SPECAVG                 20
+#define     SPEC_AVG                 20
+#define     SPEC_IMPACT              20
+#define     BPM_AVG                  0.75
+#define     BPM_IMPACT               20
 
 //////////////////////////////////////////////
 
@@ -194,7 +197,8 @@ void Imms::set_lastinfo(LastInfo &last)
 {
     last.set_on = time(0);
     last.sid = current.get_sid();
-    last.avalid = current.get_acoustic(&last.mm, sizeof(MixtureModel), 0, 0);
+    last.avalid = current.get_acoustic(&last.mm, sizeof(MixtureModel),
+            last.beats, sizeof(last.beats));
 }
 
 void Imms::end_song(bool at_the_end, bool jumped, bool bad)
@@ -256,6 +260,10 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
 }
 
+static inline float cap(float val, float max = 1) {
+    return std::max(std::min(val, max), -max);
+}
+
 void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
 {
     // Reset lasts if we had them for too long
@@ -265,20 +273,22 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     if (last.sid == -1)
         return;
 
-    float rel = ImmsDb::correlate(data.get_sid(), last.sid) / MAX_CORRELATION;
-    rel = std::max(std::min(rel, (float)1), (float)-1);
+    float rel = cap(ImmsDb::correlate(
+                data.get_sid(), last.sid) / MAX_CORRELATION);
     data.relation += ROUND(rel * weight * CORRELATION_IMPACT);
 
     if (!last.avalid)
         return;
 
-    MixtureModel thismm;
-    if (!data.get_acoustic(&thismm, sizeof(MixtureModel), 0, 0))
+    MixtureModel mm;
+    float beats[BEATSSIZE];
+    if (!data.get_acoustic(&mm, sizeof(MixtureModel), beats, sizeof(beats)))
         return;
     
-    float dist = EMD::distance(last.mm, thismm);
-
-    data.specrating = ROUND((SPECAVG - dist) * weight);
+    float spectdist = cap((SPEC_AVG - EMD::distance(last.mm, mm)) / SPEC_AVG);
+    data.specrating += ROUND(spectdist * SPEC_IMPACT * weight);
+    float bpmdist = cap((BPM_AVG - EMD::distance(last.beats, beats)) / BPM_AVG);
+    data.bpmrating += ROUND(bpmdist * BPM_IMPACT * weight);
 }
 
 bool Imms::fetch_song_info(SongData &data)

@@ -495,6 +495,7 @@ Rating Song::get_raw_rating()
 
         AutoTransaction a;
 
+        infer_rating();
         update_rating();
 
         q << uid;
@@ -509,6 +510,59 @@ Rating Song::get_raw_rating()
     WARNIFFAILED();
 
     return r;
+}
+
+void Song::infer_rating()
+{
+    if (sid < 0)
+        return;
+
+    int mean = -1, trials;
+
+    try {
+        Q q("SELECT avg(rating), sum(playcounter) "
+                "FROM Library L NATURAL JOIN Ratings "
+                "WHERE L.sid = ?;");
+        q << sid;
+
+        // if we have another instance of the same song,
+        // take it's rating as the default
+        if (q.next())
+            q >> mean >> trials;
+
+        if (mean <= 0)
+        {
+            // otherwise base it on the average of the artist as a whole
+            int aid = -1;
+            {
+                Q q("SELECT aid FROM Info WHERE sid = ?;");
+                q << sid;
+                if (q.next())
+                    q >> aid;
+            }
+            if (aid > 0)
+            {
+                Q q("SELECT avg(rating), sum(playcounter)/sum(1) "
+                        "FROM Library L NATURAL JOIN Info I "
+                        "INNER JOIN Ratings R on L.uid = R.uid "
+                        "WHERE aid = ?;");
+                q << aid;
+                if (q.next())
+                {
+                    q >> mean >> trials;
+                    mean = std::max(33, std::min(66, mean));
+                }
+            }
+        }
+
+        if (mean > 0)
+        {
+            Q q("INSERT INTO Bias ('uid', 'mean', 'trials') "
+                    "VALUES (?, ?, ?);");
+            q << uid << mean << trials;
+            q.execute();
+        }
+    } WARNIFFAILED();
 }
 
 int Song::get_rating(Rating *r_)

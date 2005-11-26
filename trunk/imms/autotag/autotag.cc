@@ -108,7 +108,6 @@ public:
 
             infos[i].score += result.size() * 5;
 
-
             if (abs(infos[i].duration - length) < DURATIONACC)
                 infos[i].score += 15;
             else if (!infos[i].duration)

@@ -49,43 +49,47 @@ float EMD::distance(const MixtureModel &m1, const MixtureModel &m2)
     return emd(&s1, &s2, EMD::gauss_dist, 0, 0);
 }
 
-bool normalize(float beats[BEATSSIZE])
+static bool normalize(float beats[BEATSSIZE], int comb)
 {
-    float max = 0, min = 1e100, range;
+    float sum = 0, min = 1e100;
 
     for (int i = 0; i < BEATSSIZE; ++i)
     {
-        if (beats[i] > max)
-            max = beats[i];
+        sum += beats[i];
         if (beats[i] < min)
             min = beats[i];
     }
 
-    range = max - min;
-
-    if (range == 0)
+    if (sum == 0)
         return false;
 
+    // scale to keep the total area under the curve to be fixed
+    float scale = 100.0 / sum;
     for (int i = 0; i < BEATSSIZE; ++i)
-        beats[i] = 100 * (beats[i] - min) / range;
+    {
+        float cur = beats[i];
+        beats[i] = 0;
+        beats[i / comb] += cur * scale;
+    }
 
     return true;
 }
 
 float EMD::distance(float beats1[BEATSSIZE], float beats2[BEATSSIZE])
 {
-    feature_t features[BEATSSIZE];
+    static const int comb = 3;
+    feature_t features[BEATSSIZE / comb];
 
-    for (int i = 0; i < BEATSSIZE; ++i)
+    for (int i = 0; i < BEATSSIZE / comb; ++i)
         features[i] = i;
 
-    if (!normalize(beats1))
+    if (!normalize(beats1, comb))
         return -1;
-    if (!normalize(beats2))
+    if (!normalize(beats2, comb))
         return -1;
 
-    signature_t s1 = { BEATSSIZE, features, beats1 };
-    signature_t s2 = { BEATSSIZE, features, beats2 };
+    signature_t s1 = { BEATSSIZE / comb, features, beats1 };
+    signature_t s2 = { BEATSSIZE / comb, features, beats2 };
     return emd(&s1, &s2, EMD::linear_dist, 0, 0);
 }
 
