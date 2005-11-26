@@ -16,6 +16,7 @@ enum LogTypes {
 #define     HOUR                    (60*60)
 #define     DAY                     (24*HOUR)
 #define     ROUND(x)                (int)((x) + 0.5)
+#define     DIVROUNDUP(x,y)         ((int)(x + y - 1) / (int)y)
 
 #define     LOG(x)                  \
             (x == INFO ? std::cout : std::cerr) << AppName << ": "
