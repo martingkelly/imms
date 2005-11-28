@@ -12,7 +12,7 @@
 #define     MIN_SAMPLE_SIZE         35
 #define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
 
-#define     EXP                     1.09
+#define     EXP                     1.10
 #define     _TICKETS(x)             pow(EXP, x) * 99.0 / pow(EXP, 100)
 #define     TICKETS(x)              ROUND(_TICKETS(x) + 1)
 
