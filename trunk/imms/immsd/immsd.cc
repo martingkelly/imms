@@ -152,6 +152,7 @@ void ImmsProcessor::process_line(const string &line)
         bool use_xidle;
         sstr >> use_xidle;
         imms->setup(use_xidle);
+        write_command("ResetSelection");
         return;
     }
     if (command == "StartSong")
@@ -206,7 +207,6 @@ void ImmsProcessor::process_line(const string &line)
 #endif
         imms->playlist_changed(length);
         write_command("GetEntirePlaylist");
-
         return;
     }
     if (command == "SelectNext")

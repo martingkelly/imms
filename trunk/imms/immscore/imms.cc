@@ -31,10 +31,10 @@ using std::ofstream;
 
 #define     TERM_WIDTH              80
 
-#define     SPEC_AVG                 20
-#define     SPEC_IMPACT              20
-#define     BPM_AVG                  0.70
-#define     BPM_IMPACT               15
+#define     SPEC_AVG                20
+#define     SPEC_IMPACT             20
+#define     BPM_AVG                 0.70
+#define     BPM_IMPACT              15
 
 //////////////////////////////////////////////
 
@@ -294,14 +294,10 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     }
 
     float bpmdist = EMD::distance(last.beats, beats);
-    DEBUGVAL(data.get_uid());
-    DEBUGVAL(last.uid);
-    DEBUGVAL(bpmdist);
     if (bpmdist >= 0)
     {
         bpmdist = cap((BPM_AVG - bpmdist) / BPM_AVG);
         data.bpmrating += ROUND(bpmdist * BPM_IMPACT * weight);
-        DEBUGVAL(ROUND(bpmdist * BPM_IMPACT));
     }
 }
 
