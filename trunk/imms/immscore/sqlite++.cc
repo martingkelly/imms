@@ -260,6 +260,13 @@ bool SQLQuery::next()
     return false;
 }
 
+bool SQLQuery::is_null()
+{
+    if (!stmt)
+        return false;
+    return sqlite3_column_type(stmt, curbind) == SQLITE_NULL;
+}
+
 void SQLQuery::reset()
 {
     curbind = 0;

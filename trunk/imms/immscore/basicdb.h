@@ -16,7 +16,6 @@ public:
     bool check_artist(string &artist);
     bool check_title(const string &artist, string &title);
 
-    int avg_rating(const string &artist, const string &title);
     int avg_playcounter();
 
     void update_all_ratings();

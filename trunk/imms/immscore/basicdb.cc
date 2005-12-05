@@ -151,50 +151,6 @@ void BasicDb::sql_create_tables()
     WARNIFFAILED();
 }
 
-int BasicDb::avg_rating(const string &artist, const string &title)
-{
-    try
-    {
-        if (title != "")
-        {
-            Q q("SELECT avg(rating) FROM Library AS L "
-                    "INNER JOIN Info AS I ON L.sid = I.sid "
-                    "INNER JOIN Ratings AS R ON L.uid = R.uid "
-                    "INNER JOIN Artists AS A ON I.aid = A.aid "
-                    "WHERE A.artist = ? AND I.title = ?;");
-
-            q << artist << title;
-
-            if (q.next())
-            {
-                int avg;
-                q >> avg;
-                return avg;
-            }
-        }
-
-        if (artist != "")
-        {
-            Q q("SELECT avg(rating) FROM Library AS L"
-                    "INNER JOIN Info AS I on L.sid = I.sid "
-                    "INNER JOIN Ratings AS R ON R.uid = L.uid "
-                    "INNER JOIN Artists AS A ON I.aid = A.aid "
-                    "WHERE A.artist = ?;");
-            q << artist;
-
-            if (q.next())
-            {
-                int avg;
-                q >> avg;
-                if (avg)
-                    return std::min(std::max(avg, 90), 115);
-            }
-        }
-    }
-    WARNIFFAILED();
-    return -1;
-}
-
 int BasicDb::avg_playcounter()
 {
     static int playcounter = -1;
@@ -204,7 +160,7 @@ int BasicDb::avg_playcounter()
     try
     {
         Q q("SELECT avg(playcounter) from Library;");
-        if (q.next())
+        if (q.next() && q.not_null())
             q >> playcounter;
     }
     WARNIFFAILED();
@@ -369,6 +325,11 @@ void BasicDb::sql_schema_upgrade(int from)
             Q(query).execute();
             Q("DROP TABLE Journal_backup;").execute();
         }
+        if (from == 12) 
+        {
+            Q("DELETE FROM Bias WHERE mean = 33 and trials = 0;").execute();
+            update_all_ratings();
+        }
 
         a.commit();
     }
@@ -402,7 +363,7 @@ void BasicDb::mass_rating_upgrade()
         time_t maxfirstseen = 0;
 
         Q q("SELECT avg(firstseen) FROM Library;");
-        if (q.next())
+        if (q.next() && q.not_null())
         {
             q >> maxfirstseen;
             maxfirstseen = (maxfirstseen - time(0)) * 2 / 5;

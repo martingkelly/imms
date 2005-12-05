@@ -71,18 +71,6 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     data.rating = data.get_raw_rating();
     data.effective_rating = data.rating.sample();
 
-    // FIXME:
-    /*
-    if (data.rating < 1)
-    {
-        data.rating = ImmsDb::avg_rating(data.get_info().first, title);
-        if (data.rating < 1)
-            data.rating = 100;
-
-        data.set_rating(data.rating);
-    }
-    */
-
 #if defined(DEBUG) && 0
     cerr << "path:\t" << data.get_path() << endl;
     cerr << "artist:\t" << artist << endl;

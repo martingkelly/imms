@@ -167,12 +167,7 @@ void Song::update_tag_info(const string &artist, const string &album,
 {
     // don't erase existing tags
     if (artist == "" && title == "")
-    {
-        Q q("SELECT count(1) FROM Tags WHERE uid = ?;");
-        q << uid;
-        if (q.next())
-            return;
-    }
+        return;
 
     {
         Q q("INSERT OR REPLACE INTO Tags "
@@ -527,7 +522,7 @@ void Song::infer_rating()
 
         // if we have another instance of the same song,
         // take it's rating as the default
-        if (q.next())
+        if (q.next() && q.not_null()) 
             q >> mean >> trials;
 
         if (mean <= 0)
@@ -547,7 +542,7 @@ void Song::infer_rating()
                         "INNER JOIN Ratings R on L.uid = R.uid "
                         "WHERE aid = ?;");
                 q << aid;
-                if (q.next())
+                if (q.next() && q.not_null())
                 {
                     q >> mean >> trials;
                     mean = std::max(33, std::min(66, mean));
@@ -644,7 +639,7 @@ Rating Song::update_rating()
                     "FROM Bias WHERE uid = ? GROUP BY uid;");
             q << uid;
 
-            if (q.next())
+            if (q.next() && q.not_null())
             {
                 q >> biasmean >> biastrials;
                 biasmean /= 100.0;
@@ -680,7 +675,6 @@ Rating Song::update_rating()
         {
             biasmass = (MIN_TRIALS - total);
             sum += biastrials * biasmass / MIN_TRIALS;
-
         }
 
         ones += biasmass * biasmean;
