@@ -115,6 +115,8 @@ public:
 
     void reset();
     bool next();
+    bool is_null();
+    bool not_null() { return !is_null(); }
     void execute() { while (next()); }
 
     SQLQuery &operator()(int bindto) { curbind = bindto; return *this; }
