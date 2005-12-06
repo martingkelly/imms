@@ -86,6 +86,18 @@ int main(int argc, char *argv[])
 
         LOG(INFO) << "BPM Distance = " << dist << endl;;
     }
+    else if (!strcmp(argv[1], "specdistance"))
+    {
+        if (argc != 4)
+        {
+            cout << "huh??" << endl;
+            return -1;
+        }
+
+        float dist = song_cepstr_distance(atoi(argv[2]), atoi(argv[3]));
+
+        LOG(INFO) << "Cepstrum Distance = " << dist << endl;;
+    }
     else if (!strcmp(argv[1], "random"))
     {
         if (argc != 4)

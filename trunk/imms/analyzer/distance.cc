@@ -10,6 +10,10 @@
 using std::cerr;
 using std::endl;
 
+#define     SPEC_AVG                20
+#define     BPM_AVG                 0.70
+#define     DISTANCE_REPRESSANT     1.8
+
 float KL_Divergence(const Gaussian &g1, const Gaussian &g2)
 {
     float total = 0;
@@ -29,7 +33,25 @@ float KL_Divergence(const Gaussian &g1, const Gaussian &g2)
 
 float EMD::cost[NUMGAUSS][NUMGAUSS];
 
+static float normalize_distance(float dist, float avg)
+{
+    if (dist < 0)
+        return 0;
+    dist = cap((avg - dist) / avg);
+    return (dist > 0 ? 1 : -1) * pow(fabs(dist), DISTANCE_REPRESSANT);
+}
+
 float EMD::distance(const MixtureModel &m1, const MixtureModel &m2)
+{
+    return normalize_distance(raw_distance(m1, m2), SPEC_AVG);
+}
+
+float EMD::distance(float beats1[BEATSSIZE], float beats2[BEATSSIZE])
+{
+    return normalize_distance(raw_distance(beats1, beats2), BPM_AVG);
+}
+
+float EMD::raw_distance(const MixtureModel &m1, const MixtureModel &m2)
 {
     feature_t features[NUMGAUSS];
     float w1[NUMGAUSS], w2[NUMGAUSS];
@@ -49,7 +71,7 @@ float EMD::distance(const MixtureModel &m1, const MixtureModel &m2)
     return emd(&s1, &s2, EMD::gauss_dist, 0, 0);
 }
 
-static bool normalize(float beats[BEATSSIZE], float *output, int comb)
+static bool normalize_beat_graph(float beats[BEATSSIZE], float *output, int comb)
 {
     float sum = 0, min = 1e100;
 
@@ -71,7 +93,7 @@ static bool normalize(float beats[BEATSSIZE], float *output, int comb)
     return true;
 }
 
-float EMD::distance(float beats1[BEATSSIZE], float beats2[BEATSSIZE])
+float EMD::raw_distance(float beats1[BEATSSIZE], float beats2[BEATSSIZE])
 {
     static const int comb = 5;
     static const int OUTSIZE = DIVROUNDUP(BEATSSIZE, comb);
@@ -85,9 +107,9 @@ float EMD::distance(float beats1[BEATSSIZE], float beats2[BEATSSIZE])
     memset(b1, 0, sizeof(b1));
     memset(b2, 0, sizeof(b2));
 
-    if (!normalize(beats1, b1, comb))
+    if (!normalize_beat_graph(beats1, b1, comb))
         return -1;
-    if (!normalize(beats2, b2, comb))
+    if (!normalize_beat_graph(beats2, b2, comb))
         return -1;
 
     signature_t s1 = { OUTSIZE, features, b1 };
