@@ -31,9 +31,7 @@ using std::ofstream;
 
 #define     TERM_WIDTH              80
 
-#define     SPEC_AVG                20
 #define     SPEC_IMPACT             20
-#define     BPM_AVG                 0.70
 #define     BPM_IMPACT              15
 
 //////////////////////////////////////////////
@@ -261,10 +259,6 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
 }
 
-static inline float cap(float val, float max = 1) {
-    return std::max(std::min(val, max), -max);
-}
-
 void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
 {
     // Reset lasts if we had them for too long
@@ -286,19 +280,10 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     if (!data.get_acoustic(&mm, sizeof(MixtureModel), beats, sizeof(beats)))
         return;
     
-    float specdist = EMD::distance(last.mm, mm);
-    if (specdist >= 0)
-    {
-        specdist = cap((SPEC_AVG - specdist) / SPEC_AVG);
-        data.specrating += ROUND(specdist * SPEC_IMPACT * weight);
-    }
-
-    float bpmdist = EMD::distance(last.beats, beats);
-    if (bpmdist >= 0)
-    {
-        bpmdist = cap((BPM_AVG - bpmdist) / BPM_AVG);
-        data.bpmrating += ROUND(bpmdist * BPM_IMPACT * weight);
-    }
+    data.specrating += ROUND(SPEC_IMPACT * weight
+            * EMD::distance(last.mm, mm));
+    data.bpmrating += ROUND(BPM_IMPACT * weight
+            * EMD::distance(last.beats, beats));
 }
 
 bool Imms::fetch_song_info(SongData &data)

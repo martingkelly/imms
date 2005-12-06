@@ -28,6 +28,10 @@ using std::vector;
 int imms_random(int max);
 uint64_t usec_diff(struct timeval &tv1, struct timeval &tv2);
 
+static inline float cap(float val, float max = 1) {
+    return std::max(std::min(val, max), -max);
+}
+
 int socket_connect(const string &sockname);
 
 class StackTimer

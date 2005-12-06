@@ -133,6 +133,10 @@ int Analyzer::analyze(const string &path)
     cerr << "obtained " << frames << " frames" << endl;
 #endif
 
+    // did we read enough data?
+    if (frames < 100)
+        return 0;
+
     mfcckeeper.finalize();
     beatkeeper.finalize();
 
