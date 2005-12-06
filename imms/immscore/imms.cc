@@ -243,7 +243,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     last_jumped = jumped;
 
-    Rating r;
+    Song::Rating r;
 
     AutoTransaction at;
 
@@ -256,7 +256,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     fout << (jumped ? "[Jumped] " : "");
     fout << (!jumped && last_skipped ? "[Skipped] " : "");
-    fout << "[After: " << r.mean << "(" << r.dev << ")]";
+    fout << "[After: " << r.print() << "]";
     fout << endl;
 
 }

@@ -54,6 +54,11 @@ void do_test_deltas(ImmsDb &immsdb, const vector<int> &v);
 
 int main(int argc, char *argv[])
 {
+    LOG(ERROR) << string(60, '*') << endl;
+    LOG(ERROR) << "*   this utility is completely unsupported" << endl;
+    LOG(ERROR) << "*   please make sure to backup of your .imms directory" << endl;
+    LOG(ERROR) << string(60, '*') << endl;
+
     if (argc < 2)
         return usage();
 
@@ -185,8 +190,6 @@ int main(int argc, char *argv[])
             }
         }
         WARNIFFAILED();
-        
-        do_lint();
     }
     else if (!strcmp(argv[1], "graph"))
     {
@@ -295,7 +298,7 @@ void do_identify(const string &path)
     cout << "sid        : " << s.get_sid() << endl;
     cout << "artist     : " << s.get_info().first << endl;
     cout << "title      : " << s.get_info().second << endl;
-    cout << "rating     : " << s.get_rating() << endl;
+    cout << "rating     : " << s.get_raw_rating().print() << endl;
     cout << "last       : " << strtime(time(0) - s.get_last()) << endl;
 
     cout << endl << "positively correlated with: " << endl;
@@ -395,11 +398,9 @@ void do_lint()
         Q("DELETE FROM Artists "
                 "WHERE aid NOT IN (SELECT aid FROM Info);").execute();
 
-#ifdef DANGEROUS
         Q("DELETE FROM C.Correlations "
                 "WHERE x NOT IN (SELECT sid FROM Library) "
                 "OR y NOT IN (SELECT sid FROM Library);").execute();
-#endif
 
         QueryCacheDisabler qcd;
 
@@ -560,8 +561,5 @@ void do_test_deltas(ImmsDb &immsdb, const vector<int> &v)
         immsdb.fake_encounter(10000, v[i], --timestamp);
     
     Song song("", 10000);
-    Rating r = song.update_rating();
-
-    DEBUGVAL(r.mean);
-    DEBUGVAL(r.dev);
+    LOG(INFO) << song.update_rating().print() << endl;
 }
