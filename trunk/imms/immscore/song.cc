@@ -16,17 +16,22 @@
 #include "normal.h"
 #include "appname.h"
 
-#define DELTA_SCALE     1.5
+#define DELTA_SCALE     1.4
 #define DECAY_LIMIT     60
 #define MIN_TRIALS      30
 
 using std::cerr;
 using std::endl;
 
-int Rating::sample()
+int Song::Rating::sample()
 {
     int rating = ROUND(normal(mean, dev));
     return std::min(100, std::max(0, rating));
+}
+
+string Song::Rating::print()
+{
+    return itos(mean) + "(" + itos(dev) + ")";
 }
 
 int evaluate_artist(const string &artist, const string &album,
@@ -470,7 +475,7 @@ time_t Song::get_last()
     return result;
 }
 
-Rating Song::get_raw_rating()
+Song::Rating Song::get_raw_rating()
 {
     Rating r;
 
@@ -624,7 +629,7 @@ static float decay(float delta, float sum)
     return delta * log(DECAY_LIMIT + 1 - sum) / log(DECAY_LIMIT);
 } 
 
-Rating Song::update_rating()
+Song::Rating Song::update_rating()
 {
     Rating r;
 

@@ -9,16 +9,17 @@ using std::string;
 
 typedef pair<string, string> StringPair;
 
-struct Rating
-{
-    Rating(int mean = -1, int dev = 0) : mean(mean), dev(dev) {}
-    int sample();
-    int mean, dev;
-};
-
 class Song
 {
 public:
+    struct Rating
+    {
+        Rating(int mean = -1, int dev = 0) : mean(mean), dev(dev) {}
+        string print();
+        int sample();
+        int mean, dev;
+    };
+
     Song(const string &path = "", int _uid = -1, int _sid = -1);
 
     void set_last(time_t last);
