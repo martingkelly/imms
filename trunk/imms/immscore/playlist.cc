@@ -109,7 +109,7 @@ int PlaylistDb::get_effective_playlist_length()
         return effective_length_cache;
 
     try {
-        Q q("SELECT count(1) FROM Filter;");
+        Q q("SELECT count(1) FROM Filter WHERE uid != -2;");
         if (q.next())
             q >> effective_length_cache;
     }
@@ -124,7 +124,7 @@ void PlaylistDb::get_random_sample(vector<int> &metacandidates, int size)
         int total = get_effective_playlist_length();
 
         Q q("SELECT pos FROM Filter "
-                "WHERE uid >= 0 AND (abs(random()) % ?) < ?;");
+                "WHERE uid != -2 AND (abs(random()) % ?) < ?;");
         q << total << (size + 5);
 
         int result;
@@ -145,7 +145,7 @@ void PlaylistDb::clear_matches()
         Q("DELETE FROM DiskMatches;").execute();
         a.commit();
     }
-    WARNIFFAILED();
+    IGNOREFAILURE();
 }
 
 string PlaylistDb::get_item_from_playlist(int pos)

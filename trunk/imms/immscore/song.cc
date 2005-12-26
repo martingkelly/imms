@@ -212,7 +212,7 @@ void Song::update_tag_info(const string &artist, const string &album,
         Q q("UPDATE Artists SET readable = ?, trust = ? WHERE aid = ?;");
         q << artist << trust << aid;
         q.execute();
-    } catch (SQLException &e) {}
+    } IGNOREFAILURE();
 }
 
 void Song::identify(time_t modtime)

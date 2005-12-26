@@ -153,6 +153,10 @@ typedef SQLQuery Q;
         cerr << string(80, '*') << endl;                                    \
     } do {} while (0)
 
+#define IGNOREFAILURE()                                                     \
+    catch (SQLException &e) {                                               \
+    } do {} while (0)
+
 #define SQLStandardException()  \
     SQLException(__FILE__, __LINE__, SQLDatabaseConnection::error())
 
