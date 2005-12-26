@@ -123,7 +123,8 @@ void PlaylistDb::get_random_sample(vector<int> &metacandidates, int size)
     try {
         int total = get_effective_playlist_length();
 
-        Q q("SELECT pos FROM Filter WHERE (abs(random()) % ?) < ?;");
+        Q q("SELECT pos FROM Filter "
+                "WHERE uid >= 0 AND (abs(random()) % ?) < ?;");
         q << total << (size + 5);
 
         int result;
