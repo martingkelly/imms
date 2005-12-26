@@ -176,7 +176,7 @@ void CorrelationDb::expire_recent_helper()
     
     try {
         Q("DELETE FROM TmpCorr;").execute();
-    } catch (SQLException &e) {}
+    } IGNOREFAILURE();
 
     {
         string query("INSERT INTO TmpCorr SELECT x, y, weight "
@@ -235,8 +235,7 @@ void CorrelationDb::update_correlation(int from, int to, float weight)
         q << min << max << weight;
         q.execute();
         return;
-    }
-    catch (SQLException &e) { }
+    } IGNOREFAILURE();
 
     {
         Q q("UPDATE C.Correlations SET weight = "
