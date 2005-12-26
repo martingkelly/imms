@@ -34,11 +34,12 @@ bool InfoFetcher::SongData::get_song_from_playlist()
 bool InfoFetcher::identify_playlist_item(int pos)
 {
     Song song(PlaylistDb::get_item_from_playlist(pos));
-    if (!song.isok())
-        return false;
+    int uid = -2;
+    if (song.isok())
+        uid = song.get_uid();
 
-    PlaylistDb::playlist_update_identity(pos, song.get_uid());
-    return true;
+    PlaylistDb::playlist_update_identity(pos, uid);
+    return song.isok();
 }
 
 bool InfoFetcher::fetch_song_info(SongData &data)
