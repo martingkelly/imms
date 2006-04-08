@@ -126,7 +126,11 @@ class TagInfo : public InfoSlave
         {
             return !fileref.isNull() && fileref.audioProperties()
                 ? fileref.audioProperties()->length() : 0;
-
+        }
+        virtual int get_track_num()
+        {
+            return !fileref.isNull() && fileref.tag() ? 
+                    fileref.tag()->track() : 0;
         }
     private:
         FileRef fileref;
@@ -178,3 +182,6 @@ string SongInfo::get_album()
 
 time_t SongInfo::get_length()
     { return myslave->get_length(); }
+
+int SongInfo::get_track_num()
+    { return myslave->get_track_num(); }

@@ -21,7 +21,8 @@ analyzer-LIBS=`pkg-config fftw3 --libs` -ltorch
 
 autotag: $(call objects,../autotag)
 autotag: libimmscore.a
-autotag-LIBS=-lmusicbrainz
+autotag-CPPFLAGS=$(TAGCPPFLAGS)
+autotag-LIBS=-lmusicbrainz -ltag
 
 immsremote: $(call objects,../immsremote)
 immsremote: libimmscore.a
@@ -47,8 +48,11 @@ plugins_install: $(PLUGINS_INSTALL)
 analyzer_install: analyzer
 	${INSTALL} -D $< $(bindir)/$<
 
+autotag_install: autotag
+	${INSTALL} -D $< $(bindir)/$<
+
 immsremote_install: immsremote glade_install
 	${INSTALL} -D $< $(bindir)/$<
 
 glade_install: ../immsremote/immsremote.glade
-	${INSTALL} -D $< $(datadir)/imms/immsremote.glade
+	${INSTALL} -m 644 -D $< $(datadir)/imms/immsremote.glade
