@@ -17,6 +17,7 @@ public:
     virtual string get_album()  { return ""; }
 
     virtual time_t get_length() { return 0; }
+    virtual int get_track_num() { return 0; }
 
     virtual ~InfoSlave() {};
 };
@@ -32,6 +33,7 @@ public:
     virtual string get_title();
     virtual string get_album();
     virtual time_t get_length();
+    virtual int get_track_num();
 
     void link(const string &_filename);
 
