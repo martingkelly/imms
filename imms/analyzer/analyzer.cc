@@ -1,10 +1,11 @@
-#include <stdio.h>
-#include <unistd.h>
+#include <errno.h>
 #include <iostream>
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <string>
 #include <string.h>
-#include <stdint.h>
-#include <math.h>
+#include <unistd.h>
 
 #include <immsutil.h>
 #include <appname.h>
@@ -127,7 +128,8 @@ int Analyzer::analyze(const string &path)
         memmove(indata, indata + READSIZE, OVERLAP * sizeof(sample_t));
     }
 
-    pclose(p);
+    if (pclose(p))
+        LOG(ERROR) << "pclose failed: " << strerror(errno) << endl;
 
 #ifdef DEBUG
     cerr << "obtained " << frames << " frames" << endl;

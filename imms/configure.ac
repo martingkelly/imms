@@ -92,17 +92,6 @@ if test "$with_zlib" = "no"; then
     AC_MSG_ERROR([zlib required and missing.])
 fi
 
-AC_CHECK_PROG(have_sqlites, sqlite, "yes", "no")
-if test "$have_sqlites" = "yes"; then
-    AC_CHECK_PROG(have_sqlites, sqlite3, "yes", "no")
-fi
-if test "$have_sqlites" = "no"; then
-    AC_MSG_WARN([******************************************************]);
-    AC_MSG_WARN([If you are upgrading from IMMS version <= 1.1]);
-    AC_MSG_WARN([You need both sqlite and sqlite3 executables installed]);
-    AC_MSG_WARN([******************************************************]);
-fi
-
 AC_CHECK_LIB(sqlite3, sqlite3_get_autocommit,, [with_sqlite=no])
 AC_CHECK_HEADERS(sqlite3.h,, [with_sqlite=no])
 if test "$with_sqlite" = "no"; then

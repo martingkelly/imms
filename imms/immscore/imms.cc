@@ -10,7 +10,7 @@
 #include "strmanip.h"
 #include "immsutil.h"
 
-#include <analyzer/distance.h>
+#include <model/distance.h>
 
 using std::string;
 using std::endl;
@@ -147,7 +147,7 @@ void Imms::start_song(int position, string path)
     WARNIFFAILED();
 
 #ifdef ANALYZER_ENABLED
-    if (!current.get_acoustic(0, 0, 0, 0))
+    if (!current.isanalyzed())
     {
         string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
         system(string("analyzer '" + epath + "' &").c_str());

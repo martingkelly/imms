@@ -217,7 +217,7 @@ void Song::update_tag_info(const string &artist, const string &album,
 
 void Song::identify(time_t modtime)
 {
-    {
+    try {
         Q q("SELECT Library.uid, sid, modtime "
                 "FROM Identify NATURAL JOIN 'Library' "
                 "WHERE path = ?;");
@@ -231,7 +231,7 @@ void Song::identify(time_t modtime)
             if (modtime == last_modtime)
                 return;
         }
-    }
+    } WARNIFFAILED();
 
     string checksum = Md5Digest::digest_file(path);
 
