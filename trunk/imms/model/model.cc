@@ -28,6 +28,6 @@ SimilarityModel::SimilarityModel() {
     mlp.setPartialBackprop();
 
     DiskXFile::setLittleEndianMode();
-    DiskXFile model_file(get_imms_root("model"), "r");
+    DiskXFile model_file(get_imms_root("model").c_str(), "r");
     mlp.loadXFile(&model_file);
 }
