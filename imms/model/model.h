@@ -12,7 +12,7 @@ public:
     SimilarityModel();
 private:
     Torch::ConnectedMachine mlp;
-    Torch::MeanVarNorm normalizer;
+    Torch::MeanVarNorm *normalizer;
 };
 
 #endif

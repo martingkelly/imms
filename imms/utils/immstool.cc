@@ -23,7 +23,7 @@
 #include <normal.h>
 #include <appname.h>
 
-#include <analyzer/distance.h>
+#include <model/distance.h>
 #include <analyzer/beatkeeper.h>
 
 using std::string;
