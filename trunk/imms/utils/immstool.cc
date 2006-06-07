@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 
         float dist = song_bpm_distance(atoi(argv[2]), atoi(argv[3]));
 
-        LOG(INFO) << "BPM Distance = " << dist << endl;;
+        LOG(INFO) << "Distance = " << dist << endl;;
     }
     else if (!strcmp(argv[1], "specdistance"))
     {
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 
         float dist = song_cepstr_distance(atoi(argv[2]), atoi(argv[3]));
 
-        LOG(INFO) << "Cepstrum Distance = " << dist << endl;;
+        LOG(INFO) << "Distance = " << dist << endl;;
     }
     else if (!strcmp(argv[1], "random"))
     {
