@@ -45,7 +45,7 @@ public:
     void set_acoustic(const void *mfccdat, size_t mfccsize,
             const void *bpmdat, size_t bpmsize);
     bool get_acoustic(void *mfccdat, size_t mfccsize,
-            void *bpmdat, size_t bpmsize);
+            void *bpmdat, size_t bpmsize) const;
 
     Rating update_rating();
     void infer_rating();

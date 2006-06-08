@@ -23,7 +23,7 @@
 #include <normal.h>
 #include <appname.h>
 
-#include <model/distance.h>
+#include <model/model.h>
 #include <analyzer/beatkeeper.h>
 
 using std::string;
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 
         do_update_distances();
     }
-    else if (!strcmp(argv[1], "bpmdistance"))
+    else if (!strcmp(argv[1], "distance"))
     {
         if (argc != 4)
         {
@@ -82,21 +82,17 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        float dist = song_bpm_distance(atoi(argv[2]), atoi(argv[3]));
+        Song s1(argv[2]), s2(argv[3]);
 
-        LOG(INFO) << "Distance = " << dist << endl;;
-    }
-    else if (!strcmp(argv[1], "specdistance"))
-    {
-        if (argc != 4)
+        if (!s1.isok() || !s2.isok())
         {
-            cout << "huh??" << endl;
-            return -1;
+            LOG(ERROR) << "Failed to id songs" << endl;
+            return -2;
         }
 
-        float dist = song_cepstr_distance(atoi(argv[2]), atoi(argv[3]));
+        SimilarityModel m;
 
-        LOG(INFO) << "Distance = " << dist << endl;;
+        LOG(INFO) << "Distance = " << m.evaluate(s1, s2) << endl;;
     }
     else if (!strcmp(argv[1], "random"))
     {
@@ -484,7 +480,8 @@ void do_update_distances()
             {
                 int small = std::min(uid, *j);
                 int large = std::max(uid, *j);
-                int dist = ROUND(song_cepstr_distance(uid, *j));
+                // FIXME:
+                int dist = 0; // ROUND(song_cepstr_distance(uid, *j));
                 if (dist < 0)
                     continue;
                 if (dist > 255)

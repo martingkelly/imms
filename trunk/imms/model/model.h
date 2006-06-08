@@ -1,18 +1,25 @@
 #ifndef __MODEL_H
 #define __MODEL_H
 
-#include "torch/MeanVarNorm.h"
-#include "torch/ConnectedMachine.h"
+#include <memory>
+#include <vector>
 
 #define NUM_FEATURES 12
+
+struct SimilarityModelPrivate;
+class Song;
 
 class SimilarityModel
 {
 public:
     SimilarityModel();
+    ~SimilarityModel();
+    float evaluate(const Song &s1, const Song &s2);
+    static bool extract_features(const Song &s1, const Song &s2,
+            std::vector<float> *features);
+    float evaluate(float *features, bool normalize = true);
 private:
-    Torch::ConnectedMachine mlp;
-    Torch::MeanVarNorm *normalizer;
+    std::auto_ptr<SimilarityModelPrivate> impl;
 };
 
 #endif
