@@ -143,7 +143,7 @@ void Song::set_acoustic(const void *mfccdat, size_t mfccsize,
 }
 
 bool Song::get_acoustic(void *mfccdat, size_t mfccsize,
-        void *bpmdat, size_t bpmsize)
+        void *bpmdat, size_t bpmsize) const
 {
     if (uid < 0)
         return false;

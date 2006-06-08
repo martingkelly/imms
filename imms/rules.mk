@@ -12,7 +12,7 @@ link = $(CXX) $(filter-out %.a,$1) $(filter %.a,$1) $3 -o $2
 
 %.o: %.cc; $(call compile, $(CXX), $<, $@, $($*-CXXFLAGS) $(CXXFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
 %.o: %.c; $(call compile, $(CC), $<, $@, $($*-CFLAGS) $(CFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
-%: %.o; $(call link, $^ $($*-OBJ) $($*-LIBS) $(LIBS), $@, $(LDFLAGS))
+%: %.o; $(call link, $^ $($*-OBJ) $(LIBS), $@, $($*-LIBS) $(LDFLAGS))
 %.so:
 	$(CXX) $^ $($*-OBJ) $($*-LIBS) $(LIBS) \
 	    $(LDFLAGS) \

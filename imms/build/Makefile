@@ -18,6 +18,8 @@ libmodel.a: $(call objects,../model)
 
 immstool: immstool.o libmodel.a libimmscore.a 
 train: train.o libmodel.a libimmscore.a 
+immstool-LIBS=-ltorch
+train-LIBS=-ltorch
 
 analyzer: $(call objects,../analyzer)
 analyzer: libimmscore.a libmodel.a

@@ -22,6 +22,7 @@
 #include <appname.h>
 
 #include <model/distance.h>
+#include <model/model.h>
 #include <analyzer/beatkeeper.h>
 
 using std::string;
@@ -56,33 +57,7 @@ void collect_samples(Samples *samples,
     } WARNIFFAILED();
 }
 
-float find_max(float a[BEATSSIZE])
-{
-    return *std::max_element(a, a + BEATSSIZE);
-}
-
-float find_min(float a[BEATSSIZE])
-{
-    return *std::min_element(a, a + BEATSSIZE);
-}
-
-void mm_sums(const MixtureModel &mm, float sums[3])
-{
-    for (int i = 0; i < 3; ++i)
-        sums[i] = 0;
-    for (int i = 0; i < NUMGAUSS; ++i)
-    {
-        const Gaussian &g = mm.gauss[i];
-        for (int j = 0; j < NUMCEPSTR; ++j)
-            sums[j / 5] += g.weight * g.means[j];
-    }
-}
-
 void collect_features(Features *features, const Samples &samples) {
-    MixtureModel mm1, mm2;
-    float b1[BEATSSIZE], b2[BEATSSIZE];
-    float sums1[3], sums2[3];
-
     AutoTransaction a;
 
     for (unsigned i = 0, size = samples.size(); i < size; ++i) {
@@ -90,27 +65,8 @@ void collect_features(Features *features, const Samples &samples) {
         const Sample &s = samples[i];
         Song s1("", s.uid1), s2("", s.uid2);
 
-        s1.get_acoustic(&mm1, sizeof(MixtureModel), b1, sizeof(b1));
-        s2.get_acoustic(&mm2, sizeof(MixtureModel), b2, sizeof(b2));
-
-        f.push_back(EMD::raw_distance(mm1, mm2));
-        f.push_back(EMD::raw_distance(b1, b2));
-
-        mm_sums(mm1, sums1);
-        mm_sums(mm2, sums2);
-
-        for (int j = 0; j < 3; ++j)
-        {
-            f.push_back(sums1[j]);
-            f.push_back(sums2[j]);
-        }
-
-        f.push_back(find_max(b1));
-        f.push_back(find_max(b2));
-
-        f.push_back(find_min(b1));
-        f.push_back(find_min(b2));
-
+        if (!SimilarityModel::extract_features(s1, s2, &f))
+            continue;
         f.push_back(samples[i].CLASS);
 
         features->push_back(f);
@@ -162,6 +118,10 @@ int main(int argc, char *argv[])
     collect_samples(&samples, "NegativeUids", 0);
 
     DEBUGVAL(samples.size());
+    for (int i = 0; i < 5; ++i) {
+        DEBUGVAL(samples[i].uid1);
+        DEBUGVAL(samples[i].uid2);
+    }
 
     Features features;
     collect_features(&features, samples);
