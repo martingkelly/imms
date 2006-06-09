@@ -196,8 +196,7 @@ void Imms::set_lastinfo(LastInfo &last)
     last.set_on = time(0);
     last.uid = current.get_uid();
     last.sid = current.get_sid();
-    last.avalid = current.get_acoustic(&last.mm, sizeof(MixtureModel),
-            last.beats, sizeof(last.beats));
+    last.avalid = current.get_acoustic(&last.mm, last.beats);
 }
 
 void Imms::end_song(bool at_the_end, bool jumped, bool bad)
@@ -277,7 +276,7 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
 
     MixtureModel mm;
     float beats[BEATSSIZE];
-    if (!data.get_acoustic(&mm, sizeof(MixtureModel), beats, sizeof(beats)))
+    if (!data.get_acoustic(&mm, beats))
         return;
     
     data.specrating += ROUND(SPEC_IMPACT * weight

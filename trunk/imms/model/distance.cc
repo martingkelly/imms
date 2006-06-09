@@ -123,14 +123,14 @@ float song_cepstr_distance(int uid1, int uid2)
 
     MixtureModel m1, m2;
 
-    if (!song1.get_acoustic(&m1, sizeof(MixtureModel), 0, 0))
+    if (!song1.get_acoustic(&m1, 0))
     {
         LOG(ERROR) << "warning: failed to load cepstrum data for uid "
             << uid1 << endl;
         return -1;
     }
 
-    if (!song2.get_acoustic(&m2, sizeof(MixtureModel), 0, 0))
+    if (!song2.get_acoustic(&m2, 0))
     {
         LOG(ERROR) << "warning: failed to load cepstrum data for uid "
             << uid2 << endl;
@@ -147,16 +147,14 @@ float song_bpm_distance(int uid1, int uid2)
     MixtureModel m;
     float beats1[BEATSSIZE], beats2[BEATSSIZE];
 
-    if (!song1.get_acoustic(&m, sizeof(MixtureModel),
-            beats1, sizeof(beats1)))
+    if (!song1.get_acoustic(&m, beats1))
     {
         LOG(ERROR) << "warning: failed to load bpm data for uid "
             << uid1 << endl;
         return -1;
     }
 
-    if (!song2.get_acoustic(&m, sizeof(MixtureModel),
-            beats2, sizeof(beats2)))
+    if (!song2.get_acoustic(&m, beats2))
     {
         LOG(ERROR) << "warning: failed to load bpm data for uid "
             << uid2 << endl;

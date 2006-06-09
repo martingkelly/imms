@@ -15,6 +15,8 @@
 #include "songinfo.h"
 #include "normal.h"
 #include "appname.h"
+#include "analyzer/mfcckeeper.h"
+#include "analyzer/beatkeeper.h"
 
 #define DELTA_SCALE     1.4
 #define DECAY_LIMIT     60
@@ -142,8 +144,7 @@ void Song::set_acoustic(const void *mfccdat, size_t mfccsize,
     WARNIFFAILED();
 }
 
-bool Song::get_acoustic(void *mfccdat, size_t mfccsize,
-        void *bpmdat, size_t bpmsize) const
+bool Song::get_acoustic(MixtureModel *mm, float *beats) const
 {
     if (uid < 0)
         return false;
@@ -155,10 +156,10 @@ bool Song::get_acoustic(void *mfccdat, size_t mfccsize,
 
         if (q.next())
         {
-            if (mfccdat)
-                q.load(mfccdat, mfccsize);  
-            if (bpmdat)
-                q.load(bpmdat, bpmsize);  
+            if (mm)
+                q.load(mm, sizeof(MixtureModel));  
+            if (beats)
+                q.load(beats, sizeof(float) * BEATSSIZE);  
             return true;
         }
     }
