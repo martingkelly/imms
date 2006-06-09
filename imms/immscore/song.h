@@ -9,6 +9,8 @@ using std::string;
 
 typedef pair<string, string> StringPair;
 
+class MixtureModel;
+
 class Song
 {
 public:
@@ -44,8 +46,7 @@ public:
 
     void set_acoustic(const void *mfccdat, size_t mfccsize,
             const void *bpmdat, size_t bpmsize);
-    bool get_acoustic(void *mfccdat, size_t mfccsize,
-            void *bpmdat, size_t bpmsize) const;
+    bool get_acoustic(MixtureModel *mm, float *beats) const;
 
     Rating update_rating();
     void infer_rating();

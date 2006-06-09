@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
         MixtureModel m;
         float beats[BEATSSIZE];
 
-        if (!s.get_acoustic(&m, sizeof(m), beats, sizeof(beats)))
+        if (!s.get_acoustic(&m, beats))
         {
             LOG(ERROR) << "failed to load acoustic data for file "
                 << argv[2] << endl;

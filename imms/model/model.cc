@@ -110,16 +110,20 @@ static float find_min(float a[BEATSSIZE])
     return *std::min_element(a, a + BEATSSIZE);
 }
 
-static void mm_sums(const MixtureModel &mm, float sums[3])
+static void add_partitions(const MixtureModel &mm, vector<float> *f)
 {
-    for (int i = 0; i < 3; ++i)
+    static const int num_partitions = 3;
+    float sums[num_partitions];
+    for (int i = 0; i < num_partitions; ++i)
         sums[i] = 0;
     for (int i = 0; i < NUMGAUSS; ++i)
     {
         const Gaussian &g = mm.gauss[i];
         for (int j = 0; j < NUMCEPSTR; ++j)
-            sums[j / 5] += g.weight * g.means[j];
+            sums[j / (NUMCEPSTR / num_partitions)] += g.weight * g.means[j];
     }
+    for (int i = 0; i < num_partitions; ++i)
+        f->push_back(sums[i]);
 } 
 
 bool SimilarityModel::extract_features(const Song &s1, const Song &s2,
@@ -127,24 +131,17 @@ bool SimilarityModel::extract_features(const Song &s1, const Song &s2,
 {
     MixtureModel mm1, mm2;
     float b1[BEATSSIZE], b2[BEATSSIZE];
-    float sums1[3], sums2[3];
 
-    if (!s1.get_acoustic(&mm1, sizeof(MixtureModel), b1, sizeof(b1)))
+    if (!s1.get_acoustic(&mm1, b1))
         return false;
-    if (!s2.get_acoustic(&mm2, sizeof(MixtureModel), b2, sizeof(b2)))
+    if (!s2.get_acoustic(&mm2, b2))
         return false;
 
     f->push_back(EMD::raw_distance(mm1, mm2));
     f->push_back(EMD::raw_distance(b1, b2));
 
-    mm_sums(mm1, sums1);
-    mm_sums(mm2, sums2);
-
-    for (int j = 0; j < 3; ++j)
-    {
-        f->push_back(sums1[j]);
-        f->push_back(sums2[j]);
-    }
+    add_partitions(mm1, f);
+    add_partitions(mm2, f);
 
     f->push_back(find_max(b1));
     f->push_back(find_max(b2));

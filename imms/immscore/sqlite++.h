@@ -136,6 +136,10 @@ public:
     SQLQuery &operator>>(string &s);
 
     SQLQuery &load(void *data, size_t &n);
+    SQLQuery &load(void *data, unsigned n) {
+        size_t real_size = n;
+        return load(data, real_size);
+    };
 
 private:
     int curbind;
