@@ -9,6 +9,7 @@ using std::string;
 class IMMSClientStub
 {
 public:
+    virtual ~IMMSClientStub() {}
     void setup(bool use_xidle);
     void start_song(int position, std::string path);
     void end_song(bool at_the_end, bool jumped, bool bad);

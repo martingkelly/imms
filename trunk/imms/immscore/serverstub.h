@@ -8,6 +8,7 @@ using std::string;
 class IMMSServer
 {
 public:
+    virtual ~IMMSServer() {}
     void request_playlist_change();
     void request_playlist_item(int index);
     void request_entire_playlist();

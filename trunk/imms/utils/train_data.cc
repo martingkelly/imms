@@ -60,13 +60,20 @@ void collect_samples(Samples *samples,
 void collect_features(Features *features, const Samples &samples) {
     AutoTransaction a;
 
+    MixtureModel mm1, mm2;
+    float b1[BEATSSIZE], b2[BEATSSIZE];
+
     for (unsigned i = 0, size = samples.size(); i < size; ++i) {
         vector<float> f;
         const Sample &s = samples[i];
         Song s1("", s.uid1), s2("", s.uid2);
 
-        if (!SimilarityModel::extract_features(s1, s2, &f))
+        if (!s1.get_acoustic(&mm1, b1))
             continue;
+        if (!s2.get_acoustic(&mm2, b2))
+            continue;
+
+        SimilarityModel::extract_features(mm1, b1, mm2, b2, &f);
         f.push_back(samples[i].CLASS);
 
         features->push_back(f);
@@ -118,10 +125,6 @@ int main(int argc, char *argv[])
     collect_samples(&samples, "NegativeUids", 0);
 
     DEBUGVAL(samples.size());
-    for (int i = 0; i < 5; ++i) {
-        DEBUGVAL(samples[i].uid1);
-        DEBUGVAL(samples[i].uid2);
-    }
 
     Features features;
     collect_features(&features, samples);

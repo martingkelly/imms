@@ -93,8 +93,21 @@ float SimilarityModel::evaluate(float *features, bool normalize)
 
 float SimilarityModel::evaluate(const Song &s1, const Song &s2)
 {
+    MixtureModel mm1, mm2;
+    float b1[BEATSSIZE], b2[BEATSSIZE];
+
+    if (!s1.get_acoustic(&mm1, b1))
+        return 0;
+    if (!s2.get_acoustic(&mm2, b2))
+        return 0;
+
+    return evaluate(mm1, b1, mm2, b2);
+}
+
+float SimilarityModel::evaluate(const MixtureModel &mm1, float *beats1,
+        const MixtureModel &mm2, float *beats2) {
     vector<float> features;
-    extract_features(s1, s2, &features);
+    extract_features(mm1, beats1, mm2, beats2, &features);
     float feat_array[NUM_FEATURES];
     std::copy(features.begin(), features.end(), feat_array);
     return evaluate(feat_array);
@@ -126,28 +139,20 @@ static void add_partitions(const MixtureModel &mm, vector<float> *f)
         f->push_back(sums[i]);
 } 
 
-bool SimilarityModel::extract_features(const Song &s1, const Song &s2,
+void SimilarityModel::extract_features(
+        const MixtureModel &mm1, float *beats1,
+        const MixtureModel &mm2, float *beats2,
         vector<float> *f)
 {
-    MixtureModel mm1, mm2;
-    float b1[BEATSSIZE], b2[BEATSSIZE];
-
-    if (!s1.get_acoustic(&mm1, b1))
-        return false;
-    if (!s2.get_acoustic(&mm2, b2))
-        return false;
-
     f->push_back(EMD::raw_distance(mm1, mm2));
-    f->push_back(EMD::raw_distance(b1, b2));
+    f->push_back(EMD::raw_distance(beats1, beats2));
 
     add_partitions(mm1, f);
     add_partitions(mm2, f);
 
-    f->push_back(find_max(b1));
-    f->push_back(find_max(b2));
+    f->push_back(find_max(beats1));
+    f->push_back(find_max(beats2));
 
-    f->push_back(find_min(b1));
-    f->push_back(find_min(b2));
-
-    return true;
+    f->push_back(find_min(beats1));
+    f->push_back(find_min(beats2));
 }

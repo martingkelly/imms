@@ -22,7 +22,7 @@ protected:
 
         Rating rating;
         int position, effective_rating;
-        int relation, bpmrating, specrating;
+        int relation, acoustic;
         time_t last_played;
         bool identified;
     };

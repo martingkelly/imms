@@ -8,7 +8,9 @@ first: ../configure
 
 include ../rules.mk
 
-all: immsd immstool train $(OPTIONAL) $(PLUGINS)
+all: immsd immstool $(OPTIONAL) $(PLUGINS)
+
+training: train_data train_model
 
 libimmscore.a: $(call objects,../immscore)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
@@ -17,9 +19,11 @@ libmodel.a: $(call objects,../model)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 
 immstool: immstool.o libmodel.a libimmscore.a 
-train: train.o libmodel.a libimmscore.a 
+train_data: train_data.o libmodel.a libimmscore.a 
+train_model: train_model.o libmodel.a libimmscore.a 
 immstool-LIBS=-ltorch
-train-LIBS=-ltorch
+train_data-LIBS=-ltorch
+train_model-LIBS=-ltorch
 
 analyzer: $(call objects,../analyzer)
 analyzer: libimmscore.a libmodel.a
@@ -41,7 +45,7 @@ socketserver-CPPFLAGS=$(GLIB2CPPFLAGS)
 immsd: libimmscore.a libmodel.a
 immsd: $(call objects,../immsd)
 immsd-CPPFLAGS=$(GLIB2CPPFLAGS)
-immsd-LIBS=$(GLIB2LDFLAGS)
+immsd-LIBS=$(GLIB2LDFLAGS) -ltorch
 
 PLUGINS_INSTALL=$(patsubst %,%_install,$(PLUGINS))
 plugins_install: $(PLUGINS_INSTALL)
