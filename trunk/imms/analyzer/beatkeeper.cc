@@ -154,7 +154,7 @@ void BeatManager::finalize()
 #endif
 }
 
-void *BeatManager::get_result()
+float *BeatManager::get_result()
 {
     return lofreq.beats;
 }

@@ -94,7 +94,7 @@ void MFCCKeeper::finalize()
 #endif
 }
 
-void *MFCCKeeper::get_result()
+const MixtureModel &MFCCKeeper::get_result()
 {
-    return result.gauss;
+    return result;
 }

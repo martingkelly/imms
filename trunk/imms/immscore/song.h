@@ -44,8 +44,7 @@ public:
     bool isok() { return uid != -1 && path != ""; }
     bool isanalyzed();
 
-    void set_acoustic(const void *mfccdat, size_t mfccsize,
-            const void *bpmdat, size_t bpmsize);
+    void set_acoustic(const MixtureModel &mm, const float *beats);
     bool get_acoustic(MixtureModel *mm, float *beats) const;
 
     Rating update_rating();
