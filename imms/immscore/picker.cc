@@ -153,7 +153,7 @@ int SongPicker::select_next()
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
-        i->effective_rating += i->relation + i->specrating + i->bpmrating;
+        i->effective_rating += i->relation + i->acoustic;
         i->effective_rating = ROUND(i->effective_rating
                 * i->last_played / max_last_played);
         int tickets = TICKETS(i->effective_rating);

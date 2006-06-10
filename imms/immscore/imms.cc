@@ -31,8 +31,7 @@ using std::ofstream;
 
 #define     TERM_WIDTH              80
 
-#define     SPEC_IMPACT             20
-#define     BPM_IMPACT              15
+#define     ACOUSTIC_IMPACT         50
 
 //////////////////////////////////////////////
 
@@ -174,10 +173,8 @@ void Imms::print_song_info()
     fout << setiosflags(std::ios::showpos);
     if (current.relation)
         fout << current.relation << "r";
-    if (current.bpmrating)
-        fout << current.bpmrating << "b";
-    if (current.specrating)
-        fout << current.specrating << "c";
+    if (current.acoustic)
+        fout << current.acoustic << "a";
     fout << resetiosflags(std::ios::showpos);
 
     fout << "] [Last: " << strtime(current.last_played) <<
@@ -278,11 +275,9 @@ void Imms::evaluate_transition(SongData &data, LastInfo &last, float weight)
     float beats[BEATSSIZE];
     if (!data.get_acoustic(&mm, beats))
         return;
-    
-    data.specrating += ROUND(SPEC_IMPACT * weight
-            * EMD::distance(last.mm, mm));
-    data.bpmrating += ROUND(BPM_IMPACT * weight
-            * EMD::distance(last.beats, beats));
+
+    float score = model.evaluate(last.mm, last.beats, mm, beats);
+    data.acoustic += ROUND(score * weight * ACOUSTIC_IMPACT);
 }
 
 bool Imms::fetch_song_info(SongData &data)
@@ -293,7 +288,7 @@ bool Imms::fetch_song_info(SongData &data)
     if (data.last_played > local_max)
         data.last_played = local_max;
 
-    data.specrating = data.bpmrating = data.relation = 0;
+    data.acoustic = data.relation = 0;
 
     evaluate_transition(data, handpicked, 1);
     evaluate_transition(data, last,

@@ -10,6 +10,7 @@
 #include "serverstub.h"
 #include <analyzer/mfcckeeper.h>
 #include <analyzer/beatkeeper.h>
+#include <model/model.h>
 
 // IMMS, UMMS, we all MMS for XMMS?
 
@@ -71,6 +72,7 @@ protected:
 
     std::ofstream fout;
 
+    SimilarityModel model;
     LastInfo handpicked, last;
     IMMSServer *server;
 };

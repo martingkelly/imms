@@ -20,7 +20,7 @@ InfoFetcher::SongData::SongData(int _position, const string &_path)
 
 void InfoFetcher::SongData::reset()
 {
-    bpmrating = specrating = effective_rating = relation = 0;
+    acoustic = effective_rating = relation = 0;
     identified = false;
     last_played = 0;
 }
