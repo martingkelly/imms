@@ -142,9 +142,7 @@ int Analyzer::analyze(const string &path)
     mfcckeeper.finalize();
     beatkeeper.finalize();
 
-    song.set_acoustic(mfcckeeper.get_result(), MFCCKeeper::ResultSize,
-            beatkeeper.get_result(), BeatManager::ResultSize);
-
+    song.set_acoustic(mfcckeeper.get_result(), beatkeeper.get_result());
     return 0;
 }
 

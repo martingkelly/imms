@@ -40,9 +40,9 @@ public:
     ~MFCCKeeper();
     void process(float *capstrum);
     void finalize();
-    void *get_result();
+    const MixtureModel &get_result();
 
-    static const int ResultSize = sizeof(MixtureModel);
+    static const int ResultSize = sizeof(Gaussian) * NUMGAUSS;
 protected:
     std::auto_ptr<MFCCKeeperPrivate> impl;
 

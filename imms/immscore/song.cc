@@ -129,16 +129,15 @@ bool Song::isanalyzed()
     return false;
 }
 
-void Song::set_acoustic(const void *mfccdat, size_t mfccsize,
-        const void *bpmdat, size_t bpmsize)
+void Song::set_acoustic(const MixtureModel &mm, const float *beats)
 {
     try {
         Q q("INSERT OR REPLACE INTO A.Acoustic "
                 "('uid', 'mfcc', 'bpm') "
                 "VALUES (?, ?, ?);");
         q << uid;
-        q.bind(mfccdat, mfccsize);
-        q.bind(bpmdat, bpmsize);
+        q.bind(&mm.gauss, MFCCKeeper::ResultSize);
+        q.bind(beats, sizeof(float) * BEATSSIZE);
         q.execute();
     }
     WARNIFFAILED();
@@ -157,7 +156,7 @@ bool Song::get_acoustic(MixtureModel *mm, float *beats) const
         if (q.next())
         {
             if (mm)
-                q.load(mm, sizeof(MixtureModel));  
+                q.load(mm->gauss, MFCCKeeper::ResultSize);  
             if (beats)
                 q.load(beats, sizeof(float) * BEATSSIZE);  
             return true;
