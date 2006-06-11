@@ -34,4 +34,4 @@ dist: immsconf.h distclean
 vars.mk:;
 
 %:
-	@make -C build --no-print-directory $@
+	@$(MAKE) -C build --no-print-directory $@
