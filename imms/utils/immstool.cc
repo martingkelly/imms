@@ -435,17 +435,19 @@ void do_missing()
 void do_update_distances()
 {
     vector<int> uids;
-    int uid;
     try
     {
-        Q q("SELECT uid FROM A.Acoustic WHERE mfcc NOTNULL;");
+        Q q("SELECT uid FROM A.Acoustic WHERE mfcc NOTNULL AND bpm NOTNULL;");
         while (q.next())
         {
+            int uid;
             q >> uid;
             uids.push_back(uid);
         }
     }
     WARNIFFAILED();
+
+    SimilarityModel model;
 
     size_t numuids = uids.size();
     for (size_t i = 0; i < numuids; ++i)
@@ -471,6 +473,13 @@ void do_update_distances()
         }
         WARNIFFAILED();
 
+        MixtureModel m1;
+        float beats1[BEATSSIZE];
+
+        Song s1("", uid);
+        if (!s1.get_acoustic(&m1, beats1))
+            continue;
+
         try {
             AutoTransaction at(true);
             Q q("INSERT OR REPLACE INTO A.Distances ('x', 'y', 'dist') "
@@ -478,18 +487,21 @@ void do_update_distances()
 
             for (set<int>::iterator j = neigh.begin(); j != neigh.end(); ++j)
             {
+                MixtureModel m2;
+                float beats2[BEATSSIZE];
+
+                Song s2("", *j);
+                if (!s2.get_acoustic(&m2, beats2))
+                    continue;
+
                 int small = std::min(uid, *j);
                 int large = std::max(uid, *j);
-                // FIXME:
-                int dist = 0; // ROUND(song_cepstr_distance(uid, *j));
-                if (dist < 0)
+
+                int dist = ROUND(model.evaluate(m1, beats1, m2, beats2) * 100);
+
+                if (dist < 30)
                     continue;
-                if (dist > 255)
-                {
-                    cerr << "warning: bogus distance (" << dist << ") between "
-                        << small << " and " << large << endl;
-                    dist = 255;
-                }
+
                 cout << "updating " << small << " -> "
                     << large << " = " << dist << endl;
                 q << small << large << dist;
@@ -518,7 +530,7 @@ void do_closest(const string &path)
     try
     {
         Q q("SELECT x,y,dist FROM A.Distances WHERE x = ? or y = ? "
-                "ORDER BY dist ASC LIMIT 25;");
+                "ORDER BY dist DESC LIMIT 25;");
         q << uid << uid;
 
         int x, y, dist;

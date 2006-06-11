@@ -24,14 +24,13 @@ using std::ofstream;
 #define     MAX_TIME                21*DAY
 
 #define     MAX_CORRELATION         12.0
-#define     SECONDARY               0.3
 #define     CORRELATION_IMPACT      40
 
 #define     LAST_EXPIRE             HOUR
 
 #define     TERM_WIDTH              80
 
-#define     ACOUSTIC_IMPACT         50
+#define     ACOUSTIC_IMPACT         40
 
 //////////////////////////////////////////////
 
@@ -290,9 +289,8 @@ bool Imms::fetch_song_info(SongData &data)
 
     data.acoustic = data.relation = 0;
 
-    evaluate_transition(data, handpicked, 1);
-    evaluate_transition(data, last,
-            SECONDARY * (handpicked.sid == -1 ? 2 : 1));
+    evaluate_transition(data, handpicked, 0.75);
+    evaluate_transition(data, last, (handpicked.sid == -1 ? 0.5 : 0.25));
 
     return true;
 }
