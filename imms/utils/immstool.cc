@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
             return -2;
         }
 
-        MLPSimilarityModel m;
+        SVMSimilarityModel m;
 
         LOG(INFO) << "Distance = " << m.evaluate(s1, s2) << endl;;
     }
