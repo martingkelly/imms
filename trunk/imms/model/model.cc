@@ -5,6 +5,7 @@
 #include "torch/MeanVarNorm.h"
 #include "torch/MemoryDataSet.h"
 #include "torch/OneHotClassFormat.h"
+#include "torch/SVMClassification.h"
 #include "torch/Tanh.h"
 
 #include <iostream>
@@ -26,6 +27,7 @@ using std::vector;
 static const int num_inputs = NUM_FEATURES;
 static const int num_hidden = 25;
 static const int num_outputs = 2;
+static const int stdv = 12;
 
 class XFileModeSetter {
 public:
@@ -41,15 +43,31 @@ public:
     }
 };
 
+class Normalizer {
+public:
+    Normalizer(int num_inputs) : fake(num_inputs), normalizer(&fake) {}
+    void load(XFile *file)
+    {
+        normalizer.loadXFile(file);
+    }
+    void normalize(Sequence *sequence)
+    {
+        normalizer.preProcessInputs(sequence);
+    }
+private:
+    MyMemoryDataSet fake;
+    MeanVarNorm normalizer;
+};
+
 class MLPModel : public Model {
 public:
     MLPModel(const string &filename)
-        : class_format(num_outputs), fake(num_inputs), normalizer(&fake) 
+        : class_format(num_outputs), normalizer(num_inputs)
     {
         build_model();
 
         DiskXFile file(filename.c_str(), "r");
-        normalizer.loadXFile(&file);
+        normalizer.load(&file);
         mlp.loadXFile(&file);
         LOG(ERROR) << "model loading complete" << endl;
     }
@@ -75,7 +93,7 @@ public:
         Sequence feat_seq(0, NUM_FEATURES);
         feat_seq.addFrame(features);
 
-        normalizer.preProcessInputs(&feat_seq);
+        normalizer.normalize(&feat_seq);
 
         mlp.forward(&feat_seq);
         return (mlp.outputs->frames[0][1] - mlp.outputs->frames[0][0]) / 5;
@@ -85,12 +103,43 @@ private:
     Allocator alloc;
     OneHotClassFormat class_format;
     ConnectedMachine mlp;
-    MyMemoryDataSet fake;
-    MeanVarNorm normalizer;
+    Normalizer normalizer;
+};
+
+class SVMModel : public Model {
+public:
+    SVMModel(const string &filename)
+        : kernel(1./(stdv*stdv)), svm(&kernel), normalizer(num_inputs)
+    {
+        DiskXFile file(filename.c_str(), "r");
+        normalizer.load(&file);
+        svm.loadXFile(&file);
+        LOG(ERROR) << "model loading complete" << endl;
+    }
+
+    float evaluate(float *features) {
+        // Garbage, I tell you!!
+        Sequence feat_seq(0, num_inputs);
+        feat_seq.addFrame(features);
+
+        normalizer.normalize(&feat_seq);
+
+        svm.forward(&feat_seq);
+        return svm.outputs->frames[0][0] / 3;
+    }
+     
+private:
+    GaussianKernel kernel;
+    SVMClassification svm;
+    Normalizer normalizer;
 };
 
 MLPSimilarityModel::MLPSimilarityModel()
     : SimilarityModel(new MLPModel(get_imms_root("model"))) 
+{ }
+
+SVMSimilarityModel::SVMSimilarityModel()
+    : SimilarityModel(new SVMModel(get_imms_root("svm-model"))) 
 { }
 
 SimilarityModel::SimilarityModel(Model *model) : model(model)

@@ -72,7 +72,7 @@ protected:
 
     std::ofstream fout;
 
-    MLPSimilarityModel model;
+    SVMSimilarityModel model;
     LastInfo handpicked, last;
     IMMSServer *server;
 };

@@ -64,7 +64,6 @@ void collect_features(Features *features, const Samples &samples) {
     float b1[BEATSSIZE], b2[BEATSSIZE];
 
     for (unsigned i = 0, size = samples.size(); i < size; ++i) {
-        vector<float> f;
         const Sample &s = samples[i];
         Song s1("", s.uid1), s2("", s.uid2);
 
@@ -73,10 +72,15 @@ void collect_features(Features *features, const Samples &samples) {
         if (!s2.get_acoustic(&mm2, b2))
             continue;
 
-        SimilarityModel::extract_features(mm1, b1, mm2, b2, &f);
-        f.push_back(samples[i].CLASS);
+        vector<float> f1;
+        SimilarityModel::extract_features(mm1, b1, mm2, b2, &f1);
+        f1.push_back(samples[i].CLASS);
+        features->push_back(f1);
 
-        features->push_back(f);
+        vector<float> f2;
+        SimilarityModel::extract_features(mm2, b2, mm1, b1, &f2);
+        f2.push_back(samples[i].CLASS);
+        features->push_back(f2);
     }
 }
 

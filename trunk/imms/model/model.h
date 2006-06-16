@@ -39,4 +39,9 @@ public:
     MLPSimilarityModel();
 };
 
+class SVMSimilarityModel : public SimilarityModel {
+public:
+    SVMSimilarityModel();
+};
+
 #endif
