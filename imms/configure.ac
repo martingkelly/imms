@@ -321,6 +321,35 @@ else
     fi
 fi
 
+PKG_CHECK_MODULES(AUDACIOUS, [audacious >= 0.2.0], [], [with_audacious=no])
+
+LIBS=$AUDACIOUS_LIBS
+CPPFLAGS=$AUDACIOUS_CFLAGS
+
+AC_CHECK_HEADERS(audacious/plugin.h,, [with_audacious=no])
+AC_CHECK_HEADERS(audacious/beepctrl.h,, [with_audacious=no])
+
+audacious_enable_playqueue=$enable_queuecontrol
+if test "$with_audacious" = "no"; then
+    AC_MSG_WARN([Not building audacious plugin])
+else 
+    if test "$audacious_enable_playqueue" != "no"; then
+        AC_MSG_CHECKING([for xmms_remote_playqueue_add in -laudacious])
+        AC_TRY_LINK([#include <audacious/beepctrl.h>],
+                    [xmms_remote_playqueue_add(0, 0)],
+                    [AC_MSG_RESULT(yes)],
+                    [audacious_enable_playqueue="no"
+                         AC_MSG_RESULT(no)]);
+    fi
+    if test "$audacious_enable_playqueue" = "no"; then
+        AC_APPEND(PLUGINS, libaudaciousimms.so)
+    else
+        AC_DEFINE(AUDACIOUS_HAVE_QUEUE_CONTROL,,
+                  [audacious provides functions to control the play queue])
+        AC_APPEND(PLUGINS, libaudaciousimms2.so)
+    fi
+fi
+
 if test "$enable_analyzer" != "no"; then
     AC_APPEND(OPTIONAL, analyzer)
     AC_DEFINE(ANALYZER_ENABLED,, [Analyzer enabled])

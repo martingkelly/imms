@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 
         Q("CREATE TEMP TABLE PositiveUids AS "
                 + select_start
-                + "ORDER BY -weight"
+                + "WHERE i1.rating < 95 AND i2.rating < 95 ORDER BY -weight"
                 + select_end).execute();
         Q("CREATE TEMP TABLE NegativeUids AS "
                 + select_start
