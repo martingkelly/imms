@@ -10,7 +10,7 @@ include ../rules.mk
 
 all: immsd immstool $(OPTIONAL) $(PLUGINS)
 
-training: train_data train_model
+training: training_data train_model
 
 libimmscore.a: $(call objects,../immscore)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
@@ -19,10 +19,10 @@ libmodel.a: $(call objects,../model)
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 
 immstool: immstool.o libmodel.a libimmscore.a 
-train_data: train_data.o libmodel.a libimmscore.a 
+training_data: training_data.o libmodel.a libimmscore.a 
 train_model: train_model.o libmodel.a libimmscore.a 
 immstool-LIBS=-ltorch
-train_data-LIBS=-ltorch
+training_data-LIBS=-ltorch
 train_model-LIBS=-ltorch
 
 analyzer: $(call objects,../analyzer)
