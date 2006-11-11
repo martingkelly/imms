@@ -118,14 +118,19 @@ int main(int argc, char *argv[])
             "INNER JOIN Inverse i2 on R.y = i2.sid ";
         string select_end = " LIMIT " + itos(limit) + ";";
 
-        Q("CREATE TEMP TABLE PositiveUids AS "
-                + select_start
-                + "WHERE i1.rating < 95 AND i2.rating < 95 ORDER BY -weight"
-                + select_end).execute();
-        Q("CREATE TEMP TABLE NegativeUids AS "
-                + select_start
-                + "WHERE i1.rating > 60 AND i2.rating > 60 ORDER BY weight"
-                + select_end).execute();
+        string positive_query = "CREATE TEMP TABLE PositiveUids AS "
+            + select_start;
+
+        string negative_query = "CREATE TEMP TABLE NegativeUids AS "
+            + select_start;
+
+        if (true) {
+            positive_query += "WHERE rating < 95 AND i2.rating < 95 ";
+            negative_query += "WHERE i1.rating > 60 AND i2.rating > 60 ";
+        }
+
+        Q(positive_query + "ORDER BY -weight" + select_end).execute();
+        Q(negative_query + "ORDER BY weight" + select_end).execute();
     } WARNIFFAILED();
 
     Samples samples;

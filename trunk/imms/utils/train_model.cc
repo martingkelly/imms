@@ -1,12 +1,3 @@
-const char *help = "\
-SVMTorch III (c) Trebolloc & Co 2002\n\
-\n\
-This program will train a SVM for classification or regression\n\
-with a gaussian kernel (default) or a polynomial kernel.\n\
-It supposes that the file you provide contains two classes,\n\
-except if you use the '-class' option which trains one class\n\
-against the others.\n";
-
 #include <torch/MatDataSet.h>
 #include <torch/TwoClassFormat.h>
 #include <torch/ClassMeasurer.h>
@@ -37,10 +28,7 @@ int main(int argc, char **argv)
   real c_cst, stdv = 12;
   real accuracy, cache_size;
   int iter_shrink, k_fold;
-  char *dir_name;
   char *model_file;
-  bool binary_mode;
-  real a_cst, b_cst;
 
   Allocator *allocator = new Allocator;
 
@@ -49,9 +37,6 @@ int main(int argc, char **argv)
   // Construct the command line
   CmdLine cmd;
 
-  // Put the help line at the beginning
-  cmd.info(help);
-
   // Train mode
   cmd.addText("\nArguments:");
   cmd.addSCmdArg("file", &file, "the train file");
@@ -59,19 +44,16 @@ int main(int argc, char **argv)
 
   cmd.addText("\nModel Options:");
   cmd.addRCmdOption("-c", &c_cst, 100., "trade off cst between error/margin");
-  cmd.addRCmdOption("-std", &stdv, 12, "the std parameter in the gaussian kernel [exp(-|x-y|^2/std^2)]", true);
-
-  cmd.addRCmdOption("-a", &a_cst, 1., "constant a in the polynomial kernel", true);
-  cmd.addRCmdOption("-b", &b_cst, 1., "constant b in the polynomial kernel", true);
+  cmd.addRCmdOption("-std", &stdv, 12,
+          "the std parameter in the gaussian kernel", true);
 
   cmd.addText("\nLearning Options:");
   cmd.addRCmdOption("-e", &accuracy, 0.01, "end accuracy");
   cmd.addRCmdOption("-m", &cache_size, 50., "cache size in Mo");
-  cmd.addICmdOption("-h", &iter_shrink, 100, "minimal number of iterations before shrinking");
+  cmd.addICmdOption("-h", &iter_shrink,
+          100, "minimal number of iterations before shrinking");
 
   cmd.addText("\nMisc Options:");
-  cmd.addSCmdOption("-dir", &dir_name, ".", "directory to save measures");
-  cmd.addBCmdOption("-bin", &binary_mode, false, "binary mode for files");
 
   // KFold mode (one difference with previous mode: no model is available)
   cmd.addMasterSwitch("--kfold");
@@ -80,30 +62,22 @@ int main(int argc, char **argv)
   cmd.addICmdArg("k", &k_fold, "number of folds");
 
   cmd.addText("\nModel Options:");
-  cmd.addRCmdOption("-c", &c_cst, 100., "trade off cst between error/margin");
-  cmd.addRCmdOption("-std", &stdv, 12, "the std parameter in the gaussian kernel", true);
-
-  cmd.addRCmdOption("-a", &a_cst, 1., "constant a in the polynomial kernel", true);
-  cmd.addRCmdOption("-b", &b_cst, 1., "constant b in the polynomial kernel", true);
+  cmd.addRCmdOption("-c", &c_cst, 100.,
+          "trade off cst between error/margin");
+  cmd.addRCmdOption("-std", &stdv, 12,
+          "the std parameter in the gaussian kernel", true);
 
   cmd.addText("\nLearning Options:");
   cmd.addRCmdOption("-e", &accuracy, 0.01, "end accuracy");
   cmd.addRCmdOption("-m", &cache_size, 50., "cache size in Mo");
-  cmd.addICmdOption("-h", &iter_shrink, 100, "minimal number of iterations before shrinking");
-
-  cmd.addText("\nMisc Options:");
-  cmd.addSCmdOption("-dir", &dir_name, ".", "directory to save measures");
-  cmd.addBCmdOption("-bin", &binary_mode, false, "binary mode for files");
+  cmd.addICmdOption("-h", &iter_shrink, 100,
+          "minimal number of iterations before shrinking");
 
   // Test mode
   cmd.addMasterSwitch("--test");
   cmd.addText("\nArguments:");
   cmd.addSCmdArg("model", &model_file, "the model file");
   cmd.addSCmdArg("file", &file, "the test file");
-
-  cmd.addText("\nMisc Options:");
-  cmd.addSCmdOption("-dir", &dir_name, ".", "directory to save measures");
-  cmd.addBCmdOption("-bin", &binary_mode, false, "binary mode for files");
 
   // Read the command line
   int mode = cmd.read(argc, argv);
@@ -114,7 +88,7 @@ int main(int argc, char **argv)
 
   if(mode < 2)
       Random::seed();
-  cmd.setWorkingDirectory(dir_name);
+  cmd.setWorkingDirectory(".");
 
   //=================== Create the SVM... =========================
   Kernel *kernel = new(allocator) GaussianKernel(1./(stdv*stdv));
@@ -128,8 +102,10 @@ int main(int argc, char **argv)
   //=================== DataSets & Measurers... ===================
 
   // Create the training dataset
-  MatDataSet *mat_data = new(allocator) MatDataSet(file, -1, 1, false, -1, binary_mode);
-  MatDataSet *orig_mat_data = new(allocator) MatDataSet(file, -1, 1, false, -1, binary_mode);
+  MatDataSet *mat_data =
+      new(allocator) MatDataSet(file, -1, 1, false, -1, false);
+  MatDataSet *orig_mat_data =
+      new(allocator) MatDataSet(file, -1, 1, false, -1, false);
   Sequence *class_labels = new(allocator) Sequence(2, 1);
   class_labels->frames[0][0] = -1;
   class_labels->frames[0][1] = 1;
@@ -140,12 +116,15 @@ int main(int argc, char **argv)
   mat_data->preProcess(mv_norm);
 
   DataSet *data = new(allocator) ClassFormatDataSet(mat_data, class_labels);
-  DataSet *orig_data = new(allocator) ClassFormatDataSet(orig_mat_data, class_labels);
+  DataSet *orig_data =
+      new(allocator) ClassFormatDataSet(orig_mat_data, class_labels);
 
   // The list of measurers...
   MeasurerList measurers;
   TwoClassFormat *class_format = new(allocator) TwoClassFormat(data);
-  ClassMeasurer *class_meas = new(allocator) ClassMeasurer(svm->outputs, data, class_format, cmd.getXFile("the_class_err"));
+  ClassMeasurer *class_meas = new(allocator) ClassMeasurer(
+          svm->outputs, data, class_format, cmd.getXFile("the_class_err"));
+
   if(mode > 0)
       measurers.addNode(class_meas);
 
@@ -168,7 +147,8 @@ int main(int argc, char **argv)
   if(mode == 0)
   {
     trainer.train(data, NULL);
-    message("%d SV with %d at bounds", svm->n_support_vectors, svm->n_support_vectors_bound);
+    message("%d SV with %d at bounds", svm->n_support_vectors,
+            svm->n_support_vectors_bound);
     DiskXFile model_(model_file, "w");
     mv_norm->saveXFile(&model_);
     svm->saveXFile(&model_);
@@ -210,5 +190,5 @@ int main(int argc, char **argv)
   }
 
   delete allocator;
-  return(0);
+  return 0;
 }
