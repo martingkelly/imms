@@ -1,9 +1,14 @@
 #include <gtk/gtk.h>
 
+#ifdef BMP
 #include <bmp/configdb.h>
 #include <bmp/util.h>
 #include <bmp/plugin.h>
-
+#elif AUDACIOUS
+#include <audacious/configdb.h>
+#include <audacious/util.h>
+#include <audacious/plugin.h>
+#endif
 #include "immsconf.h"
 #include "cplugin.h"
 
@@ -110,7 +115,11 @@ void configure(void)
     gtk_container_add(GTK_CONTAINER(configure_win), configure_vbox);
 
     ADD_CONFIG_CHECKBOX(xidle, "Idleness", 
+#ifdef BMP
             "Disable this option if you use BEEP on a dedicated machine",
+#elif AUDACIOUS
+            "Disable this option if you use audacious on a dedicated machine",
+#endif
             "Use X idleness statistics");
 
     /* Buttons */
