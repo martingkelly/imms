@@ -321,7 +321,7 @@ else
     fi
 fi
 
-PKG_CHECK_MODULES(AUDACIOUS, [audacious >= 0.2.0], [], [with_audacious=no])
+PKG_CHECK_MODULES(Audacious, [audacious >= 0.2.0], [], [with_audacious=no])
 
 LIBS=$AUDACIOUS_LIBS
 CPPFLAGS=$AUDACIOUS_CFLAGS

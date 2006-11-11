@@ -1,73 +1,99 @@
+const char *help = "\
+SVMTorch III (c) Trebolloc & Co 2002\n\
+\n\
+This program will train a SVM for classification or regression\n\
+with a gaussian kernel (default) or a polynomial kernel.\n\
+It supposes that the file you provide contains two classes,\n\
+except if you use the '-class' option which trains one class\n\
+against the others.\n";
+
 #include <torch/MatDataSet.h>
-#include <torch/ClassFormatDataSet.h>
-#include <torch/ClassNLLCriterion.h>
-#include <torch/MSECriterion.h>
-#include <torch/OneHotClassFormat.h>
+#include <torch/TwoClassFormat.h>
 #include <torch/ClassMeasurer.h>
 #include <torch/MSEMeasurer.h>
-
-#include <torch/StochasticGradient.h>
-#include <torch/KFold.h>
-
-#include <torch/ConnectedMachine.h>
-#include <torch/Linear.h>
-#include <torch/Tanh.h>
-#include <torch/LogSoftMax.h>
-
-#include <torch/MeanVarNorm.h>
-#include <torch/NullXFile.h>
+#include <torch/QCTrainer.h>
 #include <torch/CmdLine.h>
 #include <torch/Random.h>
+#include <torch/MeanVarNorm.h>
+#include <torch/SVMClassification.h>
+#include <torch/KFold.h>
+#include <torch/DiskXFile.h>
+#include <torch/ClassFormatDataSet.h>
 
-#include "model/model.h"
-#include "immscore/immsutil.h"
-
-#include <string>
-#include <iostream>
 #include <assert.h>
+#include <iostream>
+
+#include <model/model.h>
+#include <immscore/immsutil.h>
+
+const string AppName = "train_model";
 
 using namespace Torch;
 using namespace std;
 
-const string AppName = "train_model";
-
 int main(int argc, char **argv)
 {
   char *file;
-
-  int n_inputs = NUM_FEATURES;
-  int n_targets = 2;
-  int k_fold;
-
-  real accuracy;
-  real learning_rate;
-  real decay = 0;
-  int max_iter = 100;
-
+  real c_cst, stdv = 12;
+  real accuracy, cache_size;
+  int iter_shrink, k_fold;
+  char *dir_name;
   char *model_file;
-  real weight_decay;
-  int n_outputs;
+  bool binary_mode;
+  real a_cst, b_cst;
 
   Allocator *allocator = new Allocator;
-  DiskXFile::setLittleEndianMode();
 
   //=================== The command-line ==========================
 
   // Construct the command line
   CmdLine cmd;
 
+  // Put the help line at the beginning
+  cmd.info(help);
+
   // Train mode
   cmd.addText("\nArguments:");
   cmd.addSCmdArg("file", &file, "the train file");
+  cmd.addSCmdArg("model", &model_file, "the model file");
+
+  cmd.addText("\nModel Options:");
+  cmd.addRCmdOption("-c", &c_cst, 100., "trade off cst between error/margin");
+  cmd.addRCmdOption("-std", &stdv, 12, "the std parameter in the gaussian kernel [exp(-|x-y|^2/std^2)]", true);
+
+  cmd.addRCmdOption("-a", &a_cst, 1., "constant a in the polynomial kernel", true);
+  cmd.addRCmdOption("-b", &b_cst, 1., "constant b in the polynomial kernel", true);
 
   cmd.addText("\nLearning Options:");
-  cmd.addRCmdOption("-lr", &learning_rate, 0.01, "learning rate");
-  cmd.addRCmdOption("-e", &accuracy, 0.0001, "end accuracy");
-  cmd.addICmdOption("-kfold", &k_fold, -1, "number of folds, if you want to do cross-validation");
-  cmd.addRCmdOption("-wd", &weight_decay, 0, "weight decay", true);
+  cmd.addRCmdOption("-e", &accuracy, 0.01, "end accuracy");
+  cmd.addRCmdOption("-m", &cache_size, 50., "cache size in Mo");
+  cmd.addICmdOption("-h", &iter_shrink, 100, "minimal number of iterations before shrinking");
 
   cmd.addText("\nMisc Options:");
-  cmd.addSCmdOption("-save", &model_file, "", "the model file");
+  cmd.addSCmdOption("-dir", &dir_name, ".", "directory to save measures");
+  cmd.addBCmdOption("-bin", &binary_mode, false, "binary mode for files");
+
+  // KFold mode (one difference with previous mode: no model is available)
+  cmd.addMasterSwitch("--kfold");
+  cmd.addText("\nArguments:");
+  cmd.addSCmdArg("file", &file, "the train file");
+  cmd.addICmdArg("k", &k_fold, "number of folds");
+
+  cmd.addText("\nModel Options:");
+  cmd.addRCmdOption("-c", &c_cst, 100., "trade off cst between error/margin");
+  cmd.addRCmdOption("-std", &stdv, 12, "the std parameter in the gaussian kernel", true);
+
+  cmd.addRCmdOption("-a", &a_cst, 1., "constant a in the polynomial kernel", true);
+  cmd.addRCmdOption("-b", &b_cst, 1., "constant b in the polynomial kernel", true);
+
+  cmd.addText("\nLearning Options:");
+  cmd.addRCmdOption("-e", &accuracy, 0.01, "end accuracy");
+  cmd.addRCmdOption("-m", &cache_size, 50., "cache size in Mo");
+  cmd.addICmdOption("-h", &iter_shrink, 100, "minimal number of iterations before shrinking");
+
+  cmd.addText("\nMisc Options:");
+  cmd.addSCmdOption("-dir", &dir_name, ".", "directory to save measures");
+  cmd.addBCmdOption("-bin", &binary_mode, false, "binary mode for files");
 
   // Test mode
   cmd.addMasterSwitch("--test");
@@ -75,136 +101,108 @@ int main(int argc, char **argv)
   cmd.addSCmdArg("model", &model_file, "the model file");
   cmd.addSCmdArg("file", &file, "the test file");
 
+  cmd.addText("\nMisc Options:");
+  cmd.addSCmdOption("-dir", &dir_name, ".", "directory to save measures");
+  cmd.addBCmdOption("-bin", &binary_mode, false, "binary mode for files");
+
   // Read the command line
   int mode = cmd.read(argc, argv);
 
   DiskXFile *model = NULL;
-  if(mode == 1)
+  if(mode == 2)
     model = new(allocator) DiskXFile(model_file, "r");
 
-  // If the user didn't give any random seed,
-  // generate a random random seed...
-  if(mode == 0)
+  if(mode < 2)
       Random::seed();
-  cmd.setWorkingDirectory(".");
+  cmd.setWorkingDirectory(dir_name);
 
-  n_outputs = n_targets;
+  //=================== Create the SVM... =========================
+  Kernel *kernel = new(allocator) GaussianKernel(1./(stdv*stdv));
+  SVM *svm = new(allocator) SVMClassification(kernel);
 
-  //=================== Create the MLP... =========================
-  ConnectedMachine mlp;
-
-  int n_hu = 25;
-  Linear *c1 = new(allocator) Linear(n_inputs, n_hu);
-  c1->setROption("weight decay", weight_decay);
-  Tanh *c2 = new(allocator) Tanh(n_hu);
-  Linear *c3 = new(allocator) Linear(n_hu, n_outputs);
-  c3->setROption("weight decay", weight_decay);
-
-  mlp.addFCL(c1);
-  mlp.addFCL(c2);
-  mlp.addFCL(c3);
-
-  LogSoftMax *c4 = new(allocator) LogSoftMax(n_outputs);
-  mlp.addFCL(c4);
-
-  // Initialize the MLP
-  mlp.build();
-  mlp.setPartialBackprop();
-
+  if(mode < 2)
+  {
+    svm->setROption("C", c_cst);
+    svm->setROption("cache size", cache_size);
+  }
   //=================== DataSets & Measurers... ===================
 
-  // Create the training dataset (normalize inputs)
-  MatDataSet *mat_data = new(allocator) MatDataSet(
-          file, n_inputs, 1, false, -1, false);
-  MatDataSet *orig_mat_data = new(allocator) MatDataSet(
-          file, n_inputs, 1, false, -1, false);
+  // Create the training dataset
+  MatDataSet *mat_data = new(allocator) MatDataSet(file, -1, 1, false, -1, binary_mode);
+  MatDataSet *orig_mat_data = new(allocator) MatDataSet(file, -1, 1, false, -1, binary_mode);
+  Sequence *class_labels = new(allocator) Sequence(2, 1);
+  class_labels->frames[0][0] = -1;
+  class_labels->frames[0][1] = 1;
+
   MeanVarNorm *mv_norm = new(allocator) MeanVarNorm(mat_data);
-  if(mode == 1)
+  if(mode == 2)
       mv_norm->loadXFile(model);
   mat_data->preProcess(mv_norm);
 
-  DataSet *data = new(allocator) ClassFormatDataSet(mat_data, n_targets);
-  DataSet *orig_data = new(allocator) ClassFormatDataSet(
-          orig_mat_data, n_targets);
-
-  if(mode == 1)
-    mlp.loadXFile(model);
+  DataSet *data = new(allocator) ClassFormatDataSet(mat_data, class_labels);
+  DataSet *orig_data = new(allocator) ClassFormatDataSet(orig_mat_data, class_labels);
 
   // The list of measurers...
   MeasurerList measurers;
+  TwoClassFormat *class_format = new(allocator) TwoClassFormat(data);
+  ClassMeasurer *class_meas = new(allocator) ClassMeasurer(svm->outputs, data, class_format, cmd.getXFile("the_class_err"));
+  if(mode > 0)
+      measurers.addNode(class_meas);
 
-  // The class format
-  OneHotClassFormat *class_format = new(allocator) OneHotClassFormat(n_outputs);
-
-  // Measurers on the training dataset
-  ClassMeasurer *class_meas = new(allocator)
-      ClassMeasurer(mlp.outputs, data, class_format,
-              cmd.getXFile("class_error"), false);
-  measurers.addNode(class_meas);
+  // Reload the model in test mode
+  if(mode == 2)
+    svm->loadXFile(model);
   
   //=================== The Trainer ===============================
-  
-  // The criterion for the StochasticGradient (MSE criterion or NLL criterion)
-  Criterion *criterion = new(allocator) ClassNLLCriterion(class_format);
 
-  // The Gradient Machine Trainer
-  StochasticGradient trainer(&mlp, criterion);
+  QCTrainer trainer(svm);
   if(mode == 0)
   {
-    trainer.setIOption("max iter", max_iter);
     trainer.setROption("end accuracy", accuracy);
-    trainer.setROption("learning rate", learning_rate);
-    trainer.setROption("learning rate decay", decay);
+    trainer.setIOption("iter shrink", iter_shrink);
   }
 
   //=================== Let's go... ===============================
 
-  // Print the number of parameter of the MLP (just for fun)
-  message("Number of parameters: %d", mlp.params->n_params);
-
+  // Train
   if(mode == 0)
   {
-    message("train");
-    if(k_fold <= 0)
-    {
-      trainer.train(data, &measurers);
-      
-      if(strcmp(model_file, ""))
-      {
-        DiskXFile all_(model_file, "w");
-        mv_norm->saveXFile(&all_);
-        mlp.saveXFile(&all_);
-      }
-    }
-    else
-    {
-      KFold k(&trainer, k_fold);
-      k.crossValidate(data, NULL, &measurers);
-    }
+    trainer.train(data, NULL);
+    message("%d SV with %d at bounds", svm->n_support_vectors, svm->n_support_vectors_bound);
+    DiskXFile model_(model_file, "w");
+    mv_norm->saveXFile(&model_);
+    svm->saveXFile(&model_);
   }
-  else
+
+  // KFold
+  if(mode == 1)
   {
+    KFold k(&trainer, k_fold);
+    k.crossValidate(data, NULL, &measurers);
+  }
+
+  // Test
+  if(mode == 2) {
     trainer.test(&measurers);
 
-    MLPSimilarityModel m;
+    SVMSimilarityModel model;
 
     float correct = 0, wrong = 0;
     for (int t = 0; t < data->n_examples; t++) {
         data->setExample(t);
         orig_data->setExample(t);
 
-        mlp.forward(data->inputs);
-        int true_class = (int)data->targets->frames[0][1];
-        int obs_class = class_format->getClass(mlp.outputs->frames[0]);
-        float score = mlp.outputs->frames[0][1] - mlp.outputs->frames[0][0];
-        score /= 5.;
+        svm->forward(data->inputs);
+        int true_class = class_format->getClass(data->targets->frames[0]);
+        int obs_class = class_format->getClass(svm->outputs->frames[0]);
         (true_class == obs_class ? correct : wrong) += 1;
-
-        float model_score = m.evaluate(orig_data->inputs->frames[0]);
-        assert(fabs(score - model_score) < 0.01);
-        assert(obs_class == 0 || score >= 0);
-        assert(obs_class == 1 || score <= 0);
+        float score = svm->outputs->frames[0][0] / 3;
+        assert(obs_class > 0 || score < 0);
+        float model_score = model.evaluate(orig_data->inputs->frames[0]);
+        if (fabs(score - model_score) > 0.01)
+            cout << "Er: " << score << " vs. " << model_score << endl;
     }
+
     cout << "TOTAL      : " << correct + wrong << endl;
     cout << "CORRECT    : " << correct << endl;
     cout << "WRONG      : " << wrong << endl;
@@ -212,6 +210,5 @@ int main(int argc, char **argv)
   }
 
   delete allocator;
-
   return(0);
 }
