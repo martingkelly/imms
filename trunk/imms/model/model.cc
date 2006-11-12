@@ -1,5 +1,9 @@
+#include <sys/stat.h>
+
 #include "torch/ConnectedMachine.h"
+#include "torch/XFile.h"
 #include "torch/DiskXFile.h"
+#include "torch/MemoryXFile.h"
 #include "torch/Linear.h"
 #include "torch/LogSoftMax.h"
 #include "torch/MeanVarNorm.h"
@@ -11,6 +15,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <memory>
 
 #include "model.h"
 #include "song.h"
@@ -23,18 +28,22 @@ using std::endl;
 using std::cout;
 using std::cerr;
 using std::vector;
+using std::auto_ptr;
 
 static const int num_inputs = NUM_FEATURES;
 static const int num_hidden = 25;
 static const int num_outputs = 2;
 static const int stdv = 12;
 
+extern char _binary____data_svm_similarity_start;
+extern char _binary____data_svm_similarity_end;
+
 class XFileModeSetter {
 public:
     XFileModeSetter() { DiskXFile::setLittleEndianMode(); }
 };
 
-static XFileModeSetter xfilemodesetter;
+static const XFileModeSetter xfilemodesetter;
 
 class MyMemoryDataSet : public MemoryDataSet {
 public:
@@ -59,62 +68,32 @@ private:
     MeanVarNorm normalizer;
 };
 
-class MLPModel : public Model {
-public:
-    MLPModel(const string &filename)
-        : class_format(num_outputs), normalizer(num_inputs)
-    {
-        build_model();
-
-        DiskXFile file(filename.c_str(), "r");
-        normalizer.load(&file);
-        mlp.loadXFile(&file);
-        LOG(ERROR) << "model loading complete" << endl;
-    }
-
-    void build_model() {
-        Linear *c1 = new(&alloc) Linear(num_inputs, num_hidden);
-        Tanh *c2 = new(&alloc) Tanh(num_hidden);
-        Linear *c3 = new(&alloc) Linear(num_hidden, num_outputs);
-
-        mlp.addFCL(c1);
-        mlp.addFCL(c2);
-        mlp.addFCL(c3);
-
-        LogSoftMax *c4 = new(&alloc) LogSoftMax(num_outputs);
-        mlp.addFCL(c4);
-
-        mlp.build();
-        mlp.setPartialBackprop();
-    }
-
-    float evaluate(float *features) {
-        // Garbage, I tell you!!
-        Sequence feat_seq(0, NUM_FEATURES);
-        feat_seq.addFrame(features);
-
-        normalizer.normalize(&feat_seq);
-
-        mlp.forward(&feat_seq);
-        return (mlp.outputs->frames[0][1] - mlp.outputs->frames[0][0]) / 5;
-    }
-     
-private:
-    Allocator alloc;
-    OneHotClassFormat class_format;
-    ConnectedMachine mlp;
-    Normalizer normalizer;
-};
+static bool file_exists(const string &filename) {
+    struct stat buf;
+    return !stat(filename.c_str(), &buf);
+}
 
 class SVMModel : public Model {
 public:
-    SVMModel(const string &filename)
+    SVMModel()
         : kernel(1./(stdv*stdv)), svm(&kernel), normalizer(num_inputs)
     {
-        DiskXFile file(filename.c_str(), "r");
-        normalizer.load(&file);
-        svm.loadXFile(&file);
-        LOG(ERROR) << "model loading complete" << endl;
+        auto_ptr<XFile> model;
+        string filename = get_imms_root("svm-similarity");
+        if (file_exists(filename))
+        {
+            LOG(INFO) << "Overriding the built in model with " << filename;
+            model.reset(new DiskXFile(filename.c_str(), "r"));
+        }
+        else
+        {
+            static const size_t data_size = &_binary____data_svm_similarity_end
+                - &_binary____data_svm_similarity_start;
+            model.reset(new MemoryXFile(
+                        &_binary____data_svm_similarity_start, data_size));
+        }
+        normalizer.load(model.get());
+        svm.loadXFile(model.get());
     }
 
     float evaluate(float *features) {
@@ -134,12 +113,8 @@ private:
     Normalizer normalizer;
 };
 
-MLPSimilarityModel::MLPSimilarityModel()
-    : SimilarityModel(new MLPModel(get_imms_root("model"))) 
-{ }
-
 SVMSimilarityModel::SVMSimilarityModel()
-    : SimilarityModel(new SVMModel(get_imms_root("svm-model"))) 
+    : SimilarityModel(new SVMModel()) 
 { }
 
 SimilarityModel::SimilarityModel(Model *model) : model(model)

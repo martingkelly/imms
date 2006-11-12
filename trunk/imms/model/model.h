@@ -34,11 +34,6 @@ private:
     std::auto_ptr<Model> model;
 };
 
-class MLPSimilarityModel : public SimilarityModel {
-public:
-    MLPSimilarityModel();
-};
-
 class SVMSimilarityModel : public SimilarityModel {
 public:
     SVMSimilarityModel();
