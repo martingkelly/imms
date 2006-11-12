@@ -5,9 +5,11 @@
 #include <fstream>
 #include <memory>
 
+#include "immsconf.h"
 #include "picker.h"
 #include "xidle.h"
 #include "serverstub.h"
+
 #include <analyzer/mfcckeeper.h>
 #include <analyzer/beatkeeper.h>
 #include <model/model.h>

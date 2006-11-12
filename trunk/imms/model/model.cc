@@ -1,3 +1,6 @@
+#include "immsconf.h"
+
+#ifdef WITH_TORCH
 #include "torch/ConnectedMachine.h"
 #include "torch/XFile.h"
 #include "torch/DiskXFile.h"
@@ -9,6 +12,7 @@
 #include "torch/OneHotClassFormat.h"
 #include "torch/SVMClassification.h"
 #include "torch/Tanh.h"
+#endif  // WITH_TORCH
 
 #include <iostream>
 #include <vector>
@@ -20,13 +24,15 @@
 #include "immsutil.h"
 #include "distance.h"
 
-using namespace Torch;
-
 using std::endl;
 using std::cout;
 using std::cerr;
 using std::vector;
 using std::auto_ptr;
+
+#ifdef WITH_TORCH
+
+using namespace Torch;
 
 static const int num_inputs = NUM_FEATURES;
 static const int num_hidden = 25;
@@ -110,11 +116,26 @@ SVMSimilarityModel::SVMSimilarityModel()
     : SimilarityModel(new SVMModel()) 
 { }
 
+#else
+SVMSimilarityModel::SVMSimilarityModel()
+    : SimilarityModel(new DummyModel()) { }
+#endif  // WITH_TORCH
+
 SimilarityModel::SimilarityModel(Model *model) : model(model)
 {
 }
 
-SimilarityModel::~SimilarityModel() {
+SimilarityModel::~SimilarityModel()
+{
+}
+
+float SimilarityModel::evaluate(const MixtureModel &mm1, float *beats1,
+        const MixtureModel &mm2, float *beats2) {
+    vector<float> features;
+    extract_features(mm1, beats1, mm2, beats2, &features);
+    float feat_array[NUM_FEATURES];
+    std::copy(features.begin(), features.end(), feat_array);
+    return evaluate(feat_array);
 }
 
 float SimilarityModel::evaluate(float *features)
@@ -134,16 +155,6 @@ float SimilarityModel::evaluate(const Song &s1, const Song &s2)
 
     return evaluate(mm1, b1, mm2, b2);
 }
-
-float SimilarityModel::evaluate(const MixtureModel &mm1, float *beats1,
-        const MixtureModel &mm2, float *beats2) {
-    vector<float> features;
-    extract_features(mm1, beats1, mm2, beats2, &features);
-    float feat_array[NUM_FEATURES];
-    std::copy(features.begin(), features.end(), feat_array);
-    return evaluate(feat_array);
-}
-
 static float find_max(float a[BEATSSIZE])
 {
     return *std::max_element(a, a + BEATSSIZE);
@@ -170,6 +181,7 @@ static void add_partitions(const MixtureModel &mm, vector<float> *f)
         f->push_back(sums[i]);
 } 
 
+
 void SimilarityModel::extract_features(
         const MixtureModel &mm1, float *beats1,
         const MixtureModel &mm2, float *beats2,
@@ -187,3 +199,4 @@ void SimilarityModel::extract_features(
     f->push_back(find_min(beats1));
     f->push_back(find_min(beats2));
 }
+

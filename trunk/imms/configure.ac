@@ -129,14 +129,16 @@ if test "$enable_analyzer" != "no"; then
                 [Torch::KMeans kmeans(10, 5)],
         [AC_MSG_RESULT(yes)],
         [have_torch=no; AC_MSG_RESULT(no)])
-    LIBS=$saved_libs
     
     if test "$have_torch" = "no"; then
         AC_MSG_WARN([******************************************************]);
         AC_MSG_WARN("torch >= 3.0 required for analyzer and missing");
-        AC_MSG_WARN("Acoustic analyzer will not be built");
+        AC_MSG_WARN("Acoustic analysis engine will not be built");
         AC_MSG_WARN([******************************************************]);
         enable_analyzer=no
+        LIBS=$saved_libs
+    else
+        AC_DEFINE(WITH_TORCH,, [libtorch support])
     fi
 fi
 
@@ -260,7 +262,7 @@ saved_libs="$LIBS"
 
 PLUGINS=""
 AC_CHECK_PROG(with_xmms, xmms-config, "yes", "no")
-if test "$xmms_config" != "no"; then
+if test "$with_xmms" != "no"; then
     CPPFLAGS=`xmms-config --cflags`
     AC_CHECK_HEADERS(glib.h,, [with_xmms=no]) # how to disable caching for this?
     AC_CHECK_HEADERS(gtk/gtk.h,, [with_xmms=no])
@@ -323,8 +325,8 @@ fi
 
 PKG_CHECK_MODULES(Audacious, [audacious >= 0.2.0], [], [with_audacious=no])
 
-LIBS=$AUDACIOUS_LIBS
-CPPFLAGS=$AUDACIOUS_CFLAGS
+LIBS=$Audacious_LIBS
+CPPFLAGS=$Audacious_CFLAGS
 
 AC_CHECK_HEADERS(audacious/plugin.h,, [with_audacious=no])
 AC_CHECK_HEADERS(audacious/beepctrl.h,, [with_audacious=no])

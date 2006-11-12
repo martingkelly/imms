@@ -14,6 +14,7 @@
 #include <time.h>
 #include <math.h>
 
+#include <immsconf.h>
 #include <imms.h>
 #include <song.h>
 #include <immsdb.h>
@@ -91,7 +92,6 @@ int main(int argc, char *argv[])
         }
 
         SVMSimilarityModel m;
-
         LOG(INFO) << "Distance = " << m.evaluate(s1, s2) << endl;;
     }
     else if (!strcmp(argv[1], "random"))

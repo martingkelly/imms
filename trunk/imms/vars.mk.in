@@ -25,6 +25,7 @@ CXXFLAGS=@CXXFLAGS@ -fno-rtti
 
 GLIB2LDFLAGS=`pkg-config glib-2.0 --libs`
 GLIB1LDFLAGS=`pkg-config glib --libs`
+
 LDFLAGS=-L. @LIBS@
 
 default: all
