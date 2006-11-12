@@ -18,6 +18,9 @@ link = $(CXX) $(filter-out %.a,$1) $(filter %.a,$1) $3 -o $2
 	    $(LDFLAGS) \
 	    -shared -Wl,-z,defs,-soname,$@ -o $@
 
+%-data.o: %
+	objcopy -I binary -O default -B i386:x86-64 --rename-section .data=.rodata,alloc,load,readonly,data,contents $< $@
+
 # macros that expand to the object files in the given directories
 objects=$(sort $(notdir $(foreach type,c cc,$(call objects_$(type),$1))))
 objects_c=$(patsubst %.c,%.o,$(wildcard $(addsuffix /*.c,$1)))
