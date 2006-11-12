@@ -79,11 +79,17 @@ int main(int argc, char **argv)
   cmd.addSCmdArg("model", &model_file, "the model file");
   cmd.addSCmdArg("file", &file, "the test file");
 
+  // Test mode
+  cmd.addMasterSwitch("--validate");
+  cmd.addText("\nArguments:");
+  cmd.addSCmdArg("model", &model_file, "the model file");
+  cmd.addSCmdArg("file", &file, "the test file");
+
   // Read the command line
   int mode = cmd.read(argc, argv);
 
   DiskXFile *model = NULL;
-  if(mode == 2)
+  if(mode >= 2)
     model = new(allocator) DiskXFile(model_file, "r");
 
   if(mode < 2)
@@ -111,7 +117,7 @@ int main(int argc, char **argv)
   class_labels->frames[0][1] = 1;
 
   MeanVarNorm *mv_norm = new(allocator) MeanVarNorm(mat_data);
-  if(mode == 2)
+  if(mode >= 2)
       mv_norm->loadXFile(model);
   mat_data->preProcess(mv_norm);
 
@@ -129,7 +135,7 @@ int main(int argc, char **argv)
       measurers.addNode(class_meas);
 
   // Reload the model in test mode
-  if(mode == 2)
+  if(mode >= 2)
     svm->loadXFile(model);
   
   //=================== The Trainer ===============================
@@ -162,7 +168,7 @@ int main(int argc, char **argv)
   }
 
   // Test
-  if(mode == 2) {
+  if(mode >= 2) {
     trainer.test(&measurers);
 
     SVMSimilarityModel model;
@@ -178,9 +184,11 @@ int main(int argc, char **argv)
         (true_class == obs_class ? correct : wrong) += 1;
         float score = svm->outputs->frames[0][0] / 3;
         assert(obs_class > 0 || score < 0);
-        float model_score = model.evaluate(orig_data->inputs->frames[0]);
-        if (fabs(score - model_score) > 0.01)
-            cout << "Er: " << score << " vs. " << model_score << endl;
+        if (mode == 3) {
+            float model_score = model.evaluate(orig_data->inputs->frames[0]);
+            if (fabs(score - model_score) > 0.01)
+                cout << "Er: " << score << " vs. " << model_score << endl;
+        }
     }
 
     cout << "TOTAL      : " << correct + wrong << endl;

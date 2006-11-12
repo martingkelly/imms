@@ -1,5 +1,3 @@
-#include <sys/stat.h>
-
 #include "torch/ConnectedMachine.h"
 #include "torch/XFile.h"
 #include "torch/DiskXFile.h"
@@ -67,11 +65,6 @@ private:
     MyMemoryDataSet fake;
     MeanVarNorm normalizer;
 };
-
-static bool file_exists(const string &filename) {
-    struct stat buf;
-    return !stat(filename.c_str(), &buf);
-}
 
 class SVMModel : public Model {
 public:

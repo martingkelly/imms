@@ -1,8 +1,6 @@
 #include <stdlib.h>     // for (s)random
 #include <signal.h>
 #include <time.h>
-#include <iostream>
-#include <fstream>
 #include <math.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -11,6 +9,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/stat.h>
+
+#include <iostream>
+#include <fstream>
 
 #include "immsconf.h"
 #include "immsutil.h"
@@ -169,4 +171,9 @@ int socket_connect(const string &sockname)
         return -1;
     }
     return fd;
+}
+
+bool file_exists(const string &filename) {
+    struct stat buf;
+    return !stat(filename.c_str(), &buf);
 }
