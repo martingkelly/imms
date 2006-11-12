@@ -447,7 +447,7 @@ void do_update_distances()
     }
     WARNIFFAILED();
 
-    MLPSimilarityModel model;
+    SVMSimilarityModel model;
 
     size_t numuids = uids.size();
     for (size_t i = 0; i < numuids; ++i)

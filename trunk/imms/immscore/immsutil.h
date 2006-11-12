@@ -2,9 +2,11 @@
 #define __UTILS_H
 
 #include <sys/time.h>
+#include <stdint.h>
+
 #include <string>
 #include <vector>
-#include <stdint.h>
+#include <iostream>
 
 #include "appname.h"
 
@@ -24,6 +26,7 @@ enum LogTypes {
 
 using std::string;
 using std::vector;
+using std::endl;
 
 int imms_random(int max);
 uint64_t usec_diff(struct timeval &tv1, struct timeval &tv2);
@@ -51,6 +54,32 @@ public:
     bool isok() { return name != ""; }
 private:
     string name;
+};
+
+template <typename NUM>
+class StatCollector
+{
+public:
+    StatCollector() : maxv(0), minv(0), sum(0), num(0) {}
+    void process(NUM n) {
+        if (!num)
+            maxv = minv = n;
+        ++num;
+        sum += n;
+        maxv = std::max(maxv, n);
+        minv = std::min(minv, n);
+    }
+    void finish() {
+        DEBUGVAL(maxv);
+        DEBUGVAL(minv);
+        double avg = sum;
+        if (num)
+            avg /= num;
+        DEBUGVAL(avg);
+    }
+private:
+    NUM maxv, minv, sum;
+    int num;
 };
 
 string get_imms_root(const string &file = "");

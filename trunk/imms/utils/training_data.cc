@@ -47,14 +47,18 @@ typedef list< vector<float> > Features;
 void collect_samples(Samples *samples,
         const string &table_name, int CLASS)
 {
+    StatCollector<float> stats;
+    float weight;
     try {
     Q q("SELECT * FROM " + table_name + ";");
     while (q.next()) {
         Sample s(CLASS);
-        q >> s.uid1 >> s.uid2;
+        q >> s.uid1 >> s.uid2 >> weight;
         samples->push_back(s);
+        stats.process(weight);
     }
     } WARNIFFAILED();
+    stats.finish();
 }
 
 void collect_features(Features *features, const Samples &samples) {
@@ -113,7 +117,7 @@ int main(int argc, char *argv[])
                 "GROUP BY sid;").execute();
 
         string select_start = 
-            "SELECT i1.uid, i2.uid FROM C.Correlations R "
+            "SELECT i1.uid, i2.uid, weight FROM C.Correlations R "
             "INNER JOIN Inverse i1 on R.x = i1.sid "
             "INNER JOIN Inverse i2 on R.y = i2.sid ";
         string select_end = " LIMIT " + itos(limit) + ";";
@@ -125,7 +129,7 @@ int main(int argc, char *argv[])
             + select_start;
 
         if (true) {
-            positive_query += "WHERE rating < 95 AND i2.rating < 95 ";
+            positive_query += "WHERE i1.rating < 95 AND i2.rating < 95 ";
             negative_query += "WHERE i1.rating > 60 AND i2.rating > 60 ";
         }
 
