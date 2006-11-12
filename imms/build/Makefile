@@ -21,13 +21,10 @@ libmodel.a: $(call objects,../model) svm-similarity-data.o
 immstool: immstool.o libmodel.a libimmscore.a 
 training_data: training_data.o libmodel.a libimmscore.a 
 train_model: train_model.o libmodel.a libimmscore.a 
-immstool-LIBS=-ltorch
-training_data-LIBS=-ltorch
-train_model-LIBS=-ltorch
 
 analyzer: $(call objects,../analyzer)
 analyzer: libimmscore.a libmodel.a
-analyzer-LIBS=`pkg-config fftw3 --libs` -ltorch
+analyzer-LIBS=`pkg-config fftw3 --libs`
 
 autotag: $(call objects,../autotag)
 autotag: libimmscore.a
@@ -45,7 +42,7 @@ socketserver-CPPFLAGS=$(GLIB2CPPFLAGS)
 immsd: libimmscore.a libmodel.a
 immsd: $(call objects,../immsd)
 immsd-CPPFLAGS=$(GLIB2CPPFLAGS)
-immsd-LIBS=$(GLIB2LDFLAGS) -ltorch
+immsd-LIBS=$(GLIB2LDFLAGS)
 
 PLUGINS_INSTALL=$(patsubst %,%_install,$(PLUGINS))
 plugins_install: $(PLUGINS_INSTALL)

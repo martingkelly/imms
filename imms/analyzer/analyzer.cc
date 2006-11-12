@@ -44,6 +44,8 @@ protected:
 
 int Analyzer::analyze(const string &path)
 {
+    static const bool test_mode = 0;
+    
     if (access(path.c_str(), R_OK))
     {
         LOG(ERROR) << "Could not open file " << path << endl;
@@ -57,7 +59,7 @@ int Analyzer::analyze(const string &path)
         return -3;
     }
 
-    if (song.isanalyzed())
+    if (!test_mode && song.isanalyzed())
     {
         LOG(ERROR) << path << endl;
         LOG(ERROR) << "File already analyzed. Skipping." << endl;
@@ -128,15 +130,18 @@ int Analyzer::analyze(const string &path)
         memmove(indata, indata + READSIZE, OVERLAP * sizeof(sample_t));
     }
 
-    if (pclose(p))
+    r = pclose(p);
+    if (r == -1)
         LOG(ERROR) << "pclose failed: " << strerror(errno) << endl;
+    if (r > 0)
+        LOG(INFO) << "sox process returned " << r << endl;
 
 #ifdef DEBUG
     cerr << "obtained " << frames << " frames" << endl;
 #endif
 
     // did we read enough data?
-    if (frames < 100)
+    if (test_mode || frames < 100)
         return 0;
 
     mfcckeeper.finalize();

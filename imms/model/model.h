@@ -9,10 +9,17 @@
 class Song;
 class MixtureModel;
 
-class Model {
+class Model
+{
 public:
     virtual ~Model() {};
     virtual float evaluate(float *features) = 0;
+};
+
+class DummyModel : public Model
+{
+public:
+    float evaluate(float *features) { return 0; }
 };
 
 class SimilarityModel
