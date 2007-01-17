@@ -94,7 +94,7 @@ public:
         if (isok())
             return false;
 
-        system("immsd &");
+        system("nice -n 5 immsd &");
 
         return connect();
     }
