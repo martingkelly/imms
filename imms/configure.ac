@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[3.1.0-pre2],[mag@luminal.org])
+AC_INIT([IMMS],[3.1.0-rc2],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -64,24 +64,6 @@ XCPPFLAGS="-ggdb -O0 -DDEBUG"
 if test "$enable_debug" != "yes"; then
     XCPPFLAGS="-O3"
     AC_MSG_RESULT([no])
-else
-    AC_MSG_RESULT([yes])
-fi
-
-AC_MSG_CHECKING([for usability of initstate_r])
-
-AC_TRY_RUN([#include <stdlib.h>
-int main()
-{
-  static struct random_data rand_data;
-  static char rand_state[256];
-  initstate_r(0, rand_state, sizeof(rand_state), &rand_data);
-  exit(0);
-}], initstate_r_works=yes,, ])
-
-if test "$initstate_r_works" != "yes"; then
-    AC_MSG_RESULT([no])
-    AC_DEFINE(INITSTATE_BUG,, [initstate_r is buggy])
 else
     AC_MSG_RESULT([yes])
 fi
