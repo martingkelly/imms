@@ -11,7 +11,7 @@
 # include <bmp/beepctrl.h>
 #elif AUDACIOUS
 # include <audacious/plugin.h>
-# include <audacious/beepctrl.h>
+# include <audacious/audctrl.h>
 #else
 # include <xmms/plugin.h>
 # include <xmms/xmmsctrl.h>

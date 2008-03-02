@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include <cstdlib>
 #include <iostream>
 
 using std::endl;

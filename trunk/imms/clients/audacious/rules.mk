@@ -1,5 +1,5 @@
-AUDACIOUSCPPFLAGS=`pkg-config audacious --cflags` -I../clients/xmms/ -DAUDACIOUS
-AUDACIOUSLDFLAGS=`pkg-config audacious glib --libs`
+AUDACIOUSCPPFLAGS=`pkg-config audclient dbus-glib-1 --cflags` -I../clients/xmms/ -DAUDACIOUS
+AUDACIOUSLDFLAGS=`pkg-config audclient glib dbus-glib-1 --libs`
 AUDACIOUSCOMMON=audaciousinterface.o clientstubbase.o libimmscore.a
 
 libaudaciousimms.so: audaciousplugin.o $(AUDACIOUSCOMMON)

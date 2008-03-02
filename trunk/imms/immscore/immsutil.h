@@ -4,6 +4,7 @@
 #include <sys/time.h>
 #include <stdint.h>
 
+#include <climits>
 #include <string>
 #include <vector>
 #include <iostream>

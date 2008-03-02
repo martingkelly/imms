@@ -118,6 +118,25 @@ int main(int argc, char *argv[])
 
         do_test_deltas(immsdb, v);
     }
+    else if (!strcmp(argv[1], "filter"))
+    {
+        int cutoff = 75;
+        if (argc > 2)
+            cutoff = atoi(argv[2]);
+        if (cutoff < 1)
+            return -1;
+        LOG(ERROR) << "Filtering at cutoff = " << cutoff << endl;
+        string filename;
+        while (getline(cin, filename))
+        {
+            Song s(path_normalize(filename));
+            if (!s.isok())
+                continue;
+            int rating = s.get_raw_rating().mean;
+            if (rating >= cutoff)
+                cout << s.get_sid() << ":" << filename << endl;
+        }
+    }
     else if (!strcmp(argv[1], "updateratings"))
     {
         if (argc != 2)

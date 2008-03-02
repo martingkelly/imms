@@ -4,6 +4,7 @@
 #include <sys/time.h>
 #include <string>
 #include <vector>
+#include <climits>
 
 #include "immsconf.h"
 #include "basicdb.h"
