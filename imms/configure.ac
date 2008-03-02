@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[3.1.0-rc2],[mag@luminal.org])
+AC_INIT([IMMS],[3.1.0-rc3],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -123,6 +123,23 @@ if test "$enable_analyzer" != "no"; then
         AC_DEFINE(WITH_TORCH,, [libtorch support])
     fi
 fi
+
+AC_CHECK_TOOL(OBJCOPY, objcopy)
+if test "x$OBJCOPY" = "x"; then
+    AC_MSG_ERROR("objcopy from GNU binutils >= 2.11.90 not found")
+fi
+AC_CHECK_TOOL(OBJDUMP, objdump)
+dnl extract target and architecture if objdump was found
+if test "x$OBJDUMP" = "x"; then :; else
+    AC_MSG_CHECKING(for object target)
+    octarget=`$OBJDUMP --info | sed -ne '2p'` # extract first target
+    AC_MSG_RESULT($octarget)
+    AC_MSG_CHECKING(for object architecture)
+    ocarch=`$OBJDUMP --info | sed -ne '4p'` # extract corresponding arch
+    AC_MSG_RESULT($ocarch)
+fi
+AC_SUBST(OBJCOPYTARGET, $octarget)
+AC_SUBST(OBJCOPYARCH, $ocarch)
 
 PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.0],
                   [], [AC_MSG_ERROR([Required packages missing.])])
@@ -305,13 +322,14 @@ else
     fi
 fi
 
-PKG_CHECK_MODULES(Audacious, [audacious >= 0.2.0], [], [with_audacious=no])
+PKG_CHECK_MODULES(audacious, [audclient >= 1.4.0], [], [with_audacious=no])
+PKG_CHECK_MODULES(dbus_glib, [dbus-glib-1 >= 0.70], [], [with_audacious=no])
 
-LIBS=$Audacious_LIBS
-CPPFLAGS=$Audacious_CFLAGS
+LIBS="$audacious_LIBS $dbus_glib_LIBS"
+CPPFLAGS="$audacious_CFLAGS $dbus_glib_CFLAGS"
 
 AC_CHECK_HEADERS(audacious/plugin.h,, [with_audacious=no])
-AC_CHECK_HEADERS(audacious/beepctrl.h,, [with_audacious=no])
+AC_CHECK_HEADERS(audacious/audctrl.h,, [with_audacious=no])
 
 audacious_enable_playqueue=$enable_queuecontrol
 if test "$with_audacious" = "no"; then
@@ -319,8 +337,8 @@ if test "$with_audacious" = "no"; then
 else 
     if test "$audacious_enable_playqueue" != "no"; then
         AC_MSG_CHECKING([for xmms_remote_playqueue_add in -laudacious])
-        AC_TRY_LINK([#include <audacious/beepctrl.h>],
-                    [xmms_remote_playqueue_add(0, 0)],
+        AC_TRY_LINK([#include <audacious/audctrl.h>],
+                    [audacious_remote_playqueue_add(0, 0)],
                     [AC_MSG_RESULT(yes)],
                     [audacious_enable_playqueue="no"
                          AC_MSG_RESULT(no)]);

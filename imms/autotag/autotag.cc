@@ -228,7 +228,7 @@ public:
             return 1;
         }
 
-        if (!has_tag() && leader.score >= SCORE_THRESHOLD_NO_TAG)
+        if (leader.score >= SCORE_THRESHOLD_NO_TAG)
         {
             LOG(ERROR) << " --- Tagging with --- " << endl;
             leader.print();
