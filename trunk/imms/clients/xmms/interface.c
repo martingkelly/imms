@@ -163,17 +163,3 @@ void about(void)
     gtk_signal_connect(GTK_OBJECT(about_win), "destroy",
             GTK_SIGNAL_FUNC(gtk_widget_destroyed), &about_win);
 }
-
-GeneralPlugin imms_gp =
-{
-    NULL,           /* handle */
-    NULL,           /* plugin filename */
-    -1,             /* session */
-    PACKAGE_STRING, /* description */
-    init,
-    about,
-    configure,
-    cleanup
-};
-
-GeneralPlugin *get_gplugin_info(void) { return &imms_gp; }

@@ -6,13 +6,8 @@
 #include <iostream>
 #include <time.h>
 
-#ifdef BMP
-# include <bmp/plugin.h>
-# include <bmp/beepctrl.h>
-#else
-# include <xmms/plugin.h>
-# include <xmms/xmmsctrl.h>
-#endif
+#include <audacious/plugin.h>
+#include <audacious/audctrl.h>
 
 #include "immsconf.h"
 #include "cplugin.h"
@@ -39,21 +34,20 @@ void configure(void);
 void cleanup(void);
 }
 
-GeneralPlugin imms_gp =
+static GeneralPlugin imms_gp =
 {
-    NULL,           /* handle */
-    NULL,           /* plugin filename */
-    -1,             /* session */
-    PACKAGE_STRING, /* description */
+    0,
+    0,
+    PACKAGE_STRING,
     init,
+    cleanup,
     about,
-    configure,
-    cleanup
+    configure
 };
 
-GeneralPlugin *get_gplugin_info(void) { return &imms_gp; }
+GeneralPlugin *gp_plugin_list[] = { &imms_gp, NULL };
 
-int &session = imms_gp.xmms_session;
+SIMPLE_GENERAL_PLUGIN(imms, gp_plugin_list);
 
 // Wrapper that frees memory
 string imms_get_playlist_item(int at)
@@ -62,15 +56,20 @@ string imms_get_playlist_item(int at)
         return "";
     char *tmp = 0;
     while (!tmp)
-       tmp = xmms_remote_get_playlist_file(session, at);
+       tmp = audacious_drct_get_playlist_file(at);
     string result = tmp;
     free(tmp);
+    gchar *realfn = g_filename_from_uri(result.c_str(), NULL, NULL);
+    tmp = aud_filename_to_utf8(realfn ? realfn : result.c_str());
+    result = tmp;
+    free(tmp);
+    free(realfn);
     return result;
 }
 
-static void xmms_reset_selection()
+static void player_reset_selection()
 {
-    xmms_remote_playqueue_remove(session, next_plpos);
+    audacious_drct_playqueue_remove(next_plpos);
     next_plpos = -1;
 }
 
@@ -98,13 +97,13 @@ struct FilterOps
     static void set_next(int next)
     {
         next_plpos = next;
-        xmms_remote_playqueue_add(session, next_plpos);
+        audacious_drct_playqueue_add(next_plpos);
         select_pending = false;
         just_enqueued = 2;
     }
     static void reset_selection()
     {
-        xmms_reset_selection();
+        player_reset_selection();
     }
     static string get_item(int index)
     {
@@ -112,7 +111,7 @@ struct FilterOps
     }
     static int get_length()
     {
-        return xmms_remote_get_playlist_length(session);
+        return audacious_drct_get_playlist_length();
     }
 }; 
 
@@ -162,18 +161,18 @@ static void do_song_change()
 static void check_playlist()
 {
     // update playlist length
-    int new_pl_length = xmms_remote_get_playlist_length(session);
+    int new_pl_length = audacious_drct_get_playlist_length();
     if (new_pl_length != pl_length)
     {
         pl_length = new_pl_length;
-        xmms_reset_selection();
+        player_reset_selection();
         imms->playlist_changed(pl_length);
     }
 }
 
 static void check_time()
 {
-    int cur_time = xmms_remote_get_output_time(session);
+    int cur_time = audacious_drct_get_output_time();
 
     ending += song_length - cur_time < 20 * 1000
                             ? ending < 10 : -(ending > 0);
@@ -188,23 +187,23 @@ void do_checks()
         select_pending = false;
         imms->setup(xidle_val);
         imms->playlist_changed(pl_length =
-                xmms_remote_get_playlist_length(session));
-        if (xmms_remote_is_playing(session))
+                audacious_drct_get_playlist_length());
+        if (audacious_drct_is_playing())
         {
-            last_plpos = cur_plpos = xmms_remote_get_playlist_pos(session);
+            last_plpos = cur_plpos = audacious_drct_get_playlist_pos();
             last_path = cur_path = imms_get_playlist_item(cur_plpos);
             imms->start_song(cur_plpos, cur_path);
         }
         enqueue_next();
     }
 
-    if (!xmms_remote_is_playing(session))
+    if (!audacious_drct_is_playing())
         return;
 
-    cur_plpos = xmms_remote_get_playlist_pos(session);
+    cur_plpos = audacious_drct_get_playlist_pos();
     
     // check if xmms is reporting the song length correctly
-    song_length = xmms_remote_get_playlist_time(session, cur_plpos);
+    song_length = audacious_drct_get_playlist_time(cur_plpos);
     if (song_length > 1000)
         good_length++;
 
@@ -220,24 +219,24 @@ void do_checks()
         if (last_path != cur_path)
         {
             do_song_change();
-            xmms_remote_playqueue_remove(session, next_plpos);
+            audacious_drct_playqueue_remove(next_plpos);
             return;
         }
     }
 
     check_time();
 
-    bool newshuffle = xmms_remote_is_shuffle(session);
+    bool newshuffle = audacious_drct_is_shuffle();
     if (!newshuffle && shuffle)
-        xmms_reset_selection();
+        player_reset_selection();
     shuffle = newshuffle;
 
     if (!shuffle)
         return;
 
-    int qlength = xmms_remote_get_playqueue_length(session);
+    int qlength = audacious_drct_get_playqueue_length();
     if (qlength > 1)
-        xmms_reset_selection();
+        player_reset_selection();
     else if (!qlength)
         enqueue_next();
 }

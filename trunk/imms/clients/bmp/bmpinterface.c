@@ -118,7 +118,7 @@ void configure(void)
 #ifdef BMP
             "Disable this option if you use BEEP on a dedicated machine",
 #elif AUDACIOUS
-            "Disable this option if you use audacious on a dedicated machine",
+            "Disable this option if you use Audacious on a dedicated machine",
 #endif
             "Use X idleness statistics");
 
@@ -152,7 +152,12 @@ void about(void)
     if (about_win)
         return;
 
-    about_win = xmms_show_message(
+    about_win =
+#ifdef AUDACIOUS
+        audacious_info_dialog(
+#else
+        xmms_show_message(
+#endif
             "About IMMS",
             PACKAGE_STRING "\n\n"
             "Intelligent Multimedia Management System" "\n\n"
@@ -170,17 +175,3 @@ void about(void)
     gtk_signal_connect(GTK_OBJECT(about_win), "destroy",
             GTK_SIGNAL_FUNC(gtk_widget_destroyed), &about_win);
 }
-
-GeneralPlugin imms_gp =
-{
-    NULL,           /* handle */
-    NULL,           /* plugin filename */
-    -1,             /* session */
-    PACKAGE_STRING, /* description */
-    init,
-    about,
-    configure,
-    cleanup
-};
-
-GeneralPlugin *get_gplugin_info(void) { return &imms_gp; }
