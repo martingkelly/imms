@@ -1,22 +1,14 @@
 AUDACIOUSCPPFLAGS=`pkg-config audclient dbus-glib-1 --cflags` -I../clients/xmms/ -DAUDACIOUS
 AUDACIOUSLDFLAGS=`pkg-config audclient glib dbus-glib-1 --libs`
-AUDACIOUSCOMMON=audaciousinterface.o clientstubbase.o libimmscore.a
 
-libaudaciousimms.so: audaciousplugin.o $(AUDACIOUSCOMMON)
+libaudaciousimms.so: audplugin.o audaciousinterface.o clientstubbase.o libimmscore.a 
 libaudaciousimms-LIBS = $(AUDACIOUSLDFLAGS)
-libaudaciousimms2.so: audaciousplugin2.o $(AUDACIOUSCOMMON)
-libaudaciousimms2-LIBS = $(AUDACIOUSLDFLAGS)
 
 audaciousinterface-CPPFLAGS=$(AUDACIOUSCPPFLAGS)
+audplugin-CPPFLAGS=$(AUDACIOUSCPPFLAGS)
 
 audaciousinterface.o: bmpinterface.c
 	$(call compile, $(CC), $<, $@, $($*-CFLAGS) $(CFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
-
-audaciousplugin.o: plugin.cc
-	$(call compile, $(CXX), $<, $@, $(CXXFLAGS) $(AUDACIOUSCPPFLAGS) $(CPPFLAGS))
-
-audaciousplugin2.o: plugin2.cc
-	$(call compile, $(CXX), $<, $@, $(CXXFLAGS) $(AUDACIOUSCPPFLAGS) $(CPPFLAGS))
 
 AUDACIOUSDESTDIR=""
 ifeq ($(shell id -u), 0)
@@ -26,7 +18,4 @@ else
 endif
 
 libaudaciousimms.so_install: libaudaciousimms.so
-	${INSTALL} -D $^ $(AUDACIOUSDESTDIR)/libaudaciousimms.so
-
-libaudaciousimms2.so_install: libaudaciousimms2.so
 	${INSTALL} -D $^ $(AUDACIOUSDESTDIR)/libaudaciousimms.so

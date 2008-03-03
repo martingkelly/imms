@@ -31,8 +31,27 @@ int last_plpos = -2, cur_plpos, pl_length = -1, should_play = 0;
 int good_length = 0, song_length = 0, delay = 0, xidle_val = 0;
 string cur_path = "", last_path = "";
 
-// Extern from interface.c
-extern GeneralPlugin imms_gp;
+extern "C" {
+void init(void);
+void about(void);
+void configure(void);
+void cleanup(void);
+}
+
+GeneralPlugin imms_gp =
+{
+    NULL,           /* handle */
+    NULL,           /* plugin filename */
+    -1,             /* session */
+    PACKAGE_STRING, /* description */
+    init,
+    about,
+    configure,
+    cleanup
+};
+
+GeneralPlugin *get_gplugin_info(void) { return &imms_gp; }
+
 int &session = imms_gp.xmms_session;
 
 static enum

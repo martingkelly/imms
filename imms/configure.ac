@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[3.1.0-rc3],[mag@luminal.org])
+AC_INIT([IMMS],[3.1.0-rc4],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -322,34 +322,30 @@ else
     fi
 fi
 
-PKG_CHECK_MODULES(audacious, [audclient >= 1.4.0], [], [with_audacious=no])
+PKG_CHECK_MODULES(audacious, [audacious >= 1.4.0], [], [with_audacious=no])
 PKG_CHECK_MODULES(dbus_glib, [dbus-glib-1 >= 0.70], [], [with_audacious=no])
 
 LIBS="$audacious_LIBS $dbus_glib_LIBS"
 CPPFLAGS="$audacious_CFLAGS $dbus_glib_CFLAGS"
 
 AC_CHECK_HEADERS(audacious/plugin.h,, [with_audacious=no])
-AC_CHECK_HEADERS(audacious/audctrl.h,, [with_audacious=no])
+AC_CHECK_HEADERS(audacious/auddrct.h,, [with_audacious=no])
 
-audacious_enable_playqueue=$enable_queuecontrol
+if test "$with_audacious" != "no"; then
+    AC_MSG_CHECKING([for audacious_drct_playqueue_add in -laudacious])
+    AC_TRY_LINK([#include <audacious/auddrct.h>
+                 #include <audacious/plugin.h>
+                 SIMPLE_GENERAL_PLUGIN(0, 0);],
+                [audacious_drct_playqueue_add(0)],
+                [AC_MSG_RESULT(yes)],
+                [with_audacious="no"
+                 AC_MSG_RESULT(no)]);
+fi
+
 if test "$with_audacious" = "no"; then
     AC_MSG_WARN([Not building audacious plugin])
 else 
-    if test "$audacious_enable_playqueue" != "no"; then
-        AC_MSG_CHECKING([for xmms_remote_playqueue_add in -laudacious])
-        AC_TRY_LINK([#include <audacious/audctrl.h>],
-                    [audacious_remote_playqueue_add(0, 0)],
-                    [AC_MSG_RESULT(yes)],
-                    [audacious_enable_playqueue="no"
-                         AC_MSG_RESULT(no)]);
-    fi
-    if test "$audacious_enable_playqueue" = "no"; then
-        AC_APPEND(PLUGINS, libaudaciousimms.so)
-    else
-        AC_DEFINE(AUDACIOUS_HAVE_QUEUE_CONTROL,,
-                  [audacious provides functions to control the play queue])
-        AC_APPEND(PLUGINS, libaudaciousimms2.so)
-    fi
+    AC_APPEND(PLUGINS, libaudaciousimms.so)
 fi
 
 if test "$enable_analyzer" != "no"; then

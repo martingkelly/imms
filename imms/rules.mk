@@ -16,8 +16,7 @@ link = $(CXX) $(filter-out %.a,$1) $(filter %.a,$1) $3 -o $2
 %.so:
 	$(CXX) $^ $($*-OBJ) $($*-LIBS) $(LIBS) \
 	    $(LDFLAGS) \
-	    -shared -Wl,-soname,$@ -o $@
-#           -shared -Wl,-z,defs,-soname,$@ -o $@
+            -shared -Wl,-z,defs,-soname,$@ -o $@
 
 %-data.o: %
 	objcopy -I binary -O $(OBJCOPYTARGET) -B $(OBJCOPYARCH) --rename-section .data=.rodata,alloc,load,readonly,data,contents $< $@
