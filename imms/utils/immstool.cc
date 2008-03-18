@@ -23,6 +23,7 @@
 #include <picker.h>
 #include <normal.h>
 #include <appname.h>
+#include <string.h>
 
 #include <model/model.h>
 #include <analyzer/beatkeeper.h>

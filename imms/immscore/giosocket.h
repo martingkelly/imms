@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <assert.h>
 
+#include <string.h>
+
 #include "immsconf.h"
 
 using std::string;

@@ -592,7 +592,7 @@ int main(int argc, char **argv)
     }
     WARNIFFAILED();
 
-    char *glades[] =
+    const char *glades[] =
     {   
         "immsremote/immsremote.glade",
         DATADIR "/imms/immsremote.glade",

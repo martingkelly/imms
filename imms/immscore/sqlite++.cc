@@ -2,6 +2,8 @@
 #include <sstream>
 #include <time.h>
 
+#include <string.h>
+
 #include "sqlite++.h"
 
 using std::ostringstream;

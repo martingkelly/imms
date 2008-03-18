@@ -3,6 +3,8 @@
 
 #include <math.h>
 
+#include <stdlib.h>
+
 #include <analyzer/mfcckeeper.h>
 #include <analyzer/beatkeeper.h>
 
