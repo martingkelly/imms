@@ -274,7 +274,7 @@ void Song::_identify(time_t modtime, const string &checksum)
     q << checksum;
 
     bool duplicate;
-    if (duplicate = q.next())
+    if ((duplicate = q.next()))
     {
         // Check if any of the old paths no longer exist 
         // (aka file was moved) so that we can reuse their uid

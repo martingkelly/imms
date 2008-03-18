@@ -161,8 +161,8 @@ bool InfoFetcher::parse_song_info(const SongData &data, StringPair &info)
     {
         if (Regexx(*i, BADARTIST))
             continue;
-        if (artist_confirmed =
-                (ImmsDb::check_artist(*i) || string_like(*i, artist, 4)))
+        if ((artist_confirmed =
+                (ImmsDb::check_artist(*i) || string_like(*i, artist, 4))))
             artist = *i;
         // And while we are at it find the uppermost related directory
         else if (outermost == "" && fm.first.find(*i) != string::npos)
@@ -221,9 +221,9 @@ bool InfoFetcher::parse_song_info(const SongData &data, StringPair &info)
     if (title != "" && ImmsDb::check_title(artist, title))
         return true;
 
-    if (identified = Regexx(title, album + ".*(" REMIXCLUES ")"))
+    if ((identified = Regexx(title, album + ".*(" REMIXCLUES ")")))
         title = album;
-    else if (identified = Regexx(fm.first, album + "$"))
+    else if ((identified = Regexx(fm.first, album + "$")))
         title = album;
 
     // Can recognize the title by matching filename parts to the database?

@@ -3,6 +3,7 @@
 
 #include <song.h>
 #include <immsutil.h>
+#include <string.h>
 
 #include "distance.h"
 #include "emd.h"

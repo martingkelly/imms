@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include "md5.h"
 
+#include <string.h>
+
 using std::string;
 
 #define NUMBLOCKS 256
