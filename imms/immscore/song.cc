@@ -6,17 +6,18 @@
 
 #include <iostream>
 
-#include "song.h"
+#include "analyzer/beatkeeper.h"
+#include "analyzer/mfcckeeper.h"
+
+#include "appname.h"
 #include "flags.h"
-#include "md5digest.h"
 #include "immsutil.h"
+#include "md5digest.h"
+#include "normal.h"
+#include "song.h"
+#include "songinfo.h"
 #include "sqlite++.h"
 #include "strmanip.h"
-#include "songinfo.h"
-#include "normal.h"
-#include "appname.h"
-#include "analyzer/mfcckeeper.h"
-#include "analyzer/beatkeeper.h"
 
 #define DELTA_SCALE     1.4
 #define DECAY_LIMIT     60

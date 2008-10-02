@@ -5,7 +5,7 @@
 #include "playlist.h"
 #include "correlate.h"
 
-#define SCHEMA_VERSION 13
+#define SCHEMA_VERSION 14
 
 class ImmsDb : virtual public BasicDb,
                        public PlaylistDb,

@@ -89,8 +89,8 @@ int Analyzer::analyze(const string &path)
     if (r != OVERLAP)
         return -5;
 
-    while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p)
-            == READSIZE && ++frames < MAXFRAMES)
+    while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p) ==
+            READSIZE && ++frames < MAXFRAMES)
     {
         for (int i = 0; i < WINDOWSIZE; ++i)
             pcmfft.input()[i] = (double)indata[i];

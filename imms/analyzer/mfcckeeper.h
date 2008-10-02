@@ -3,6 +3,7 @@
 
 #define NUMCEPSTR   15
 #define NUMGAUSS    5
+#define NUMFEATURES (NUMCEPSTR*3)
 
 #include <memory>
 
@@ -12,11 +13,12 @@ namespace Torch {
 
 struct Gaussian
 {
+    static const int NumDimensions = NUMCEPSTR * 3;
     Gaussian() {};
     Gaussian(float weight, float *means, float *vars);
     float weight;
-    float means[NUMCEPSTR];
-    float vars[NUMCEPSTR];
+    float means[NumDimensions];
+    float vars[NumDimensions];
 };
 
 struct MixtureModel
@@ -45,7 +47,8 @@ public:
     static const int ResultSize = sizeof(Gaussian) * NUMGAUSS;
 protected:
     std::auto_ptr<MFCCKeeperPrivate> impl;
-
+    int sample_number;
+    float last_frame[NUMCEPSTR], last_delta[NUMCEPSTR];
     MixtureModel result;
 };
 

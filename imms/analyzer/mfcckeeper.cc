@@ -7,7 +7,6 @@
 #include <torch/MemoryDataSet.h>
 #include <torch/DiagonalGMM.h>
 
-
 #include <sqlite++.h>
 
 #include "mfcckeeper.h"
@@ -17,10 +16,15 @@
 
 using namespace Torch;
 
+class RandomSeeder {
+public:
+    RandomSeeder() { Torch::Random::seed(); }
+};
+
 Gaussian::Gaussian(float weight, float *means_, float *vars_) : weight(weight)
 {
-    memcpy(means, means_, sizeof(float) * NUMCEPSTR);
-    memcpy(vars, vars_, sizeof(float) * NUMCEPSTR);
+    memcpy(means, means_, sizeof(float) * NumDimensions);
+    memcpy(vars, vars_, sizeof(float) * NumDimensions);
 }
 
 void MixtureModel::init(DiagonalGMM &gmm)
@@ -38,22 +42,54 @@ SQLQuery &operator<<(SQLQuery &q, const MixtureModel &a)
 
 struct MFCCKeeperPrivate
 {
-    MFCCKeeperPrivate() : cepseq(0, NUMCEPSTR), cepseq_p(&cepseq)
-        { cepdat.setInputs(&cepseq_p, 1); }
+    MFCCKeeperPrivate()
+            : cepseq(0, Gaussian::NumDimensions),
+              cepseq_p(&cepseq) {
+        cepdat.setInputs(&cepseq_p, 1);
+    }
     Torch::Sequence cepseq;
     Torch::Sequence* cepseq_p;
     Torch::MemoryDataSet cepdat;
 };
 
-MFCCKeeper::MFCCKeeper() : impl(new MFCCKeeperPrivate)
+MFCCKeeper::MFCCKeeper() : impl(new MFCCKeeperPrivate), sample_number(0)
 {
-    Random::seed();
+    static RandomSeeder seeder;
+    memset(last_frame, 0, sizeof(last_frame));
+    memset(last_delta, 0, sizeof(last_delta));
 }
+
 MFCCKeeper::~MFCCKeeper() {}
+
+void diff_frames(float* dest, const float* f1, const float* f2) {
+    for (int i = 0; i < NUMCEPSTR; ++i)
+        dest[i] = f1[i] - f2[i];
+}
 
 void MFCCKeeper::process(float *cepstrum)
 {
-    impl->cepseq.addFrame(cepstrum, true);
+    ++sample_number;
+
+    // Compute first and second order delta in addition to MFCCs.
+    float delta[NUMCEPSTR];
+    float meta_delta[NUMCEPSTR];
+
+    diff_frames(delta, cepstrum, last_frame);
+    diff_frames(meta_delta, delta, last_delta);
+
+    static const int kFeatureSetSize = NUMCEPSTR * sizeof(float);
+    memcpy(last_frame, cepstrum, kFeatureSetSize);
+    memcpy(last_delta, delta, kFeatureSetSize);
+
+    if (sample_number < 3)
+        return;
+
+    float buffer[Gaussian::NumDimensions];
+    memcpy(buffer, cepstrum, kFeatureSetSize);
+    memcpy(buffer + NUMCEPSTR, delta, kFeatureSetSize);
+    memcpy(buffer + NUMCEPSTR * 2, meta_delta, kFeatureSetSize);
+
+    impl->cepseq.addFrame(buffer, true);
 }
 
 void MFCCKeeper::finalize()
@@ -89,7 +125,7 @@ void MFCCKeeper::finalize()
 
     result = gmm;
 
-#ifdef DEBUG
+#if 0
     gmm.display();
 #endif
 }

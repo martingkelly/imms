@@ -18,7 +18,7 @@ libimmscore.a: $(call objects,../immscore)
 libmodel.a: $(call objects,../model) svm-similarity-data.o
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 
-immstool: immstool.o libmodel.a libimmscore.a 
+immstool: immstool.o libmodel.a libimmscore.a mfcckeeper.o
 training_data: training_data.o libmodel.a libimmscore.a 
 train_model: train_model.o libmodel.a libimmscore.a 
 

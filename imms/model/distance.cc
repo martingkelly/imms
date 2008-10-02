@@ -11,18 +11,15 @@
 using std::cerr;
 using std::endl;
 
-#define     SPEC_AVG                20
-#define     BPM_AVG                 0.70
-#define     DISTANCE_REPRESSANT     1.8
-
 float KL_Divergence(const Gaussian &g1, const Gaussian &g2)
 {
     float total = 0;
-    for (int i = 0; i < NUMCEPSTR; ++i)
+    for (int i = 0; i < Gaussian::NumDimensions; ++i)
     {
-        // sanitize the variences so we don't get huge distances
-        float var1 = std::max(g1.vars[i], 10.0f);
-        float var2 = std::max(g2.vars[i], 10.0f);
+        // Enforce a minimum for variences so we don't get huge distances
+        const float MinVariance = 10.0f;
+        float var1 = std::max(g1.vars[i], MinVariance);
+        float var2 = std::max(g2.vars[i], MinVariance);
         float dist = var1 / var2 + var2 / var1 +
             pow(g1.means[i] - g2.means[i], 2.0f) *
             (1.0f / var1 + 1.0f / var2);
@@ -33,24 +30,6 @@ float KL_Divergence(const Gaussian &g1, const Gaussian &g2)
 }
 
 float EMD::cost[NUMGAUSS][NUMGAUSS];
-
-static float normalize_distance(float dist, float avg)
-{
-    if (dist < 0)
-        return 0;
-    dist = cap((avg - dist) / avg);
-    return (dist > 0 ? 1 : -1) * pow(fabs(dist), DISTANCE_REPRESSANT);
-}
-
-float EMD::distance(const MixtureModel &m1, const MixtureModel &m2)
-{
-    return normalize_distance(raw_distance(m1, m2), SPEC_AVG);
-}
-
-float EMD::distance(float beats1[BEATSSIZE], float beats2[BEATSSIZE])
-{
-    return normalize_distance(raw_distance(beats1, beats2), BPM_AVG);
-}
 
 float EMD::raw_distance(const MixtureModel &m1, const MixtureModel &m2)
 {
@@ -63,8 +42,11 @@ float EMD::raw_distance(const MixtureModel &m1, const MixtureModel &m2)
         w1[i] = m1.gauss[i].weight;
         w2[i] = m2.gauss[i].weight;
 
-        for (int j = 0; j < NUMGAUSS; ++j)
+        for (int j = 0; j < NUMGAUSS; ++j) {
             cost[i][j] = KL_Divergence(m1.gauss[i], m2.gauss[j]);
+            LOG(INFO) << "Divergence " << i << "x" << j << " = "
+                      << cost[i][j] << endl;
+        }
     }
 
     signature_t s1 = { NUMGAUSS, features, w1 };
@@ -138,7 +120,7 @@ float song_cepstr_distance(int uid1, int uid2)
         return -1;
     }
 
-    return EMD::distance(m1, m2);
+    return EMD::raw_distance(m1, m2);
 }
 
 float song_bpm_distance(int uid1, int uid2)
@@ -162,5 +144,5 @@ float song_bpm_distance(int uid1, int uid2)
         return -1;
     }
 
-    return EMD::distance(beats1, beats2);
+    return EMD::raw_distance(beats1, beats2);
 }

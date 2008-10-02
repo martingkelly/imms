@@ -330,6 +330,11 @@ void BasicDb::sql_schema_upgrade(int from)
             Q("DELETE FROM Bias WHERE mean = 33 and trials = 0;").execute();
             update_all_ratings();
         }
+        if (from < 14)
+        {
+            Q("DROP TABLE A.Acoustic;").execute();
+            sql_create_tables();
+        }
 
         a.commit();
     }

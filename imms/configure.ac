@@ -1,4 +1,4 @@
-AC_INIT([IMMS],[3.1.0-rc4],[mag@luminal.org])
+AC_INIT([IMMS],[3.1.0-rc5],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
@@ -68,6 +68,22 @@ else
     AC_MSG_RESULT([yes])
 fi
 
+AC_MSG_CHECKING([for usability of initstate_r])
+
+AC_TRY_COMPILE([#include <stdlib.h>],[
+  static struct random_data rand_data;
+  static char rand_state[256];
+  initstate_r(0, rand_state, sizeof(rand_state), &rand_data);
+  exit(0);
+], initstate_r_works=yes,)
+
+if test "$initstate_r_works" != "yes"; then
+    AC_MSG_RESULT([no])
+else
+    AC_MSG_RESULT([yes])
+    AC_DEFINE(INITSTATE_USABLE,, [initstate_r is usable])
+fi
+
 AC_CHECK_LIB(z, compress,, [with_zlib=no])
 AC_CHECK_HEADERS(zlib.h,, [with_zlib=no])
 if test "$with_zlib" = "no"; then
@@ -80,13 +96,11 @@ if test "$with_sqlite" = "no"; then
     AC_MSG_ERROR([sqlite >= 3.2.2 required and missing.])
 fi
 
-AC_CHECK_LIB(pcre, pcre_compile,, [with_pcre=no])
-AC_CHECK_HEADERS(pcre.h,, [with_pcre_1=no])
-if test "$with_pcre_1" = "no"; then
-    AC_CHECK_HEADERS(pcre/pcre.h,, [with_pcre=no])
-fi
+PKG_CHECK_MODULES([pcre], [libpcre], [], [with_pcre=no])
 if test "$with_pcre" = "no"; then
     AC_MSG_ERROR([PCRE required and missing.])
+else
+    LIBS="$LIBS $pcre_LIBS"
 fi
 
 if test "$enable_analyzer" != "no"; then
