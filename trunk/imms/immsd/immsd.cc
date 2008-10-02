@@ -1,6 +1,7 @@
-#include <glib.h>
 #include <errno.h>
+#include <glib.h>
 #include <signal.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <iostream>
@@ -258,7 +259,8 @@ int main(int argc, char **argv)
 
     signal(SIGINT,  quit);
     signal(SIGTERM, quit);
-    signal(SIGPIPE, SIG_IGN);
+    //signal(SIGPIPE, SIG_IGN);
+    signal(SIGPIPE, quit);
 
     GSource* ts = g_timeout_source_new(500);
     g_source_attach(ts, NULL);

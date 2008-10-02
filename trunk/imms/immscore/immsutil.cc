@@ -27,6 +27,7 @@ int imms_random(int max)
 {
     int rand_num;
     static bool initialized = false;
+#ifdef INITSTATE_USABLE
     static struct random_data rand_data;
     static char rand_state[256];
     if (!initialized)
@@ -36,6 +37,14 @@ int imms_random(int max)
         initialized = true;
     }
     random_r(&rand_data, &rand_num);
+#else
+    if (!initialized)
+    {
+        srandom(time(0));
+        initialized = true;
+    }
+    rand_num = random();
+#endif
     double cof = rand_num / (RAND_MAX + 1.0);
     return (int)(max * cof);
 }

@@ -21,12 +21,13 @@
 #include <immsutil.h>
 #include <strmanip.h>
 #include <picker.h>
-#include <normal.h>
 #include <appname.h>
 #include <string.h>
 
-#include <model/model.h>
 #include <analyzer/beatkeeper.h>
+#include <analyzer/mfcckeeper.h>
+#include <model/distance.h>
+#include <model/model.h>
 
 using std::string;
 using std::cout;
@@ -49,10 +50,8 @@ void do_missing();
 void do_purge(const string &path);
 void do_closest(const string &path);
 void do_lint();
-void do_random(int mean, int var);
 void do_identify(const string &path);
 void do_update_distances();
-void do_test_deltas(ImmsDb &immsdb, const vector<int> &v);
 
 int main(int argc, char *argv[])
 {
@@ -94,30 +93,6 @@ int main(int argc, char *argv[])
 
         SVMSimilarityModel m;
         LOG(INFO) << "Distance = " << m.evaluate(s1, s2) << endl;;
-    }
-    else if (!strcmp(argv[1], "random"))
-    {
-        if (argc != 4)
-        {
-            cout << "huh??" << endl;
-            return -1;
-        }
-
-        do_random(atoi(argv[2]), atoi(argv[3]));
-    }
-    else if (!strcmp(argv[1], "testdeltas"))
-    {
-        if (argc < 3)
-        {
-            cout << "huh??" << endl;
-            return -1;
-        }
-
-        vector<int> v;
-        for (int i = 2; i < argc; ++i)
-            v.push_back(atoi(argv[i]));
-
-        do_test_deltas(immsdb, v);
     }
     else if (!strcmp(argv[1], "filter"))
     {
@@ -519,6 +494,8 @@ void do_update_distances()
 
                 int dist = ROUND(model.evaluate(m1, beats1, m2, beats2) * 100);
 
+                // Don't bother with distance < 0.3.
+                // This way we only get a list of strongly correlated songs.
                 if (dist < 30)
                     continue;
 
@@ -585,22 +562,4 @@ void do_closest(const string &path)
         }
     }
     WARNIFFAILED();
-}
-
-void do_random(int mean, int var)
-{
-    for (int i = 0; i < 20; ++i)
-        cout << ROUND(normal(mean, var)) << endl;
-}
-
-void do_test_deltas(ImmsDb &immsdb, const vector<int> &v)
-{
-    AutoTransaction at;
-
-    time_t timestamp = time(0) - 30*DAY;
-    for (unsigned i = 0; i < v.size(); ++i)
-        immsdb.fake_encounter(10000, v[i], --timestamp);
-    
-    Song song("", 10000);
-    LOG(INFO) << song.update_rating().print() << endl;
 }
