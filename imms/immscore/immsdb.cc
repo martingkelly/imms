@@ -8,7 +8,7 @@ using std::endl;
 
 ImmsDb::ImmsDb()
 {
-    sql_schema_upgrade(SCHEMA_VERSION);
+    sql_schema_upgrade(0);
     sql_create_tables();
 }
 
@@ -29,9 +29,11 @@ void ImmsDb::sql_schema_upgrade(int from)
     } catch (SQLException &e) {}
 
     try {
-        Q q("SELECT version FROM 'Schema' WHERE description ='latest';");
+        Q q("SELECT version FROM 'Schema' WHERE description = 'latest';");
         if (q.next())
             q >> from;
+        else
+            from = 12;  // Hack to get around broken upgrades. Remove later.
     }
     WARNIFFAILED();
 
@@ -43,15 +45,23 @@ void ImmsDb::sql_schema_upgrade(int from)
         return;
     }
 
-    if (from == SCHEMA_VERSION)
+    if (from && from < 12)
+    {
+        cerr << "IMMS: Database version too old." << endl;
+        cerr << "IMMS: Upgrade to an IMMS 3.0.x first, "
+                "or delete you .imms directory." << endl;
+        close_database();
         return;
+    }
 
-    cerr << "IMMS: Outdated database schema detected." << endl;
-    cerr << "IMMS: Attempting to update." << endl;
-    
-    BasicDb::sql_schema_upgrade(from);
-    CorrelationDb::sql_schema_upgrade(from);
-    PlaylistDb::sql_schema_upgrade(from);
+    if (from && from != SCHEMA_VERSION) {
+        cerr << "IMMS: Outdated database schema detected." << endl;
+        cerr << "IMMS: Attempting to update." << endl;
+
+        BasicDb::sql_schema_upgrade(from);
+        CorrelationDb::sql_schema_upgrade(from);
+        PlaylistDb::sql_schema_upgrade(from);
+    }
 
     try {
         Q("INSERT OR REPLACE INTO 'Schema' ('description', 'version') "

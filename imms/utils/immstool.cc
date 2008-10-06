@@ -113,16 +113,6 @@ int main(int argc, char *argv[])
                 cout << s.get_sid() << ":" << filename << endl;
         }
     }
-    else if (!strcmp(argv[1], "updateratings"))
-    {
-        if (argc != 2)
-        {
-            cout << "huh??" << endl;
-            return -1;
-        }
-
-        immsdb.update_all_ratings();
-    }
     else if (!strcmp(argv[1], "closest"))
     {
         if (argc != 3)
