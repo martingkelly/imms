@@ -42,11 +42,8 @@ float EMD::raw_distance(const MixtureModel &m1, const MixtureModel &m2)
         w1[i] = m1.gauss[i].weight;
         w2[i] = m2.gauss[i].weight;
 
-        for (int j = 0; j < NUMGAUSS; ++j) {
+        for (int j = 0; j < NUMGAUSS; ++j)
             cost[i][j] = KL_Divergence(m1.gauss[i], m2.gauss[j]);
-            LOG(INFO) << "Divergence " << i << "x" << j << " = "
-                      << cost[i][j] << endl;
-        }
     }
 
     signature_t s1 = { NUMGAUSS, features, w1 };
