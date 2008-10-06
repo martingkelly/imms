@@ -170,5 +170,5 @@ void BasicDb::sql_schema_upgrade(int from)
 
         a.commit();
     }
-    WARNIFFAILED();
+    IGNOREFAILURE();  // Temporary hack to work around broken schema upgrades.
 }
