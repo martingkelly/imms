@@ -23,8 +23,6 @@ BasicDb::~BasicDb()
 void BasicDb::sql_set_pragma()
 {
     try {
-        QueryCacheDisabler qdb;
-
         Q("PRAGMA cache_size = 5000").execute();
         Q("PRAGMA temp_store = MEMORY;").execute();
     }
@@ -33,7 +31,6 @@ void BasicDb::sql_set_pragma()
 
 void BasicDb::sql_create_tables()
 {
-    QueryCacheDisabler qcd;
     RuntimeErrorBlocker reb;
     try
     {
@@ -161,7 +158,6 @@ void BasicDb::sql_schema_upgrade(int from)
 {
     try 
     {
-        QueryCacheDisabler qcd;
         AutoTransaction a;
         if (from < 14)
         {

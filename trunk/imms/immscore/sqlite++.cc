@@ -116,7 +116,6 @@ void AttachedDatabase::attach(const string &filename, const string &alias)
 {
     if (dbname != "")
         throw SQLException("Database already attached!");
-    QueryCacheDisabler qcd;
     dbname = alias;
     Q("ATTACH \"" + filename + "\" AS " + dbname).execute();
 }
@@ -125,7 +124,6 @@ void AttachedDatabase::detach()
 {
     if (dbname == "")
         throw SQLException("No database attached!");
-    QueryCacheDisabler qcd;
     string query = "DETACH " + dbname; 
     dbname = "";
     Q(query).execute();
@@ -182,34 +180,27 @@ void AutoTransaction::commit()
 
 SQLQueryManager *SQLQueryManager::instance;
 
-sqlite3_stmt *SQLQueryManager::get(const string &query, bool &cached)
+sqlite3_stmt *SQLQueryManager::get(const string &query)
 {
     StmtMap::iterator i = statements.find(query);
 
     if (i != statements.end())
-    {
-        if (!sqlite3_expired(i->second))
-            return i->second;
-        sqlite3_finalize(i->second);
-        statements.erase(query);
-    }
+        return i->second;
 
     sqlite3_stmt *statement = 0;
-    int qr = sqlite3_prepare(SQLDatabase::db(), query.c_str(),
-            -1, &statement, 0);
+    int qr = sqlite3_prepare_v2(
+            SQLDatabase::db(), query.c_str(), -1, &statement, 0);
 
     SQLException except = SQLStandardException();
 
     if (qr)
     {
-        if (block)
+        if (block_errors)
             return 0;
         throw except;
     }
 
-    cached = cache;
-    if (cache)
-        statements[query] = statement;
+    statements[query] = statement;
     return statement;
 }
 
@@ -234,17 +225,14 @@ SQLQueryManager::~SQLQueryManager()
 
 // SQLQuery
 
-SQLQuery::SQLQuery(const string &query) : curbind(0), cached(true), stmt(0)
+SQLQuery::SQLQuery(const string &query) : curbind(0), stmt(0)
 {
-    stmt = SQLQueryManager::self()->get(query, cached);
+    stmt = SQLQueryManager::self()->get(query);
 }
 
 SQLQuery::~SQLQuery()
 {
     reset();
-
-    if (stmt && !cached)
-        sqlite3_finalize(stmt);
 }
 
 bool SQLQuery::next()

@@ -395,8 +395,6 @@ void do_lint()
                 "WHERE x NOT IN (SELECT sid FROM Library) "
                 "OR y NOT IN (SELECT sid FROM Library);").execute();
 
-        QueryCacheDisabler qcd;
-
         Q("VACUUM Identify;").execute();
         Q("VACUUM Library;").execute();
     }
