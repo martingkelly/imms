@@ -69,8 +69,8 @@ typedef struct sqlite3_stmt sqlite3_stmt;
 class SQLQueryManager
 {
 public:
-    SQLQueryManager() : cache(true), block(false) {}
-    sqlite3_stmt *get(const string &query, bool &cached);
+    SQLQueryManager() : block_errors(false) {}
+    sqlite3_stmt *get(const string &query);
     ~SQLQueryManager();
 
     static SQLQueryManager *self();
@@ -79,30 +79,18 @@ private:
     typedef std::map<string, sqlite3_stmt *> StmtMap;
     StmtMap statements;
 
-    friend class QueryCacheDisabler;
     friend class RuntimeErrorBlocker;
-    bool cache, block;
+    bool block_errors;
     static SQLQueryManager *instance;
-};
-
-class QueryCacheDisabler
-{
-public:
-    QueryCacheDisabler() : active(SQLQueryManager::self()->cache)
-        { SQLQueryManager::self()->cache = false; }
-    ~QueryCacheDisabler()
-        { if (active) SQLQueryManager::self()->cache = true; }
-private:
-    bool active;
 };
 
 class RuntimeErrorBlocker
 {
 public:
-    RuntimeErrorBlocker() : active(!SQLQueryManager::self()->block)
-        { SQLQueryManager::self()->block = true; }
+    RuntimeErrorBlocker() : active(!SQLQueryManager::self()->block_errors)
+        { SQLQueryManager::self()->block_errors = true; }
     ~RuntimeErrorBlocker()
-        { if (active) SQLQueryManager::self()->block = false; }
+        { if (active) SQLQueryManager::self()->block_errors = false; }
 private:
     bool active;
 };
@@ -143,7 +131,6 @@ public:
 
 private:
     int curbind;
-    bool cached;
 
     sqlite3_stmt *stmt;
 };

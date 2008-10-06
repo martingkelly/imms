@@ -25,7 +25,6 @@ CorrelationDb::CorrelationDb() : correlate_from(time(0))
 void CorrelationDb::sql_create_tables()
 {
     RuntimeErrorBlocker reb;
-    QueryCacheDisabler qcd;
     try {
         Q("CREATE TABLE C.Correlations ("
                 "'x' INTEGER NOT NULL, "
