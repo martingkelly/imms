@@ -1,8 +1,9 @@
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <math.h>
 #include <ctype.h>
+#include <math.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <iostream>
 
@@ -38,7 +39,7 @@ string Song::Rating::print()
 }
 
 int evaluate_artist(const string &artist, const string &album,
-        const string &title, int count)
+                    const string &title, int count)
 {
     int score = 0;
 
