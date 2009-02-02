@@ -101,6 +101,7 @@ if test "$with_pcre" = "no"; then
     AC_MSG_ERROR([PCRE required and missing.])
 else
     LIBS="$LIBS $pcre_LIBS"
+    CPPFLAGS="$CPPFLAGS $pcre_CFLAGS"
 fi
 
 if test "$enable_analyzer" != "no"; then

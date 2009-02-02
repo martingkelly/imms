@@ -4,10 +4,12 @@
 #include <bmp/configdb.h>
 #include <bmp/util.h>
 #include <bmp/plugin.h>
+#define PLAYER_PREFIX(x) bmp_##x
 #elif AUDACIOUS
 #include <audacious/configdb.h>
 #include <audacious/util.h>
 #include <audacious/plugin.h>
+#define PLAYER_PREFIX(x) aud_##x
 #endif
 #include "immsconf.h"
 #include "cplugin.h"
@@ -28,10 +30,10 @@ void read_config(void)
 {
     ConfigDb *cfgfile;
 
-    if ((cfgfile = bmp_cfg_db_open()) != NULL)
+    if ((cfgfile = PLAYER_PREFIX(cfg_db_open)()) != NULL)
     {
-        bmp_cfg_db_get_int(cfgfile, "imms", "xidle", &use_xidle);
-        bmp_cfg_db_close(cfgfile);
+        PLAYER_PREFIX(cfg_db_get_int)(cfgfile, "imms", "xidle", &use_xidle);
+        PLAYER_PREFIX(cfg_db_close)(cfgfile);
     }
 }
 
@@ -55,12 +57,12 @@ void cleanup(void)
 
 void configure_ok_cb(gpointer data)
 {
-    ConfigDb *cfgfile = bmp_cfg_db_open();
+    ConfigDb *cfgfile = PLAYER_PREFIX(cfg_db_open)();
 
     use_xidle = !!GTK_TOGGLE_BUTTON(xidle_button)->active;
 
-    bmp_cfg_db_set_int(cfgfile, "imms", "xidle", use_xidle);
-    bmp_cfg_db_close(cfgfile);
+    PLAYER_PREFIX(cfg_db_set_int)(cfgfile, "imms", "xidle", use_xidle);
+    PLAYER_PREFIX(cfg_db_close)(cfgfile);
 
     imms_setup(use_xidle);
     gtk_widget_destroy(configure_win);
