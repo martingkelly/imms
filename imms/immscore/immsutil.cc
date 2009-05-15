@@ -131,33 +131,6 @@ float rms_string_distance(const string &s1, const string &s2, int max)
     return sqrt(distance / len);
 }
 
-#define STEP 3
-
-static int do_rescale_sum(const string &graph)
-{
-    if (graph.length() < STEP * 3)
-        return 0;
-
-    float total = 0;
-    float scale = 1.0 / (float)STEP;
-    for (int i = 0; i < STEP; ++i)
-    {
-        total += (scale * (i + 0.5) * (graph[i] - 'a'));
-        total += (graph[STEP + i] - 'a');
-        total += (scale * (STEP - i - 0.5) * (graph[STEP * 2 + i] - 'a'));
-    }
-    return ROUND(total / (STEP * 2));
-}
-
-string rescale_bpmgraph(const string &graph)
-{
-    string result;
-    int cur;
-    for (int i = 0; (cur = do_rescale_sum(graph.substr(i))); i += STEP)
-        result += std::min((char)('a' + cur), 'z');
-    return result;
-}
-
 string path_normalize(const string &path)
 {
     const char *start = path.c_str();

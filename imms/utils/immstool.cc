@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
             return -2;
         }
 
-        SimilarityModel m;
+        MLPSimilarityModel m;
 
         LOG(INFO) << "Distance = " << m.evaluate(s1, s2) << endl;;
     }
@@ -447,7 +447,7 @@ void do_update_distances()
     }
     WARNIFFAILED();
 
-    SimilarityModel model;
+    MLPSimilarityModel model;
 
     size_t numuids = uids.size();
     for (size_t i = 0; i < numuids; ++i)

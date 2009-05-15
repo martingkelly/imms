@@ -80,10 +80,7 @@ int main(int argc, char **argv)
 
   DiskXFile *model = NULL;
   if(mode == 1)
-  {
     model = new(allocator) DiskXFile(model_file, "r");
-    cmd.loadXFile(model);
-  }
 
   // If the user didn't give any random seed,
   // generate a random random seed...
@@ -96,7 +93,7 @@ int main(int argc, char **argv)
   //=================== Create the MLP... =========================
   ConnectedMachine mlp;
 
-  int n_hu = 2 * n_inputs;
+  int n_hu = 25;
   Linear *c1 = new(allocator) Linear(n_inputs, n_hu);
   c1->setROption("weight decay", weight_decay);
   Tanh *c2 = new(allocator) Tanh(n_hu);
@@ -119,12 +116,16 @@ int main(int argc, char **argv)
   // Create the training dataset (normalize inputs)
   MatDataSet *mat_data = new(allocator) MatDataSet(
           file, n_inputs, 1, false, -1, false);
+  MatDataSet *orig_mat_data = new(allocator) MatDataSet(
+          file, n_inputs, 1, false, -1, false);
   MeanVarNorm *mv_norm = new(allocator) MeanVarNorm(mat_data);
   if(mode == 1)
       mv_norm->loadXFile(model);
   mat_data->preProcess(mv_norm);
 
   DataSet *data = new(allocator) ClassFormatDataSet(mat_data, n_targets);
+  DataSet *orig_data = new(allocator) ClassFormatDataSet(
+          orig_mat_data, n_targets);
 
   if(mode == 1)
     mlp.loadXFile(model);
@@ -163,6 +164,7 @@ int main(int argc, char **argv)
 
   if(mode == 0)
   {
+    message("train");
     if(k_fold <= 0)
     {
       trainer.train(data, &measurers);
@@ -170,13 +172,6 @@ int main(int argc, char **argv)
       if(strcmp(model_file, ""))
       {
         DiskXFile all_(model_file, "w");
-        DiskXFile model_("file.model", "w");
-        DiskXFile norm_("file.norm", "w");
-        DiskXFile cmd_("file.cmd", "w");
-        cmd.saveXFile(&cmd_);
-        mv_norm->saveXFile(&norm_);
-        mlp.saveXFile(&model_);
-        cmd.saveXFile(&all_);
         mv_norm->saveXFile(&all_);
         mlp.saveXFile(&all_);
       }
@@ -187,12 +182,16 @@ int main(int argc, char **argv)
       k.crossValidate(data, NULL, &measurers);
     }
   }
-  else {
-    SimilarityModel m;
+  else
+  {
+    trainer.test(&measurers);
+
+    MLPSimilarityModel m;
 
     float correct = 0, wrong = 0;
     for (int t = 0; t < data->n_examples; t++) {
         data->setExample(t);
+        orig_data->setExample(t);
 
         mlp.forward(data->inputs);
         int true_class = (int)data->targets->frames[0][1];
@@ -201,7 +200,7 @@ int main(int argc, char **argv)
         score /= 5.;
         (true_class == obs_class ? correct : wrong) += 1;
 
-        float model_score = m.evaluate(data->inputs->frames[0], false);
+        float model_score = m.evaluate(orig_data->inputs->frames[0]);
         assert(fabs(score - model_score) < 0.01);
         assert(obs_class == 0 || score >= 0);
         assert(obs_class == 1 || score <= 0);
