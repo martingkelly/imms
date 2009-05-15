@@ -24,30 +24,37 @@ using std::cerr;
 using std::vector;
 
 static const int num_inputs = NUM_FEATURES;
-static const int num_hidden = NUM_FEATURES * 2;
+static const int num_hidden = 25;
 static const int num_outputs = 2;
 
-struct SimilarityModelPrivate
-{
-    SimilarityModelPrivate()
-        : class_format(num_outputs),
-          normalizer(0)
+class XFileModeSetter {
+public:
+    XFileModeSetter() { DiskXFile::setLittleEndianMode(); }
+};
+
+static XFileModeSetter xfilemodesetter;
+
+class MyMemoryDataSet : public MemoryDataSet {
+public:
+    MyMemoryDataSet(int xn_inputs) {
+        n_inputs = xn_inputs;
+    }
+};
+
+class MLPModel : public Model {
+public:
+    MLPModel(const string &filename)
+        : class_format(num_outputs), fake(num_inputs), normalizer(&fake) 
     {
-        init_model();
+        build_model();
+
+        DiskXFile file(filename.c_str(), "r");
+        normalizer.loadXFile(&file);
+        mlp.loadXFile(&file);
+        LOG(ERROR) << "model loading complete" << endl;
     }
 
-    OneHotClassFormat class_format;
-    ConnectedMachine mlp;
-    MeanVarNorm *normalizer;
-
-    Allocator alloc;
-
-    void init_model()
-    {
-        // *sigh* Torch is such garbage.
-        MemoryDataSet feat_dat;
-        normalizer = new(&alloc) MeanVarNorm(&feat_dat);
-
+    void build_model() {
         Linear *c1 = new(&alloc) Linear(num_inputs, num_hidden);
         Tanh *c2 = new(&alloc) Tanh(num_hidden);
         Linear *c3 = new(&alloc) Linear(num_hidden, num_outputs);
@@ -62,33 +69,40 @@ struct SimilarityModelPrivate
         mlp.build();
         mlp.setPartialBackprop();
     }
+
+    float evaluate(float *features) {
+        // Garbage, I tell you!!
+        Sequence feat_seq(0, NUM_FEATURES);
+        feat_seq.addFrame(features);
+
+        normalizer.preProcessInputs(&feat_seq);
+
+        mlp.forward(&feat_seq);
+        return (mlp.outputs->frames[0][1] - mlp.outputs->frames[0][0]) / 5;
+    }
+     
+private:
+    Allocator alloc;
+    OneHotClassFormat class_format;
+    ConnectedMachine mlp;
+    MyMemoryDataSet fake;
+    MeanVarNorm normalizer;
 };
 
-SimilarityModel::SimilarityModel() : impl(new SimilarityModelPrivate())
+MLPSimilarityModel::MLPSimilarityModel()
+    : SimilarityModel(new MLPModel(get_imms_root("model"))) 
+{ }
+
+SimilarityModel::SimilarityModel(Model *model) : model(model)
 {
-    DiskXFile::setLittleEndianMode();
-    DiskXFile model_file(get_imms_root("model").c_str(), "r");
-    impl->mlp.loadXFile(&model_file);
-    DiskXFile norm_file(get_imms_root("norm").c_str(), "r");
-    impl->normalizer->loadXFile(&norm_file);
-    LOG(ERROR) << "model loading complete" << endl;
 }
 
 SimilarityModel::~SimilarityModel() {
 }
 
-float SimilarityModel::evaluate(float *features, bool normalize)
+float SimilarityModel::evaluate(float *features)
 {
-    // Garbage, I tell you!!
-    Sequence feat_seq(0, NUM_FEATURES);
-    feat_seq.addFrame(features);
-
-    if (normalize)
-        impl->normalizer->preProcessInputs(&feat_seq);
-
-    impl->mlp.forward(&feat_seq);
-    return (impl->mlp.outputs->frames[0][1]
-            - impl->mlp.outputs->frames[0][0]) / 5;
+    return model->evaluate(features);
 }
 
 float SimilarityModel::evaluate(const Song &s1, const Song &s2)

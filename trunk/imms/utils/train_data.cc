@@ -100,24 +100,28 @@ int main(int argc, char *argv[])
         QueryCacheDisabler qcd;
         Q("CREATE TEMP TABLE Inverse "
                 "('sid' INTEGER UNIQUE NOT NULL, "
-                "'uid' INTEGER NOT NULL);").execute();
+                "'uid' INTEGER NOT NULL, "
+                "'rating' INTEGER NOT NULL);").execute();
 
         Q("INSERT INTO Inverse "
-                "SELECT sid, uid FROM (SELECT sid, uid, max(R.rating) "
+                "SELECT sid, uid, max(R.rating) "
                 "FROM Library NATURAL INNER JOIN Ratings R "
-                "GROUP BY sid);").execute();
+                "GROUP BY sid;").execute();
 
         string select_start = 
             "SELECT i1.uid, i2.uid FROM C.Correlations R "
             "INNER JOIN Inverse i1 on R.x = i1.sid "
-            "INNER JOIN Inverse i2 on R.y = i2.sid "
-            "ORDER BY ";
+            "INNER JOIN Inverse i2 on R.y = i2.sid ";
         string select_end = " LIMIT " + itos(limit) + ";";
 
         Q("CREATE TEMP TABLE PositiveUids AS "
-                + select_start + "-weight" + select_end).execute();
+                + select_start
+                + "ORDER BY -weight"
+                + select_end).execute();
         Q("CREATE TEMP TABLE NegativeUids AS "
-                + select_start + "weight" + select_end).execute();
+                + select_start
+                + "WHERE i1.rating > 60 AND i2.rating > 60 ORDER BY weight"
+                + select_end).execute();
     } WARNIFFAILED();
 
     Samples samples;
