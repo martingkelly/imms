@@ -94,7 +94,7 @@ bool SongPicker::add_candidate(bool urgent)
     {
         ++acquired;
         candidates.push_back(data);
-        if (urgent && data.effective_rating > 80)
+        if (urgent && data.rating > 80)
             attempts = MAX_ATTEMPTS + 1;
     }
 
@@ -171,10 +171,9 @@ int SongPicker::select_next()
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
-        i->effective_rating += i->relation + i->acoustic;
-        i->effective_rating = ROUND(i->effective_rating
-                * i->last_played / max_last_played);
-        int tickets = TICKETS(i->effective_rating);
+        i->rating += i->relation + i->acoustic;
+        i->rating = ROUND(i->rating * i->last_played / max_last_played);
+        int tickets = TICKETS(i->rating);
         ratings[tickets].push_back(&*i);
     }
 

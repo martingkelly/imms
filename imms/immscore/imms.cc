@@ -186,8 +186,7 @@ void Imms::print_song_info()
 #ifdef DEBUG
     fout << "[" << current.get_uid() << "] ";
 #endif
-    fout << "[Rating: " << current.rating.mean;
-    fout << "(" << current.rating.dev << ")";
+    fout << "[Rating: " << current.rating;
     fout << setiosflags(std::ios::showpos);
     if (current.relation)
         fout << current.relation << "r";
@@ -255,12 +254,10 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     last_jumped = jumped;
 
-    Song::Rating r;
-
     AutoTransaction at;
 
     ImmsDb::add_recent(current.get_uid(), played, flags);
-    r = current.update_rating();
+    int r = current.update_rating();
     current.set_last(time(0));
     current.increment_playcounter();
 
@@ -268,7 +265,7 @@ void Imms::end_song(bool at_the_end, bool jumped, bool bad)
 
     fout << (jumped ? "[Jumped] " : "");
     fout << (!jumped && last_skipped ? "[Skipped] " : "");
-    fout << "[After: " << r.print() << "]";
+    fout << "[After: " << r << "]";
     fout << endl;
 
 }

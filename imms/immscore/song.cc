@@ -31,30 +31,19 @@
 #include "appname.h"
 #include "flags.h"
 #include "immsutil.h"
+#include "ltqnorm.h"
 #include "md5digest.h"
-#include "normal.h"
 #include "song.h"
 #include "songinfo.h"
 #include "sqlite++.h"
 #include "strmanip.h"
 
-#define DELTA_SCALE     1.4
+#define DELTA_SCALE     0.8
 #define DECAY_LIMIT     60
-#define MIN_TRIALS      30
+#define MIN_TRIALS      10
 
 using std::cerr;
 using std::endl;
-
-int Song::Rating::sample()
-{
-    int rating = ROUND(normal(mean, dev));
-    return std::min(100, std::max(0, rating));
-}
-
-string Song::Rating::print()
-{
-    return itos(mean) + "(" + itos(dev) + ")";
-}
 
 int evaluate_artist(const string &artist, const string &album,
                     const string &title, int count)
@@ -402,7 +391,7 @@ void Song::increment_playcounter()
     WARNIFFAILED();
 }
 
-void Song::set_rating(const Rating &rating)
+void Song::set_rating(int rating)
 {
     if (uid < 0)
         return;
@@ -411,7 +400,7 @@ void Song::set_rating(const Rating &rating)
     {
         Q q("INSERT OR REPLACE INTO Ratings "
                "('uid', 'rating', 'dev') VALUES (?, ?, ?);");
-        q << uid << rating.mean << rating.dev;
+        q << uid << rating << 0;
         q.execute();
     }
     WARNIFFAILED();
@@ -495,43 +484,6 @@ time_t Song::get_last()
     return result;
 }
 
-Song::Rating Song::get_raw_rating()
-{
-    Rating r;
-
-    if (uid < 0)
-        return r;
-
-    try
-    {
-        Q q("SELECT rating, dev FROM Ratings WHERE uid = ?;");
-
-        q << uid;
-        if (q.next())
-        {
-            q >> r.mean >> r.dev;
-            return r;
-        }
-
-        AutoTransaction a;
-
-        infer_rating();
-        update_rating();
-
-        q << uid;
-        if (q.next())
-        {
-            q >> r.mean >> r.dev;
-            q.execute();
-        }
-
-        a.commit();
-    }
-    WARNIFFAILED();
-
-    return r;
-}
-
 void Song::infer_rating()
 {
     if (sid < 0)
@@ -568,10 +520,7 @@ void Song::infer_rating()
                         "WHERE aid = ?;");
                 q << aid;
                 if (q.next() && q.not_null())
-                {
                     q >> mean >> trials;
-                    mean = std::max(33, std::min(66, mean));
-                }
             }
         }
 
@@ -585,10 +534,40 @@ void Song::infer_rating()
     } WARNIFFAILED();
 }
 
-int Song::get_rating(Rating *r_)
+int Song::get_rating()
 {
-    Rating r = r_ ? *r_ : get_raw_rating();
-    return r.sample();
+    int rating = -1;
+    if (uid < 0)
+        return rating;
+
+    try
+    {
+        Q q("SELECT rating FROM Ratings WHERE uid = ?;");
+
+        q << uid;
+        if (q.next())
+        {
+            q >> rating;
+            return rating;
+        }
+
+        AutoTransaction a;
+
+        infer_rating();
+        update_rating();
+
+        q << uid;
+        if (q.next())
+        {
+            q >> rating;
+            q.execute();
+        }
+
+        a.commit();
+    }
+    WARNIFFAILED();
+
+    return rating;
 }
 
 StringPair Song::get_info()
@@ -647,14 +626,13 @@ static float decay(float delta, float sum)
         return 0;
 
     return delta * log(DECAY_LIMIT + 1 - sum) / log(DECAY_LIMIT);
-} 
+}
 
-Song::Rating Song::update_rating()
+int Song::update_rating()
 {
-    Rating r;
-
+    int rating = -1;
     if (uid < 0)
-        return r;
+        return rating;
 
     try
     {
@@ -693,36 +671,25 @@ Song::Rating Song::update_rating()
         if (!ones && !zeros)
             zeros = ones = 1;
 
-        double biasmass = 0;
-        double sum = ones + zeros;
-
         if (total < MIN_TRIALS)
         {
-            biasmass = (MIN_TRIALS - total);
-            sum += biastrials * biasmass / MIN_TRIALS;
+            double biasmass = MIN_TRIALS - total;
+            ones += biasmass * biasmean;
+            zeros += biasmass * (1 - biasmean);
         }
 
-        ones += biasmass * biasmean;
-        zeros += biasmass * (1 - biasmean);
+        // Calculate the upper bound of the Wilson score. For details, see:
+        // http://www.evanmiller.org/how-not-to-sort-by-average-rating.html.
+        double n = ones + zeros;
+        double z = ltqnorm(0.95);
+        double phat = ones / n;
+        double r = phat + z*z/(2*n) + z * sqrt((phat*(1-phat)+z*z/(4*n))/n);
+        r /= (1+z*z/n);
 
-        double p = ones / (ones + zeros);
-        r.mean = ROUND(100.0 * p);
-        r.dev = ROUND(100.0 * sqrt(p * (1 - p) / sum));
-
-#if 0
-        DEBUGVAL(biasmass);
-        DEBUGVAL(biasmean);
-        DEBUGVAL(total);
-        DEBUGVAL(sum);
-        DEBUGVAL(ones);
-        DEBUGVAL(zeros);
-        DEBUGVAL(r.mean);
-        DEBUGVAL(r.dev);
-#endif
-
-        set_rating(r);
+        rating = ROUND(r * 100);
+        set_rating(rating);
     }
     WARNIFFAILED();
 
-    return r;
+    return rating;
 }

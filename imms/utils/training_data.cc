@@ -36,7 +36,6 @@
 #include <immsutil.h>
 #include <strmanip.h>
 #include <picker.h>
-#include <normal.h>
 #include <appname.h>
 
 #include <model/distance.h>
