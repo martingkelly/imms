@@ -32,23 +32,14 @@ class MixtureModel;
 class Song
 {
 public:
-    struct Rating
-    {
-        Rating(int mean = -1, int dev = 0) : mean(mean), dev(dev) {}
-        string print();
-        int sample();
-        int mean, dev;
-    };
-
     Song(const string &path = "", int _uid = -1, int _sid = -1);
 
     void set_last(time_t last);
     void set_info(const StringPair &info);
-    void set_rating(const Rating &rating);
+    void set_rating(int rating);
     void increment_playcounter();
 
-    int get_rating(Rating *r = 0);
-    Rating get_raw_rating();
+    int get_rating();
     time_t get_last();
     int get_playcounter();
 
@@ -65,7 +56,7 @@ public:
     void set_acoustic(const MixtureModel &mm, const float *beats);
     bool get_acoustic(MixtureModel *mm, float *beats) const;
 
-    Rating update_rating();
+    int update_rating();
     void infer_rating();
 
     void reset() { playcounter = uid = sid = -1; artist = title = ""; }

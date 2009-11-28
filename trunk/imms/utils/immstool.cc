@@ -69,6 +69,7 @@ void do_purge(const string &path);
 void do_closest(const string &path);
 void do_lint();
 void do_identify(const string &path);
+void do_update_ratings();
 void do_update_distances();
 
 int main(int argc, char *argv[])
@@ -83,7 +84,17 @@ int main(int argc, char *argv[])
 
     ImmsDb immsdb;
 
-    if (!strcmp(argv[1], "distances"))
+    if (!strcmp(argv[1], "ratings"))
+    {
+        if (argc > 2)
+        {
+            cout << "huh??" << endl;
+            return -1;
+        }
+
+        do_update_ratings();
+    }
+    else if (!strcmp(argv[1], "distances"))
     {
         if (argc > 2)
         {
@@ -126,7 +137,7 @@ int main(int argc, char *argv[])
             Song s(path_normalize(filename));
             if (!s.isok())
                 continue;
-            int rating = s.get_raw_rating().mean;
+            int rating = s.get_rating();
             if (rating >= cutoff)
                 cout << s.get_sid() << ":" << filename << endl;
         }
@@ -302,14 +313,16 @@ void do_identify(const string &path)
         cerr << "identify failed!" << endl;
         cout << "path       : " << s.get_path() << endl;
         exit(-1);
-    }
+    } 
+
+    s.update_rating();
 
     cout << "path       : " << s.get_path() << endl;
     cout << "uid        : " << s.get_uid() << endl;
     cout << "sid        : " << s.get_sid() << endl;
     cout << "artist     : " << s.get_info().first << endl;
     cout << "title      : " << s.get_info().second << endl;
-    cout << "rating     : " << s.get_raw_rating().print() << endl;
+    cout << "rating     : " << s.get_rating() << endl;
     cout << "last       : " << strtime(time(0) - s.get_last()) << endl;
 
     cout << endl << "positively correlated with: " << endl;
@@ -430,6 +443,28 @@ void do_missing()
         q >> path;
         if (access(path.c_str(), F_OK))
             cout << path << endl;
+    }
+}
+
+void do_update_ratings()
+{
+    vector<int> uids;
+    try
+    {
+        Q q("SELECT DISTINCT uid FROM Journal;");
+        while (q.next())
+        {
+            int uid;
+            q >> uid;
+            uids.push_back(uid);
+        }
+    }
+    WARNIFFAILED();
+
+    for (size_t i = 0; i < uids.size(); ++i)
+    {
+        Song song("", uids[i]);
+        song.update_rating();
     }
 }
 

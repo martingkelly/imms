@@ -38,8 +38,8 @@ protected:
         void reset();
         bool get_song_from_playlist();
 
-        Rating rating;
-        int position, effective_rating;
+        int rating;
+        int position;
         int relation, acoustic;
         time_t last_played;
         bool identified;
