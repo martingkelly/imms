@@ -30,13 +30,14 @@
 #define     MIN_SAMPLE_SIZE         35
 #define     MAX_ATTEMPTS            (SAMPLE_SIZE*2)
 
-#define     EXP                     1.10
-#define     _TICKETS(x)             pow(EXP, x) * 99.0 / pow(EXP, 100)
-#define     TICKETS(x)              ROUND(_TICKETS(x) + 1)
-
 using std::endl;
 using std::cerr;
 using std::map;
+
+static inline int get_tickets_for_rating(int r) {
+    static const double exp = 1.1;
+    return ROUND(pow(exp, r) * 99.0 / pow(exp, 100)) + 1;
+}
 
 SongPicker::SongPicker()
     : current(0, "current"), acquired(0), winner(0, "winner")
@@ -171,9 +172,9 @@ int SongPicker::select_next()
 
     for (i = candidates.begin(); i != candidates.end(); ++i)
     {
-        i->rating += i->relation + i->acoustic;
-        i->rating = ROUND(i->rating * i->last_played / max_last_played);
-        int tickets = TICKETS(i->rating);
+        int effective_rating = i->rating + i->relation + i->acoustic;
+        effective_rating /= (i->last_played / max_last_played);
+        int tickets = get_tickets_for_rating(effective_rating);
         ratings[tickets].push_back(&*i);
     }
 
