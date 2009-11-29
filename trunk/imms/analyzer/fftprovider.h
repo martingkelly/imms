@@ -31,19 +31,8 @@ private:
     bool shouldexport;
 };
 
-class FFTProviderBase
-{
-public:
-    virtual ~FFTProviderBase() {};
-    virtual void execute() = 0;
-    virtual void apply(const vector<double> &input) = 0;
-    virtual double *input() = 0;
-    virtual fftw_complex *output() = 0;
-};
-
 template <int input_size>
-class FFTProvider : public FFTProviderBase
-{
+class FFTProvider {
 public:
     FFTProvider()
     {
