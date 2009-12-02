@@ -34,7 +34,7 @@ using std::endl;
 using std::cerr;
 using std::map;
 
-static inline int get_tickets_for_rating(int r) {
+static inline int get_tickets_for_rating(double r) {
     static const double exp = 1.1;
     return ROUND(pow(exp, r) * 99.0 / pow(exp, 100)) + 1;
 }
@@ -160,27 +160,28 @@ int SongPicker::select_next()
         return 0;
     }
 
-    typedef map<int, vector<SongData *> > Ratings;
+    typedef map<int, vector<const SongData *> > Ratings;
     Ratings ratings;
 
-    Candidates::iterator i;
-    float max_last_played = 0;
-
-    for (i = candidates.begin(); i != candidates.end(); ++i)
+    double max_last_played = 0;
+    for (Candidates::const_iterator i = candidates.begin();
+            i != candidates.end(); ++i) {
         if (i->last_played > max_last_played)
             max_last_played = i->last_played;
-
-    for (i = candidates.begin(); i != candidates.end(); ++i)
-    {
-        int effective_rating = i->rating + i->relation + i->acoustic;
-        effective_rating /= (i->last_played / max_last_played);
-        int tickets = get_tickets_for_rating(effective_rating);
-        ratings[tickets].push_back(&*i);
     }
 
-    unsigned total = 0;
-    for (Ratings::iterator i = ratings.begin(); i != ratings.end(); ++i)
-        total += i->first;
+    int total = 0;
+    for (Candidates::const_iterator i = candidates.begin();
+            i != candidates.end(); ++i) {
+        double effective_rating = i->rating + i->relation + i->acoustic;
+        // Penalize the rating linearly based on how recently this song was
+        // played compared to other candidates.
+        if (max_last_played)
+            effective_rating *= (i->last_played / max_last_played);
+        int tickets = get_tickets_for_rating(effective_rating);
+        ratings[tickets].push_back(&*i);
+        total += tickets;
+    }
 
     int winning_ticket = imms_random(total);
 
