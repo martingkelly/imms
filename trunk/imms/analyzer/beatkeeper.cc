@@ -32,6 +32,10 @@ using std::map;
 
 using std::cerr;
 
+// Grab some info about peaks of beats (where the most beats are located)?
+// TODO: this function isn't currently used; 
+// it's an experiment to see if it helps improve IMMS results.
+// Do we want to reactivate or continue testing it at some point?
 bool BeatKeeper::extract_features(float *beats, vector<float> &features)
 {
     float sum = 0, min = 1e100, max = 0;
@@ -123,6 +127,7 @@ void BeatKeeper::reset()
     last_window = &data[MAXBEATLENGTH];
 }
 
+// Dump debug data on the beats.
 void BeatKeeper::dump(const string &filename)
 {
     std::ofstream bstats(filename.c_str(), std::ios::trunc);
@@ -140,6 +145,9 @@ void BeatKeeper::process(float power)
         process_window();
 }
 
+// Compute an auto-correlation of the signal with itself.
+// By looking at the peaks in the auto-correlation we can tell 
+// what the beats are.
 void BeatKeeper::process_window()
 {
     // update beat values
@@ -162,7 +170,7 @@ void BeatKeeper::process_window()
 
 void BeatManager::process(const std::vector<double> &melfreqs)
 {
-    lofreq.process((melfreqs[0] + melfreqs[1]) / 1e11);
+    lofreq.process((melfreqs[0] + melfreqs[1]) / 1e11);  // TODO:why 1e11 here?
 }
 
 void BeatManager::finalize()

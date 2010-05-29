@@ -34,6 +34,7 @@
 #define OFFSET2BPM(offset)  \
     ROUND(60 * WINPERSEC / (float)(MINBEATLENGTH + offset))
 
+// Gather info on beat distribution.
 class BeatKeeper
 {
     friend class BeatManager;
@@ -56,6 +57,8 @@ protected:
     float beats[BEATSSIZE];
 };
 
+// Help other functions/callers gather and use the information collected by the
+// BeatKeeper class.
 class BeatManager
 {
 public:

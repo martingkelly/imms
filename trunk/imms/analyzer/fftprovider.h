@@ -22,6 +22,17 @@
 #include <memory>
 #include <fftw3.h>
 
+// Import and export FFTW Wisdom files. See FFTW docs at www.fftw.org.
+//
+// Wisdom is automatically used when you load or generate a Wisdom file
+// (see "wisdom .. is stored in a global, private data structure" in the docs).
+// Thus analyzer doesn't have to do anything to benefit from wisdom
+// other than create an instance of FFTWisdom object, 
+// which will import/generate wisdom as appropriate.
+//
+// See Also:
+// http://www.fftw.org/doc/Introduction.html
+// http://www.fftw.org/doc/Words-of-Wisdom_002dSaving-Plans.html#Words-of-Wisdom_002dSaving-Plans
 class FFTWisdom
 {
 public:
@@ -31,6 +42,7 @@ private:
     bool shouldexport;
 };
 
+// Basic hooks for working with FFTW library (www.fftw.org).
 template <int input_size>
 class FFTProvider {
 public:

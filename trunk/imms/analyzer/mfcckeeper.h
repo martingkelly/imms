@@ -29,6 +29,7 @@ namespace Torch {
     class DiagonalGMM;
 }
 
+// Struct for storing gaussian distributions.
 struct Gaussian
 {
     static const int NumDimensions = NUMCEPSTR * 3;
@@ -53,6 +54,7 @@ private:
 
 struct MFCCKeeperPrivate;
 
+// Used to store and process MFCCs for Analyzer.
 class MFCCKeeper
 {
 public:
@@ -70,4 +72,4 @@ protected:
     MixtureModel result;
 };
 
-#endif
+#endif  // __MFCCKEEPER_H

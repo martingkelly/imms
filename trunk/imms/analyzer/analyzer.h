@@ -23,11 +23,17 @@
 #define OVERLAP         256
 #define READSIZE        (WINDOWSIZE - OVERLAP)
 
-#define SAMPLERATE      22050
+#define SAMPLERATE      22050  // half of 44100; what most music is encoded as
 #define MAXFRAMES       ((SAMPLERATE*60*4)/READSIZE)
 
 #define WINPERSEC       (SAMPLERATE / (WINDOWSIZE - OVERLAP)) 
+
+// important to take (WINDOWSIZE / 2) MFCCs
 #define NUMFREQS        (WINDOWSIZE / 2 + 1)
+
+// MAXFREQ has to be lower than the Nyquist frequency
+// (i.e. lower than half the sampling rate).
+// We can't measure frequencies faster than that with the given sampling rate.
 #define MAXFREQ         (SAMPLERATE / 2)
 #define FREQDELTA       ROUND(MAXFREQ / (float)NUMFREQS)
 #define MINFREQ         FREQDELTA

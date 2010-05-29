@@ -47,6 +47,22 @@ typedef uint16_t sample_t;
 
 const string AppName = ANALYZER_APP;
 
+// Calculate acoustic stats for a song.
+//
+// Analyzer calculates the Beats Per Minute (BPM) and 
+// Mel-frequency cepstral coefficients (MFCC) for a song. These stats are used 
+// by IMMS to boost/penalize song transitions for songs that have 
+// similar/dissimilar acoustic characteristics - i.e. Analyzer helps IMMS 
+// match the 'mood'/theme of the next song to the previous one.
+//
+// BPM is a measure of how "fast" a song is; 
+// this is a valuable signal as slow and fast songs generally don't mix.
+// MFCC is meant to capture the type of the song; 
+// i.e. what instruments are used, type of vocals, etc.
+//
+// As of IMMS 1.2 Analyzer is a separate application, and called as needed.
+// Analyzer is an optional component; if not used IMMS will simply use its 
+// other sources to determine the next song.
 class Analyzer
 {
 public:
@@ -60,6 +76,7 @@ protected:
     HanningWindow hanwin;
 };
 
+// Calculate acoustic stats for a song and write them to the database.
 int Analyzer::analyze(const string &path)
 {
     static const bool test_mode = 0;
@@ -110,6 +127,7 @@ int Analyzer::analyze(const string &path)
     while (fread(indata + OVERLAP, sizeof(sample_t), READSIZE, p) ==
             READSIZE && ++frames < MAXFRAMES)
     {
+        // calculate MFCCs:
         for (int i = 0; i < WINDOWSIZE; ++i)
             pcmfft.input()[i] = (double)indata[i];
 

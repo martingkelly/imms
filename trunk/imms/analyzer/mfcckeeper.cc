@@ -34,6 +34,8 @@
 
 using namespace Torch;
 
+// Initialize Torch's random number generator when created, 
+// so the rest of the Torch utilities can use it.
 class RandomSeeder {
 public:
     RandomSeeder() { Torch::Random::seed(); }
@@ -84,6 +86,12 @@ void diff_frames(float* dest, const float* f1, const float* f2) {
         dest[i] = f1[i] - f2[i];
 }
 
+// Builds a feature vector consisting of:
+//  - c[t] (current cepstrum values)
+//  - c[t] - c[t-1] (diff of current with last values = first order delta)
+//  - (c[t] - c[t-1]) - (c[t-1] - c[t-2])
+//      (diff of current delta with last = second order delta)
+// and adds it to the sequence.
 void MFCCKeeper::process(float *cepstrum)
 {
     ++sample_number;
@@ -110,6 +118,7 @@ void MFCCKeeper::process(float *cepstrum)
     impl->cepseq.addFrame(buffer, true);
 }
 
+// Build a mixture model from from all frames (feature vectors) in the sequence
 void MFCCKeeper::finalize()
 {
     KMeans kmeans(impl->cepdat.n_inputs, NUMGAUSS);

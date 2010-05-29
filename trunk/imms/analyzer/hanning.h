@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <vector>
 
+// Apply the Hann function to a set of data.
 class HanningWindow
 {
 public:
