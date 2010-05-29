@@ -27,6 +27,13 @@ using std::endl;
 
 FFTWisdom::FFTWisdom() : shouldexport(true)
 {
+    // Grab FFTW wisdom, if available, on instantiation. 
+    // FFTW handles the storage and usage internally, which gives us the
+    // benefit for all fftw functions even if we don't explicitly do anything
+    // with this variable or class. See the fftw docs - "wisdom .. is stored
+    // in a global, private data structure managed internally by FFTW";
+    // http://www.fftw.org/fftw3_doc/Words-of-Wisdom_002dSaving-Plans.html#Words-of-Wisdom_002dSaving-Plans
+
     FILE *wisdom = fopen(get_imms_root(".fftw_wisdom").c_str(), "r");
     if (wisdom)
     {

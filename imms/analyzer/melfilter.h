@@ -24,8 +24,14 @@
 
 using std::vector;
 
-#define NUMMEL      40
+#define NUMMEL      40  // rough guess within guidelines,
+                        // to match sampling rate but leave space for smoothing
 
+// A triangular shaped bandpass filter.
+// Filters frequencies within a range to help calculate MFCCs.
+//
+// For an illustration and example see
+// http://cmusphinx.sourceforge.net/sphinx4/javadoc/edu/cmu/sphinx/frontend/frequencywarp/MelFilter.html
 class MelFilter
 {
 public:
@@ -37,6 +43,11 @@ protected:
     vector<float> weights;
 };
 
+// Class to store a number of mel-filters
+// so they can be applied in series to the whole song/input.
+//
+// For an illustration and example see
+// http://cmusphinx.sourceforge.net/sphinx4/javadoc/edu/cmu/sphinx/frontend/frequencywarp/MelFrequencyFilterBank.html
 class MelFilterBank
 {
 public:
