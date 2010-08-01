@@ -31,16 +31,9 @@ using std::endl;
 using std::cerr;
 
 InfoFetcher::SongData::SongData(int _position, const string &_path)
-    : Song(_path), position(_position)
-{
-    reset();
-}
-
-void InfoFetcher::SongData::reset()
-{
-    acoustic = rating = relation = 0;
-    identified = false;
-    last_played = 0;
+    : Song(_path), rating(0), position(_position),
+      relation(0), acoustic(0),
+      last_played(0), identified(false) {
 }
 
 bool InfoFetcher::SongData::get_song_from_playlist()
@@ -74,8 +67,10 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     }
     at.commit();
 
-    if (!data.isok())
+    if (!data.isok()) {
+        LOG(DEBUG) << "Fetch failed: " << data.get_path() << endl;
         return false;
+    }
 
     StringPair info = data.get_info();
 
@@ -95,8 +90,7 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     cerr << "title:\t" << title << endl;
 #endif
 
-    data.last_played = (data.get_sid() != next_sid) ?
-                            time(0) - data.get_last() : 0;
+    data.last_played = time(0) - data.get_last();
 
     return true;
 }

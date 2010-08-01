@@ -26,31 +26,28 @@
 class InfoFetcher : virtual protected ImmsDb
 {
 public:
-    InfoFetcher() : next_sid(-1) {}
+    InfoFetcher() {}
 protected:
     class SongData : public Song
     {
-    public:
-        SongData(int _position, const string &_path);
-        bool operator ==(const SongData &other) const
-            { return position == other.position; }
+     public:
+       SongData(int _position, const string &_path);
+       bool operator ==(const SongData &other) const
+       { return position == other.position; }
 
-        void reset();
-        bool get_song_from_playlist();
+       bool get_song_from_playlist();
 
-        int rating;
-        int position;
-        int relation, acoustic;
-        time_t last_played;
-        bool identified;
+       int rating;
+       int position;
+       int relation, acoustic;
+       time_t last_played;
+       bool identified;
     };
 
     virtual bool fetch_song_info(SongData &data);
     virtual bool parse_song_info(const SongData &data, StringPair &info);
 
     bool identify_playlist_item(int pos);
-
-    int next_sid, pl_length;
 };
 
 #endif
