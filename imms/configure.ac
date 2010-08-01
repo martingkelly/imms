@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 #
-AC_INIT([IMMS],[3.1.0-rc9],[mag@luminal.org])
+AC_INIT([IMMS],[3.1.0-rc10],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
