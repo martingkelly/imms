@@ -678,6 +678,10 @@ int Song::update_rating()
             zeros += biasmass * (1 - biasmean);
         }
 
+        // Clamp off a minimum values to avoid rounding errors.
+        ones = std::max(ones, 0.0001);
+        zeros = std::max(zeros, 0.0001);
+
         // Calculate the upper bound of the Wilson score. For details, see:
         // http://www.evanmiller.org/how-not-to-sort-by-average-rating.html.
         double n = ones + zeros;

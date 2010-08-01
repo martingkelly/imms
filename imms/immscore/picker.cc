@@ -40,7 +40,8 @@ static inline int get_tickets_for_rating(double r) {
 }
 
 SongPicker::SongPicker()
-    : current(0, "current"), acquired(0), winner(0, "winner")
+    : current(0, "current"), pl_length(0),
+      acquired(0), winner(0, "winner")
 {
     reschedule_requested = playlist_known = 0;
     reset();
@@ -68,12 +69,10 @@ bool SongPicker::add_candidate(bool urgent)
     if (candidates.empty() && metacandidates.empty())
         get_metacandidates(want);
 
-    if (attempts > MAX_ATTEMPTS)
-        return false;
+    if (attempts > MAX_ATTEMPTS) return false;
     ++attempts;
 
-    if (acquired >= want || metacandidates.empty())
-        return false;
+    if (acquired >= want || metacandidates.empty()) return false;
 
     int position = metacandidates.back();
     metacandidates.pop_back();
@@ -82,13 +81,12 @@ bool SongPicker::add_candidate(bool urgent)
 
     request_playlist_item(position);
 
-    if (path == "")
-        return false;
+    if (path == "") return false;
 
     SongData data(position, path);
 
-    if (find(candidates.begin(), candidates.end(), data)
-            != candidates.end())
+    // TODO(mag): dedupe during meta candidate generation?
+    if (find(candidates.begin(), candidates.end(), data) != candidates.end())
         return true;
 
     if (fetch_song_info(data))
@@ -165,9 +163,9 @@ int SongPicker::select_next()
 
     double max_last_played = 0;
     for (Candidates::const_iterator i = candidates.begin();
-            i != candidates.end(); ++i) {
-        if (i->last_played > max_last_played)
-            max_last_played = i->last_played;
+         i != candidates.end(); ++i) {
+      if (i->last_played > max_last_played)
+        max_last_played = i->last_played;
     }
 
     int total = 0;
@@ -179,8 +177,10 @@ int SongPicker::select_next()
         if (max_last_played)
             effective_rating *= (i->last_played / max_last_played);
         int tickets = get_tickets_for_rating(effective_rating);
-        ratings[tickets].push_back(&*i);
-        total += tickets;
+        vector<const SongData*>& bucket = ratings[tickets];
+        if (bucket.empty())
+            total += tickets;
+        bucket.push_back(&*i);
     }
 
     int winning_ticket = imms_random(total);
@@ -216,8 +216,6 @@ int SongPicker::select_next()
 #endif
 
     reset();
-
-    next_sid = winner.get_sid();
 
     return winner.position;
 }

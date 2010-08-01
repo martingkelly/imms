@@ -49,6 +49,7 @@ protected:
 
     SongData current;
     std::vector<int> metacandidates;
+    int pl_length;
 
 private:
     void get_related(int pivot_sid, int limit);

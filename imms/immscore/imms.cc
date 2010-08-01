@@ -88,6 +88,11 @@ void Imms::get_metacandidates(int size)
     if (last.sid != -1)
         CorrelationDb::get_related(metacandidates, last.sid, 20);
 
+    sort(metacandidates.begin(), metacandidates.end());
+    metacandidates.erase(
+        unique(metacandidates.begin(), metacandidates.end()),
+        metacandidates.end());
+
     if ((int)metacandidates.size() < size)
         PlaylistDb::get_random_sample(metacandidates,
                 size - metacandidates.size());
