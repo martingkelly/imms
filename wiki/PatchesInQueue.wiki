@@ -1,0 +1,6 @@
+A list of patches that need to be reviewed and approved/rejected, so we don't lose track.
+
+*Preliminary Audacious 2.4 support*
+  * by PhantomX
+  * [http://groups.google.com/group/imms-users/browse_thread/thread/e070e6aeeb75ca28 thread here]
+  * [http://groups.google.com/group/imms-users/web/imms-audacious.patch Patch file here]
