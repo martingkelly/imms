@@ -24,9 +24,16 @@
 #include <bmp/plugin.h>
 #define PLAYER_PREFIX(x) bmp_##x
 #elif AUDACIOUS
+#include <glib.h>
+#include <audacious/i18n.h>
+#include <gdk/gdkkeysyms.h>
+#include <gtk/gtk.h>
 #include <audacious/configdb.h>
-#include <audacious/util.h>
 #include <audacious/plugin.h>
+#include <libaudgui/libaudgui.h>
+#include <libaudgui/libaudgui-gtk.h>
+#define PACKAGE PACKAGE_NAME
+#define ConfigDb mcs_handle_t
 #define PLAYER_PREFIX(x) aud_##x
 #endif
 #include "immsconf.h"
@@ -169,29 +176,22 @@ void configure(void)
 
 void about(void)
 {
-    if (about_win)
-        return;
+    static GtkWidget *aboutbox = NULL;
+    gchar *tmp;
 
-    about_win =
-#ifdef AUDACIOUS
-        audacious_info_dialog(
-#else
-        xmms_show_message(
-#endif
-            "About IMMS",
-            PACKAGE_STRING "\n\n"
-            "Intelligent Multimedia Management System" "\n\n"
-            "IMMS is an intelligent playlist plug-in for BPM" "\n"
-            "that tracks your listening patterns" "\n"
-            "and dynamically adapts to your taste." "\n\n"
-            "It is incredibly unobtrusive and easy to use" "\n"
-            "as it requires no direct user interaction." "\n\n"
-            "For more information please visit" "\n"
-            "http://www.luminal.org/wiki/index.php/IMMS" "\n\n"
-            "Written by" "\n"
-            "Michael \"mag\" Grigoriev <mag@luminal.org>",
-            "Dismiss", FALSE, NULL, NULL);
+    tmp = g_strdup_printf(_(PACKAGE_STRING "\n\n"
+          "Intelligent Multimedia Management System" "\n\n"
+          "IMMS is an intelligent playlist plug-in for BPM" "\n"
+          "that tracks your listening patterns" "\n"
+          "and dynamically adapts to your taste." "\n\n"
+          "It is incredibly unobtrusive and easy to use" "\n"
+          "as it requires no direct user interaction." "\n\n"
+          "For more information please visit" "\n"
+          "http://www.luminal.org/wiki/index.php/IMMS" "\n\n"
+          "Written by" "\n"
+          "Michael \"mag\" Grigoriev <mag@luminal.org>"));
+    audgui_simple_message(&aboutbox, GTK_MESSAGE_INFO, _("About IMMS"),
+        tmp);
 
-    gtk_signal_connect(GTK_OBJECT(about_win), "destroy",
-            GTK_SIGNAL_FUNC(gtk_widget_destroyed), &about_win);
+    g_free(tmp);
 }
