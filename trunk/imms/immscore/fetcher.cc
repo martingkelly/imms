@@ -68,7 +68,7 @@ bool InfoFetcher::fetch_song_info(SongData &data)
     at.commit();
 
     if (!data.isok()) {
-        LOG(DEBUG) << "Fetch failed: " << data.get_path() << endl;
+        LOG(INFO) << "Fetch failed: " << data.get_path() << endl;
         return false;
     }
 
