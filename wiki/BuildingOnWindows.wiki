@@ -4,6 +4,10 @@
 
 This is a work in progress. Right now IMMS can be compiled on cygwin but requires a manual patch to remove torch components (analyzer). Experiments with MinGW are also underway. This page will be updated as I have time.
 
+== Building with Cygwin ==
+
+TODO: transfer cygwin stuff here from http://imms.luminal.org/download/immswindowscygwin . Since we can't distribute cygwin-compiled programs without needing the cygwin .dlls though, we will probably only want to compile IMMS using MinGW. Eventually remove the cygwin instructions once we get MinGW working and everyone agrees.
+
 
 == Building with MinGW ==
 
