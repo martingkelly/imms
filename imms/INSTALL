@@ -4,7 +4,6 @@ Requirements:
 
     * sqlite 3.0.6+
     * pcre 4.3
-    * fftw 3.0
     * glib 2.0
 
     * taglib 1.0+ [recommended]
@@ -12,6 +11,9 @@ Requirements:
     * id3lib 3.8.0+
     * libvorbis 1.0+
 
+    * fftw 3.0
+    * touch3
+    * zlib
     * sox (with support for your favourite filetypes)
 
 
