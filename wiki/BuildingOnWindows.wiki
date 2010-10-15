@@ -1,0 +1,42 @@
+#summary How to compile IMMS on Windows
+
+= Building IMMS on Windows =
+
+This is a work in progress. Right now IMMS can be compiled on cygwin but requires a manual patch to remove torch components (analyzer). Experiments with MinGW are also underway. This page will be updated as I have time.
+
+
+== Building with MinGW ==
+
+*Note:* if you have both cygwin and mingw installed on your machine this may cause problems, as mingw may pick up some paths from the Windows environment variable. When you launch the MSYS terminal, check your path ('set path'). You may want to change your path to not include anything with cygwin!
+
+See also "MinGW related" at the MinGW FAQ - http://www.mingw.org/wiki/FAQ
+
+
+1. Download mingw, and install the base system with C compiler, the C++ compiler, the fortran compiler, and MSYS. See http://www.mingw.org/wiki/Getting_Started
+
+2. Download the IMMS code somewhere
+
+3. Open a new MSYS prompt (select 'MinGW Shell' from the Start menu) and cd to the dir with the IMMS code
+
+4. Get ready to download some requirements! :D
+
+
+a) zlib http://www.zlib.net/
+- cd into the folder
+- If you try to run ./configure from mingw you will probably get "Please use win32/Makefile.gcc instead."
+- Do "make -f win32/Makefile.gcc"
+- You will need to add some lines to your path before you can install zlib. Try either of these options. Either way you will run the same make command: 'make install -f win32/Makefile.gcc'
+
+option 1: prepend the path variable before you call make:
+>'BINARY_PATH=/mingw/bin INCLUDE_PATH=/mingw/include LIBRARY_PATH=/mingw/lib make install -f win32/Makefile.gcc'
+
+option 2: add the path definitions inside your win32/Makefile.gcc file:
+
+    BINARY_PATH=/mingw/bin
+    INCLUDE_PATH=/mingw/include
+    LIBRARY_PATH=/mingw/lib
+
+, then install zlib with 'make install -f win32/Makefile.gcc'
+
+
+... other prereqs coming soon ...
