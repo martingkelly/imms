@@ -43,4 +43,12 @@ option 2: add the path definitions inside your win32/Makefile.gcc file:
 , then install zlib with 'make install -f win32/Makefile.gcc'
 
 
+b) sqlite http://www.sqlite.org/download.html
+
+- you probably want the 'amalgamation' tar.gz, that contains the configure script and makefile
+- everything should compile fine in mingw with sqlite 3.7.3, but we need to specify different installation paths for the header files and libraries/dlls. Instead of just './configure', run:
+
+./configure includedir=/mingw/include libdir=/mingw/lib
+
+
 ... other prereqs coming soon ...
