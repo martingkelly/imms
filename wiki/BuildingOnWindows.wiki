@@ -26,10 +26,10 @@ See also "MinGW related" at the MinGW FAQ - http://www.mingw.org/wiki/FAQ
 
 
 a) zlib http://www.zlib.net/
-- cd into the folder
-- If you try to run ./configure from mingw you will probably get "Please use win32/Makefile.gcc instead."
-- Do "make -f win32/Makefile.gcc"
-- You will need to add some lines to your path before you can install zlib. Try either of these options. Either way you will run the same make command: 'make install -f win32/Makefile.gcc'
+ * cd into the folder
+ * If you try to run ./configure from mingw you will probably get "Please use win32/Makefile.gcc instead."
+ * Do "make -f win32/Makefile.gcc"
+ * You will need to add some lines to your path before you can install zlib. Try either of these options. Either way you will run the same make command: 'make install -f win32/Makefile.gcc'
 
 option 1: prepend the path variable before you call make:
 >'BINARY_PATH=/mingw/bin INCLUDE_PATH=/mingw/include LIBRARY_PATH=/mingw/lib make install -f win32/Makefile.gcc'
@@ -45,8 +45,8 @@ option 2: add the path definitions inside your win32/Makefile.gcc file:
 
 b) sqlite http://www.sqlite.org/download.html
 
-- you probably want the 'amalgamation' tar.gz, that contains the configure script and makefile
-- everything should compile fine in mingw with sqlite 3.7.3, but we need to specify different installation paths for the header files and libraries/dlls. Instead of just './configure', run:
+ * you probably want the 'amalgamation' tar.gz, that contains the configure script and makefile
+ * everything should compile fine in mingw with sqlite 3.7.3, but we need to specify different installation paths for the header files and libraries/dlls. Instead of just './configure', run:
 
 ./configure includedir=/mingw/include libdir=/mingw/lib
 
