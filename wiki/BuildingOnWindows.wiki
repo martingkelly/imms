@@ -4,6 +4,8 @@
 
 This is a work in progress. Right now IMMS can be compiled on cygwin but requires a manual patch to remove torch components (analyzer). Experiments with MinGW are also underway. This page will be updated as I have time.
 
+This has only been tested on Windows XP (SP3).
+
 == Building with Cygwin ==
 
 TODO: transfer cygwin stuff here from http://imms.luminal.org/download/immswindowscygwin . Since we can't distribute cygwin-compiled programs without needing the cygwin .dlls though, we will probably only want to compile IMMS using MinGW. Eventually remove the cygwin instructions once we get MinGW working and everyone agrees.
@@ -49,6 +51,81 @@ b) sqlite http://www.sqlite.org/download.html
  * everything should compile fine in mingw with sqlite 3.7.3, but we need to specify different installation paths for the header files and libraries/dlls. Instead of just './configure', run:
 
 ./configure includedir=/mingw/include libdir=/mingw/lib
+
+c) glib. Before we can actually build glib we need to build some requirements
+
+TODO: it's possible that this could be done with just the Dev files. feel free to try and let the list know how it goes.
+
+c1) libiconv (for gettext)
+
+We follow some of the instructions in the 'README.woe32' file, but some are out of date. Remove the '-mno-mingw' flag, since it is no longer supported by cygwin.
+
+   PATH=/mingw/bin:$PATH
+   export PATH
+   ./configure --host=i586-pc-mingw32 --prefix=/mingw \
+     CPPFLAGS="-Wall -I/mingw/include" \
+     CFLAGS="-O2 -g" \
+     CXXFLAGS="-O2 -g" \
+     LDFLAGS="-L/mingw/lib"
+
+
+c2) gettext (for glib) http://www.gnu.org/software/gettext/
+
+
+Again, we follow only some of the instructions in the 'README.woe32' file. Definitely do *NOT* specify the old GCC version numbers.
+
+   PATH=/mingw/bin:$PATH
+   export PATH
+   ./configure --prefix=/mingw \     
+     CPPFLAGS="-Wall -I/mingw/include" \
+     LDFLAGS="-L/mingw/lib"
+
+configuring and making may both take a long time.
+
+
+PROBLEM: When building gettext I get an error like
+
+  ./libxml/encoding.h:29:19: fatal error: iconv.h: No such file or directory
+
+A: Have you installed libiconv? Build and install that before installing gettext.
+
+PROBLEM: When building gettext I get an error like
+
+    undefined reference to `str_cd_iconveh'
+
+A: If you read the gnu README.woe32 files you will notice that it says gettext and all dependencies have to be built with the same flags. 
+
+
+c3) glib http://www.gtk.org/download-windows.html
+
+
+You want the latest 'Sources' for glib.
+./configure --prefix=/mingw
+make
+make install
+
+
+d) pkg-config.
+
+./configure --prefix=/mingw
+make
+make install
+
+e) pcre http://sourceforge.net/projects/pcre/files/
+
+your favourite mantra:
+./configure
+make
+make install
+
+TODO: no --prefix=/mingw needed here? try from scratch.
+
+note: if you don't have pkg-config installed first, you might see an error like
+
+"checking for pkg-config... no
+checking for pcre... configure: error: PCRE required and missing."
+
+this is actually an error with pkg-config, not pcre. to fix, install pkg-config first.
 
 
 ... other prereqs coming soon ...
