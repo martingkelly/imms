@@ -17,6 +17,8 @@ TODO: transfer cygwin stuff here from http://imms.luminal.org/download/immswindo
 
 See also "MinGW related" at the MinGW FAQ - http://www.mingw.org/wiki/FAQ
 
+*Note:* IMMS on mingw has only been tested for compilation, not running. Still working on that.
+
 
 1. Download mingw, and install the base system with C compiler, the C++ compiler, the fortran compiler, and MSYS. See http://www.mingw.org/wiki/Getting_Started
 
@@ -127,5 +129,32 @@ checking for pcre... configure: error: PCRE required and missing."
 
 this is actually an error with pkg-config, not pcre. to fix, install pkg-config first.
 
+f) fftw
+
+It's no problem! Wonderful fftw users have already practised compiling under mingw :)
+
+- Download from http://www.fftw.org/download.html
+- View the mingw steps on http://www.fftw.org/install/windows.html
+
+Basically we use their recommended switches and add our prefix
+
+    ./configure --with-our-malloc16 --with-windows-f77-mangling --enable-shared --disable-static --enable-threads --with-combined-threads --enable-portable-binary --enable-sse2 --prefix=/mingw
+    make
+    make install
+
+making fftw may take a while.
+
+g) torch
+
+We're using torch3 - download from http://www.torch.ch/downloads.php
+
+TODO: getting torch compiled is a bit tricky. This uses the source code and gnu make options. It may be easier to try xmake, but that involves installing python; it may be easier to build with visual c++ as well, but that requires visual c++. feel free to experiment and ping the list.
 
 ... other prereqs coming soon ...
+
+5. Finally! Configure and make imms
+
+./configure
+make
+
+*Note:* There are numerous problems with building IMMS natively on Windows. These problems are still being addressed. More to come soon...
