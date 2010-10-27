@@ -162,7 +162,13 @@ TODO: why does 'uname -s' show something very long on mingw? ask mingw about tha
 
 To install torch, copy all of the header files from 'core', 'packages', and 'gradients' into /mingw/include. Copy the library file it compiles (probably lib\Linux_OPT_FLOAT\libtorch.a) to /mingw/lib
 
-h) sox
+h) sox http://sox.sourceforge.net/
+
+Easy. Grab the source code, then your favourite mantra
+
+./configure
+make -s (-s is specified in the INSTALL doc)
+make install
 
 ... other prereqs coming soon ...
 
