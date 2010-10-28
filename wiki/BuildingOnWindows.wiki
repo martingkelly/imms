@@ -18,22 +18,20 @@ See also "MinGW related" at the MinGW FAQ - http://www.mingw.org/wiki/FAQ
 
 *1.* Download mingw, and install the base system with C compiler, the C++ compiler, the fortran compiler, and MSYS. See http://www.mingw.org/wiki/Getting_Started .
 
-*2.* Download the IMMS code to a folder inside the Mingw installation, such as ~/imms (i.e. C:\MinGW\msys\1.0\home\[yourusername]\imms , if you installed Mingw to C:\Mingw).
-
-*3.* Open a new MSYS prompt (select 'MinGW Shell' from the Start menu) and cd into the directory with the IMMS code.
-
-*4.* Get ready to download some requirements! :D
-
-*a) autoconf* 
-
-MSYS itself does not ship with this, and in fact autoconf is not buildable under the current version of msys (this is the official statement by the maintainer; you will get weird error messages about "The system cannot find the path specified. autom4te: need GNU m4 1.4 or later"). But we need the autoconf tools to create our 'configure' file. Thankfully, one of the mingw authors distributes pre-built versions of the autotools and perl as part of the MSYS Developer Toolkit (or msysDTK).
-
-download the latest msysDTK installer exe from http://sourceforge.net/projects/mingw/files/ . Run the exe to install the latest msysDTK package to get a copy of autotools. Note: you may need to run the installer as an Administrator for it to successfully modify C:\WINDOWS\MSYS.INI
+*2.* Download the latest msysDTK (MSYS Developer Toolkit) installer exe from http://sourceforge.net/projects/mingw/files/ . Run the exe to install the latest msysDTK package to get a copy of autotools. Note: you may need to run the installer as an Administrator for it to successfully modify C:\WINDOWS\MSYS.INI
 
 When the installer asks you for a path, install to C:\MinGW\msys\1.0 so the tools get added to the same directory as the other msys tools.
 
+Note: we need the msysDTK because it supplies autoconf, and MSYS itself does not ship with autotools. In fact, autoconf is not buildable under the current version of msys - this is the official statement by the maintainer; you will get weird error messages about "The system cannot find the path specified. autom4te: need GNU m4 1.4 or later"). But we need the autoconf tools to create our 'configure' file. Thankfully, one of the mingw authors distributes pre-built versions of the autotools and perl as part of the MSYS Developer Toolkit (or msysDTK).
 
-*b) zlib* http://www.zlib.net/
+
+*3.* Download the IMMS code to a folder inside the Mingw installation, such as ~/imms (i.e. C:\MinGW\msys\1.0\home\[yourusername]\imms , if you installed Mingw to C:\Mingw).
+
+*4.* Open a new MSYS prompt (select 'MinGW Shell' from the Start menu) and cd into the directory with the IMMS code.
+
+*5.* Get ready to download some requirements! :D
+
+*a) zlib* http://www.zlib.net/
  * cd into the folder
  * If you try to run ./configure from mingw you will probably get "Please use win32/Makefile.gcc instead."
  * Do "make -f win32/Makefile.gcc"
@@ -51,18 +49,18 @@ option 2: add the path definitions inside your win32/Makefile.gcc file:
 , then install zlib with 'make install -f win32/Makefile.gcc'
 
 
-*c) sqlite* http://www.sqlite.org/download.html
+*b) sqlite* http://www.sqlite.org/download.html
 
  * you probably want the 'amalgamation' tar.gz, that contains the configure script and makefile
  * everything should compile fine in mingw with sqlite 3.7.3, but we need to specify different installation paths for the header files and libraries/dlls. Instead of just './configure', run:
 
 ./configure includedir=/mingw/include libdir=/mingw/lib
 
-*d) glib.* Before we can actually build glib we need to build some requirements
+*c) glib.* Before we can actually build glib we need to build some requirements
 
 TODO: it's possible that this could be done with just the Dev files. feel free to try and let the list know how it goes.
 
-*d1) libiconv* (for gettext)
+*c1) libiconv* (for gettext)
 
 We follow some of the instructions in the 'README.woe32' file, but some are out of date. Remove the '-mno-mingw' flag, since it is no longer supported by cygwin.
 
@@ -75,7 +73,7 @@ We follow some of the instructions in the 'README.woe32' file, but some are out 
      LDFLAGS="-L/mingw/lib"
 
 
-*d2) gettext* (for glib) http://www.gnu.org/software/gettext/
+*c2) gettext* (for glib) http://www.gnu.org/software/gettext/
 
 
 Again, we follow only some of the instructions in the 'README.woe32' file. Definitely do *NOT* specify the old GCC version numbers.
@@ -102,7 +100,7 @@ PROBLEM: When building gettext I get an error like
 A: If you read the gnu README.woe32 files you will notice that it says gettext and all dependencies have to be built with the same flags. 
 
 
-*d3) glib* http://www.gtk.org/download-windows.html
+*c3) glib* http://www.gtk.org/download-windows.html
 
 
 You want the latest 'Sources' for glib.
@@ -111,13 +109,13 @@ make
 make install
 
 
-*e) pkg-config.*
+*d) pkg-config.*
 
 ./configure --prefix=/mingw
 make
 make install
 
-*f) pcre* http://sourceforge.net/projects/pcre/files/
+*e) pcre* http://sourceforge.net/projects/pcre/files/
 
 your favourite mantra:
 ./configure
@@ -133,7 +131,7 @@ checking for pcre... configure: error: PCRE required and missing."
 
 this is actually an error with pkg-config, not pcre. to fix, install pkg-config first.
 
-*g) fftw*
+*f) fftw*
 
 It's no problem! Wonderful fftw users have already practised compiling under mingw :)
 
@@ -148,7 +146,7 @@ Basically we use their recommended switches and add our prefix
 
 making fftw may take a while.
 
-*h) torch*
+*g) torch*
 
 We're using torch3 - download from http://www.torch.ch/downloads.php
 
@@ -166,7 +164,7 @@ TODO: why does 'uname -s' show something very long on mingw? ask mingw about tha
 
 To install torch, copy all of the header files from 'core', 'packages', and 'gradients' into /mingw/include. Copy the library file it compiles (probably lib\Linux_OPT_FLOAT\libtorch.a) to /mingw/lib
 
-*i) sox* http://sox.sourceforge.net/
+*h) sox* http://sox.sourceforge.net/
 
 Easy. Grab the source code, then your favourite mantra
 
@@ -176,7 +174,7 @@ make install
 
 ... other prereqs coming soon ...
 
-*5.* Finally! Configure and make imms
+*6.* Finally! Configure and make imms
 
 ./configure
 make
