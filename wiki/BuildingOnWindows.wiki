@@ -195,7 +195,7 @@ Note: if you have both cygwin and mingw installed on your machine this may cause
  
 *Q: When compiling autoconf I get weird messages like "The system cannot find the path specified. autom4te: need GNU m4 1.4 or later". What gives?*
 
-*A:* Autoconf is not buildable from source under msys or mingw. This is the official statement from the maintainer. Instead, download the msysDTK ("Developer Tool Kit") from  http://sourceforge.net/projects/mingw/files/ and install it to get a copy of autoconf (see instructions above).
+*A:* Autoconf is not buildable from source under msys or mingw. This is the official statement from the maintainer. Don't try to compile autoconf or m4 yourself - instead, download the msysDTK ("Developer Tool Kit") from  http://sourceforge.net/projects/mingw/files/ and install it to get a copy of autoconf (see instructions above).
 
 *Q: When running ./configure for IMMS I get messages like "possibly undefined macro: PKG_CONFIG_LIBDIR", "possibly undefined macro: AC_MSG_ERROR", or "syntax error near unexpected token `pcre,' `PKG_CHECK_MODULES(pcre, libpcre, , with_pcre=no)'".*
 
