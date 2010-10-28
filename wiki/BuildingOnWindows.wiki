@@ -24,41 +24,13 @@ See also "MinGW related" at the MinGW FAQ - http://www.mingw.org/wiki/FAQ
 
 *4.* Get ready to download some requirements! :D
 
-*a) autoconf* - We need this so we can make the IMMS 'configure' file. However, autoconf itself has several requirements, so we will need to build them first.
+*a) autoconf* 
 
-*a1) GNU m4*. We need this to build autoconf.
+MSYS itself does not ship with this, and in fact autoconf is not buildable under the current version of msys (this is the official statement by the maintainer; you will get weird error messages about "The system cannot find the path specified. autom4te: need GNU m4 1.4 or later"). But we need the autoconf tools to create our 'configure' file. Thankfully, one of the mingw authors distributes pre-built versions of the autotools and perl as part of the MSYS Developer Toolkit (or msysDTK).
 
-Download from http://www.gnu.org/software/m4/m4.html - you will want the file called m4-latest.tar.gz .
+download the latest msysDTK installer exe from http://sourceforge.net/projects/mingw/files/ . Run the exe to install the latest msysDTK package to get a copy of autotools. Note: you may need to run the installer as an Administrator for it to successfully modify C:\WINDOWS\MSYS.INI
 
-Build m4 with the following commands:
-
-./configure --prefix=/mingw
-make
-make install
-
-
-We say '--prefix=/mingw' because that's where mingw stores all of its binaries, header files, and libraries (i.e. /mingw/bin, /mingw/include, and /mingw/lib).
-
-*a2) perl.* We need this to build autoconf too
-
-TODO: I installed strawberry perl under Windows, into C:\strawberry , and this was picked up as okay by mingw. Do we need to do it another way?
-
-http://strawberryperl.com/
-
-Strawberry perl has a GUI installer that you can run from Windows.
-
-
-*a3) autoconf itself*
-
-Strange that MSYS doesn't ship with this; I guess they really are minimal. But we'll have to build it to create our 'configure' file
-http://www.gnu.org/software/autoconf/
-
-Grab autoconf-latest.tar.gz
-
-./configure
-make TODO: gives errors :'(
-make install
-
+When the installer asks you for a path, install to C:\MinGW\msys\1.0 so the tools get added to the same directory as the other msys tools.
 
 
 *b) zlib* http://www.zlib.net/
@@ -210,6 +182,32 @@ make install
 make
 
 *Note:* There are numerous problems with building IMMS natively on Windows. These problems are still being addressed. More to come soon...
+
+
+=== Troubleshooting on MinGW ===
+
+MinGW Troubleshooting
+
+*Q: SQLite won't compile! All it says is "make: *** [sqlite3.lo] Error 1"*
+
+*A:* Did anything weird happen when configuring? Check your configure output, and/or your configure.log. In particular you may see messages like "Bad file number".
+
+Note: if you have both cygwin and mingw installed on your machine this may cause problems, as mingw may pick up some paths from the Windows environment variable. When you launch the MSYS terminal, check your path ('set path'). You may want to change your path to not include anything with cygwin!
+
+ 
+*Q: When compiling autoconf I get weird messages like "The system cannot find the path specified. autom4te: need GNU m4 1.4 or later". What gives?*
+
+*A:* Autoconf is not buildable from source under msys or mingw. This is the official statement from the maintainer. Instead, download the msysDTK ("Developer Tool Kit") from  http://sourceforge.net/projects/mingw/files/ and install it to get a copy of autoconf (see instructions above).
+
+*Q: When running ./configure for IMMS I get messages like "possibly undefined macro: PKG_CONFIG_LIBDIR", "possibly undefined macro: AC_MSG_ERROR", or "syntax error near unexpected token `pcre,' `PKG_CHECK_MODULES(pcre, libpcre, , with_pcre=no)'".*
+
+*A:* This is an issue with autotools not finding the right m4 macros, similar to the entry in the FAQ http://imms.luminal.org/faq#TOC-I-get-an-error-about-undefined-macr . Because we have been installing things to /mingw and the autotools only look in /usr/local by default, we need to tell them about it (TODO: may be easier to just build everything in /usr/local?) . Unfortunately each autotool has a different syntax, but you can fix this by calling them with
+
+autoheader --include=/mingw
+aclocal -I /mingw
+autoconf --include=/mingw
+
+TODO: either avoid this or patch the -I into the makefile if uname matches mingw?
 
 
 
