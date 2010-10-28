@@ -16,16 +16,52 @@ See also "MinGW related" at the MinGW FAQ - http://www.mingw.org/wiki/FAQ
 *Note:* IMMS on mingw has only been tested for compilation, not running. Still working on that.
 
 
-1. Download mingw, and install the base system with C compiler, the C++ compiler, the fortran compiler, and MSYS. See http://www.mingw.org/wiki/Getting_Started
+1. Download mingw, and install the base system with C compiler, the C++ compiler, the fortran compiler, and MSYS. See http://www.mingw.org/wiki/Getting_Started .
 
-2. Download the IMMS code somewhere
+2. Download the IMMS code to a folder inside the Mingw installation, such as ~/imms (i.e. C:\MinGW\msys\1.0\home\[yourusername]\imms , if you installed Mingw to C:\Mingw).
 
-3. Open a new MSYS prompt (select 'MinGW Shell' from the Start menu) and cd to the dir with the IMMS code
+3. Open a new MSYS prompt (select 'MinGW Shell' from the Start menu) and cd into the directory with the IMMS code.
 
 4. Get ready to download some requirements! :D
 
+a) autoconf - We need this so we can make the IMMS 'configure' file. However, autoconf itself has several requirements, so we will need to build them first.
 
-a) zlib http://www.zlib.net/
+a1) GNU m4. We need this to build autoconf.
+
+Download from http://www.gnu.org/software/m4/m4.html - you will want the file called m4-latest.tar.gz .
+
+Build m4 with the following commands:
+
+./configure --prefix=/mingw
+make
+make install
+
+
+We say '--prefix=/mingw' because that's where mingw stores all of its binaries, header files, and libraries (i.e. /mingw/bin, /mingw/include, and /mingw/lib).
+
+a2) perl. We need this to build autoconf too
+
+TODO: I installed strawberry perl under Windows, into C:\strawberry , and this was picked up as okay by mingw. Do we need to do it another way?
+
+http://strawberryperl.com/
+
+Strawberry perl has a GUI installer that you can run from Windows.
+
+
+a3) autoconf itself
+
+Strange that MSYS doesn't ship with this; I guess they really are minimal. But we'll have to build it to create our 'configure' file
+http://www.gnu.org/software/autoconf/
+
+Grab autoconf-latest.tar.gz
+
+./configure
+make TODO: gives errors :'(
+make install
+
+
+
+b) zlib http://www.zlib.net/
  * cd into the folder
  * If you try to run ./configure from mingw you will probably get "Please use win32/Makefile.gcc instead."
  * Do "make -f win32/Makefile.gcc"
@@ -43,18 +79,18 @@ option 2: add the path definitions inside your win32/Makefile.gcc file:
 , then install zlib with 'make install -f win32/Makefile.gcc'
 
 
-b) sqlite http://www.sqlite.org/download.html
+c) sqlite http://www.sqlite.org/download.html
 
  * you probably want the 'amalgamation' tar.gz, that contains the configure script and makefile
  * everything should compile fine in mingw with sqlite 3.7.3, but we need to specify different installation paths for the header files and libraries/dlls. Instead of just './configure', run:
 
 ./configure includedir=/mingw/include libdir=/mingw/lib
 
-c) glib. Before we can actually build glib we need to build some requirements
+d) glib. Before we can actually build glib we need to build some requirements
 
 TODO: it's possible that this could be done with just the Dev files. feel free to try and let the list know how it goes.
 
-c1) libiconv (for gettext)
+d1) libiconv (for gettext)
 
 We follow some of the instructions in the 'README.woe32' file, but some are out of date. Remove the '-mno-mingw' flag, since it is no longer supported by cygwin.
 
@@ -67,7 +103,7 @@ We follow some of the instructions in the 'README.woe32' file, but some are out 
      LDFLAGS="-L/mingw/lib"
 
 
-c2) gettext (for glib) http://www.gnu.org/software/gettext/
+d2) gettext (for glib) http://www.gnu.org/software/gettext/
 
 
 Again, we follow only some of the instructions in the 'README.woe32' file. Definitely do *NOT* specify the old GCC version numbers.
@@ -94,7 +130,7 @@ PROBLEM: When building gettext I get an error like
 A: If you read the gnu README.woe32 files you will notice that it says gettext and all dependencies have to be built with the same flags. 
 
 
-c3) glib http://www.gtk.org/download-windows.html
+d3) glib http://www.gtk.org/download-windows.html
 
 
 You want the latest 'Sources' for glib.
@@ -103,13 +139,13 @@ make
 make install
 
 
-d) pkg-config.
+e) pkg-config.
 
 ./configure --prefix=/mingw
 make
 make install
 
-e) pcre http://sourceforge.net/projects/pcre/files/
+f) pcre http://sourceforge.net/projects/pcre/files/
 
 your favourite mantra:
 ./configure
@@ -125,7 +161,7 @@ checking for pcre... configure: error: PCRE required and missing."
 
 this is actually an error with pkg-config, not pcre. to fix, install pkg-config first.
 
-f) fftw
+g) fftw
 
 It's no problem! Wonderful fftw users have already practised compiling under mingw :)
 
@@ -140,7 +176,7 @@ Basically we use their recommended switches and add our prefix
 
 making fftw may take a while.
 
-g) torch
+h) torch
 
 We're using torch3 - download from http://www.torch.ch/downloads.php
 
@@ -158,7 +194,7 @@ TODO: why does 'uname -s' show something very long on mingw? ask mingw about tha
 
 To install torch, copy all of the header files from 'core', 'packages', and 'gradients' into /mingw/include. Copy the library file it compiles (probably lib\Linux_OPT_FLOAT\libtorch.a) to /mingw/lib
 
-h) sox http://sox.sourceforge.net/
+i) sox http://sox.sourceforge.net/
 
 Easy. Grab the source code, then your favourite mantra
 
