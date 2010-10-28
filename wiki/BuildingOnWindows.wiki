@@ -25,7 +25,7 @@ When the installer asks you for a path, install to C:\MinGW\msys\1.0 so the tool
 Note: we need the msysDTK because it supplies autoconf, and MSYS itself does not ship with autotools. In fact, autoconf is not buildable under the current version of msys - this is the official statement by the maintainer; you will get weird error messages about "The system cannot find the path specified. autom4te: need GNU m4 1.4 or later"). But we need the autoconf tools to create our 'configure' file. Thankfully, one of the mingw authors distributes pre-built versions of the autotools and perl as part of the MSYS Developer Toolkit (or msysDTK).
 
 
-*3.* Download the IMMS code to a folder inside the Mingw installation, such as ~/imms (i.e. C:\MinGW\msys\1.0\home\[yourusername]\imms , if you installed Mingw to C:\Mingw).
+*3.* Download the IMMS code to a folder inside the Mingw installation, such as ~/imms (i.e. C:\MinGW\msys\1.0\home\{yourusername}\imms , if you installed Mingw to C:\Mingw).
 
 *4.* Open a new MSYS prompt (select 'MinGW Shell' from the Start menu) and cd into the directory with the IMMS code.
 
