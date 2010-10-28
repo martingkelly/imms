@@ -2,14 +2,10 @@
 
 = Building IMMS on Windows =
 
-This is a work in progress. Right now IMMS can be compiled on cygwin but requires a manual patch to remove torch components (analyzer). Experiments with MinGW are also underway. This page will be updated as I have time.
+IMMS on Windows is a work in progress. The main options are compiling using Cygwin or MinGW. MinGW is preferred as this results in a native executable. Building IMMS under Cygwin means we would have to distribute the cygwin dll(s) along with the IMMS installation, adding an unnecessary dependency.
+
 
 This has only been tested on Windows XP (SP3).
-
-== Building with Cygwin ==
-
-TODO: transfer cygwin stuff here from http://imms.luminal.org/download/immswindowscygwin . Since we can't distribute cygwin-compiled programs without needing the cygwin .dlls though, we will probably only want to compile IMMS using MinGW. Eventually remove the cygwin instructions once we get MinGW working and everyone agrees.
-
 
 == Building with MinGW ==
 
@@ -178,3 +174,11 @@ make install
 make
 
 *Note:* There are numerous problems with building IMMS natively on Windows. These problems are still being addressed. More to come soon...
+
+
+
+== Building with Cygwin ==
+
+If you like you can also compile IMMS under Cygwin. This is easier than MinGW because cygwin supplies many POSIX-expected functions, files, and libraries. However, the resulting IMMS programs depend on the Cygwin .dlls to run; for this reason Cygwin builds are unofficial and will not be distributed through the IMMS website.
+
+TODO: transfer cygwin stuff here from http://imms.luminal.org/download/immswindowscygwin .
