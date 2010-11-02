@@ -150,19 +150,41 @@ making fftw may take a while.
 
 We're using torch3 - download from http://www.torch.ch/downloads.php
 
-TODO: getting torch compiled is a bit tricky. This uses the source code and gnu make options. It may be easier to try xmake, but that involves installing python; it may be easier to build with visual c++ as well, but that requires visual c++. feel free to experiment and ping the list.
+*Note:* getting torch compiled is a bit tricky. This uses the source code and gnu make options. It may be easier to try xmake, but that involves installing python; it may be easier to build with visual c++ as well, but that requires visual c++. Feel free to experiment and ping the list with your results.
 
 
-- lots of makefile edits, mainly to remove preceding '\'s. see log.
-- TODO: see other things in log
-- We need 'MYINCS = -I/mingw/include'
-- TODO: remove that other 'march' flag
-- for IMMS we need 'PACKAGES = distributions gradients' (for KMeans and what?)
-TODO: torch has no 'make install' option? can we send them a patch?
-TODO: write a makefile for mingw too. see if torch3 will accept it (or if they've abandoned that project)
-TODO: why does 'uname -s' show something very long on mingw? ask mingw about that.
+Torch doesn't compile on mingw by default; we get to edit the makefile. To fix the makefiles you have two choices:
+- Edit the makefiles and change "OS := $(shell uname -s)" to "OS := Linux". This will need to be done in each subdirectory where you want to build Torch components (in our case: 'core', 'distributions', and 'gradients').
+- Copy the "Makefile_options_Linux" makefile and rename it to "Makefile_options_MINGW32_NT-5.1"
+  (where "MINGW32_NT-5.1" is the name reported by 'uname -s' in your MSYS terminal). This will need to be done in each subdirectory where you want to build Torch components (in our case: 'core', 'distributions', and 'gradients').
 
-To install torch, copy all of the header files from 'core', 'packages', and 'gradients' into /mingw/include. Copy the library file it compiles (probably lib\Linux_OPT_FLOAT\libtorch.a) to /mingw/lib
+(I have contacted the Torch owners to see if they will accept a patch in the form of a mingw makefile. We'll see)
+
+
+For this guide we'll be doing the second option.
+
+- Next, change all of the lines in the Makefiles that read "@\rm -Rf to "@rm -Rf". These are mostly in the 'clean:' directive. If you leave in the '\', make will give you errors like "	make[1]: \rm: Command not found". This will need to be done in each subdirectory where you want to build Torch components ('core', 'distributions', and 'gradients').
+- Also change all lines that read "@\mkdir" to "@mkdir", or you'll get the same error. These are mostly in the "depend:" section. This also has to be done in each file.
+
+- Next, edit the Makefile_options_g++ file(s):
+    - Remove the "-mcpu=i686" flag from CFLAGS_OPT_DOUBLE and CFLAGS_OPT_DOUBLE. otherwise gcc will tell you "-mcpu is deprecated".
+    - Add the proper include directory to MYINCS; in this case "MYINCS = -I/mingw/include". TODO: may change if our directories change. try from scratch.
+
+- Edit the Makefile_options_MINGW32_NT-5.1 file (or Makefile_options_Linux file):
+    - Remove the "-mcpu=i686" flag from CFLAGS_OPT_DOUBLE and CFLAGS_OPT_DOUBLE.
+    - Add the proper include directory to MYINCS; in this case "MYINCS = -I/mingw/include". TODO: may change if our directories change.
+    - Change the PACKAGES line to include the extra packages we need for IMMS: "PACKAGES = distributions gradients".
+
+
+- HACK: currently Torch3/core/Timer.cc doesn't compile because it needs some functions in sys/time.h, which are not provided by MinGW. Fortunately, we don't use any Timer stuff inside IMMS (TODO: right?), so we can work around this rather than fixing it. Because of the way the Torch makefiles work, if you remove the Timer.cc file or rename it to something other than '.cc', Torch will ignore it. So do that now.
+Long term: we could try using gnulib to patch in support for the needed functions. That's a lot for something we don't use though.
+
+
+- We should now be ready. Build torch by running 'make depend' and then 'make'. They may take a while.
+- Torch3 doesn't have a 'make install' option, so we get to install the files ourselves :P (Note: I have contacted the owners to see if they will accept a patch for this too).
+    - Copy the header files from the 'core' (except Timer.h :P), 'distributions', and 'gradients' folders to /mingw/include/torch/ (C:\MinGW\include\torch on Windows).
+    - Copy the compiled 'libtorch.a' library file from Torch3/libl/MINGW32_NT-5.1_OPT_FLOAT (or Torch3/liblLinux_OPT_FLOAT, if you used the Linux makefile) (or Torch3/lib/Linux_OPT_FLOAT, if you used the Linux makefile) to /mingw/lib (C:\MinGW\lib in Windows).
+
 
 *h) sox* http://sox.sourceforge.net/
 
