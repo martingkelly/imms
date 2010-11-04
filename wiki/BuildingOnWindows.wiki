@@ -185,7 +185,7 @@ Long term: we could try using gnulib to patch in support for the needed function
 - We should now be ready. Build torch by running 'make depend' and then 'make'. They may take a while.
 - Torch3 doesn't have a 'make install' option, so we get to install the files ourselves :P (Note: I have contacted the owners to see if they will accept a patch for this too).
     - Copy the header files from the 'core' (except Timer.h :P), 'distributions', and 'gradients' folders to /mingw/include/torch/ (C:\MinGW\include\torch on Windows).
-    - Copy the compiled 'libtorch.a' library file from Torch3/libl/MINGW32_NT-5.1_OPT_FLOAT (or Torch3/liblLinux_OPT_FLOAT, if you used the Linux makefile) (or Torch3/lib/Linux_OPT_FLOAT, if you used the Linux makefile) to /mingw/lib (C:\MinGW\lib in Windows).
+    - Copy the compiled 'libtorch.a' library file from Torch3/libl/MINGW32_NT-5.1_OPT_FLOAT (or Torch3/liblLinux_OPT_FLOAT, if you used the Linux makefile) to /mingw/lib (C:\MinGW\lib in Windows).
 
 
 *h) sox* http://sox.sourceforge.net/
