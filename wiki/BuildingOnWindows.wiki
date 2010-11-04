@@ -51,51 +51,11 @@ option 2: add the path definitions inside your win32/Makefile.gcc file:
 make
 make install
 
-*c) glib.* Before we can actually build glib we need to build some requirements
+*c) glib.* http://www.gtk.org/download-windows.html
 
-TODO: it's possible that this could be done with just the Dev files. feel free to try and let the list know how it goes.
+Note: If you grabbed autotools as part of the msysDTK rather than using the MinGW Developer Toolkit you may need to compile libiconv and gettext before you can build glib. If so see instructions in the "Other ways to get autotools on MinGW" section below.
 
-*c1) libiconv* (for gettext)
-
-We follow some of the instructions in the 'README.woe32' file, but some are out of date. Remove the '-mno-mingw' flag, since it is no longer supported by cygwin.
-
-   PATH=/mingw/bin:$PATH
-   export PATH
-   ./configure --host=i586-pc-mingw32 --prefix=/mingw \
-     CPPFLAGS="-Wall -I/mingw/include" \
-     CFLAGS="-O2 -g" \
-     CXXFLAGS="-O2 -g" \
-     LDFLAGS="-L/mingw/lib"
-
-
-*c2) gettext* (for glib) http://www.gnu.org/software/gettext/
-
-
-Again, we follow only some of the instructions in the 'README.woe32' file. Definitely do *NOT* specify the old GCC version numbers.
-
-   PATH=/mingw/bin:$PATH
-   export PATH
-   ./configure --prefix=/mingw \     
-     CPPFLAGS="-Wall -I/mingw/include" \
-     LDFLAGS="-L/mingw/lib"
-
-configuring and making may both take a long time.
-
-
-PROBLEM: When building gettext I get an error like
-
-  ./libxml/encoding.h:29:19: fatal error: iconv.h: No such file or directory
-
-A: Have you installed libiconv? Build and install that before installing gettext.
-
-PROBLEM: When building gettext I get an error like
-
-    undefined reference to `str_cd_iconveh'
-
-A: If you read the gnu README.woe32 files you will notice that it says gettext and all dependencies have to be built with the same flags. 
-
-
-*c3) glib* http://www.gtk.org/download-windows.html
+Note: it's possible that this could be done with just the glib Dev files. Feel free to try and let the list know how it goes.
 
 
 You want the latest 'Sources' for glib.
@@ -228,11 +188,55 @@ TODO: either avoid this or patch the -I into the makefile if uname matches mingw
 To build IMMS we need autoconf and several other autotools to create out 'configure' file, but MSYS itself does not ship with autotools. In fact, autoconf is not buildable under the current version of msys - this is the official statement by the maintainer; you will get weird error messages about "The system cannot find the path specified. autom4te: need GNU m4 1.4 or later". Thankfully, one of the mingw authors distributes pre-built versions of the autotools and perl as part of the MSYS Developer Toolkit (or msysDTK).
 
 So there are several ways to get these autotools:
-* Install the MinGW Developer Toolkit as part of your initial MinGW installation, as described above
-* Download the latest msysDTK (MSYS Developer Toolkit) installer exe from http://sourceforge.net/projects/mingw/files/ .
-** Run the exe to install the latest msysDTK package to get a copy of autotools. Note: you may need to run the installer as an Administrator for it to successfully modify C:\WINDOWS\MSYS.INI
-** When the installer asks you for a path, install to C:\MinGW\msys\1.0 so the tools get added to the same directory as the other msys tools.
-* Grab the msysDTK with mingw-get (unconfirmed; let the list know if you try this)
+ # Install the MinGW Developer Toolkit as part of your initial MinGW installation, as described above
+ # Download the latest msysDTK (MSYS Developer Toolkit) installer exe from http://sourceforge.net/projects/mingw/files/ .
+   ** Run the exe to install the latest msysDTK package to get a copy of autotools. Note: you may need to run the installer as an Administrator for it to successfully modify C:\WINDOWS\MSYS.INI
+   ** When the installer asks you for a path, install to C:\MinGW\msys\1.0 so the tools get added to the same directory as the other msys tools.
+ # Grab the msysDTK with mingw-get (unconfirmed; let the list know if you try this)
+
+If you use the msysDTK you will need to build libiconv and gettext yourself in order to compile glib.
+
+
+*1) libiconv* (for gettext)
+
+We follow some of the instructions in the 'README.woe32' file, but some are out of date. Remove the '-mno-mingw' flag, since it is no longer supported by cygwin.
+
+   PATH=/mingw/bin:$PATH
+   export PATH
+   ./configure --host=i586-pc-mingw32 --prefix=/mingw \
+     CPPFLAGS="-Wall -I/mingw/include" \
+     CFLAGS="-O2 -g" \
+     CXXFLAGS="-O2 -g" \
+     LDFLAGS="-L/mingw/lib"
+
+
+*2) gettext* (for glib) http://www.gnu.org/software/gettext/
+
+
+Again, we follow only some of the instructions in the 'README.woe32' file. Definitely do *NOT* specify the old GCC version numbers.
+
+   PATH=/mingw/bin:$PATH
+   export PATH
+   ./configure --prefix=/mingw \     
+     CPPFLAGS="-Wall -I/mingw/include" \
+     LDFLAGS="-L/mingw/lib"
+
+configuring and making may both take a long time.
+
+
+PROBLEM: When building gettext I get an error like
+
+  ./libxml/encoding.h:29:19: fatal error: iconv.h: No such file or directory
+
+A: Have you installed libiconv? Build and install that before installing gettext.
+
+PROBLEM: When building gettext I get an error like
+
+    undefined reference to `str_cd_iconveh'
+
+A: If you read the gnu README.woe32 files you will notice that it says gettext and all dependencies have to be built with the same flags. 
+
+
 
 
 
