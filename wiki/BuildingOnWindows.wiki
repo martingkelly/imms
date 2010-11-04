@@ -16,7 +16,9 @@ See also "MinGW related" at the MinGW FAQ - http://www.mingw.org/wiki/FAQ
 *Note:* IMMS on mingw has only been tested for compilation, not running. Still working on that.
 
 
-*1.* Download mingw, and install the base system with C compiler, the C++ compiler, the fortran compiler, MSYS, and MinGW Developer Toolkit. See http://www.mingw.org/wiki/Getting_Started .
+*1.* Download mingw from mingw.org. The files might be at http://sourceforge.net/projects/mingw/files_beta/Automated%20MinGW%20Installer/ . You want the Automated Installer.
+
+When installing, install the base system with C compiler, the C++ compiler, the fortran compiler, MSYS, and MinGW Developer Toolkit. See http://www.mingw.org/wiki/Getting_Started .
 
 *2.* Download the IMMS code to a folder inside the Mingw installation, such as ~/imms (i.e. C:\MinGW\msys\1.0\home\{yourusername}\imms , if you installed Mingw to C:\Mingw).
 
@@ -64,7 +66,9 @@ make
 make install
 
 
-*d) pkg-config.*
+*d) pkg-config.* http://pkgconfig.freedesktop.org/releases/
+
+Get the latest release; this guide used 0.25.
 
 ./configure --prefix=/mingw
 make
@@ -197,7 +201,7 @@ So there are several ways to get these autotools:
 If you use the msysDTK you will need to build libiconv and gettext yourself in order to compile glib.
 
 
-*1) libiconv* (for gettext)
+*1) libiconv* (for gettext) http://www.gnu.org/software/libiconv/#downloading
 
 We follow some of the instructions in the 'README.woe32' file, but some are out of date. Remove the '-mno-mingw' flag, since it is no longer supported by cygwin.
 
