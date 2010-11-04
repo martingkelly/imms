@@ -120,7 +120,7 @@ Torch doesn't compile on mingw by default; we get to edit the makefile. To fix t
 
 For this guide we'll be doing the second option.
 
- * Next, change all of the lines in the Makefiles that read "@\rm -Rf to "@rm -Rf". These are mostly in the 'clean:' directive. If you leave in the '\', make will give you errors like "make![1]: \rm: Command not found". This will need to be done in each subdirectory where you want to build Torch components ('core', 'distributions', and 'gradients').
+ * Next, change all of the lines in the Makefiles that read "@\rm -Rf to "@rm -Rf". These are mostly in the 'clean:' directive. If you leave in the '\', make will give you errors like "{{{make[1]}}}: \rm: Command not found". This will need to be done in each subdirectory where you want to build Torch components ('core', 'distributions', and 'gradients').
  * Also change all lines that read "@\mkdir" to "@mkdir", or you'll get the same error. These are mostly in the "depend:" section. This also has to be done in each file.
 
  * Next, edit the Makefile_options_g++ file(s):
@@ -163,7 +163,7 @@ Easy. Grab the source code, then your favourite mantra
 
 MinGW Troubleshooting
 
-*Q: SQLite won't compile! All it says is "make: *** ![sqlite3.lo] Error 1"*
+*Q: SQLite won't compile! All it says is "make: *** {{{[sqlite3.lo]}}} Error 1"*
 
 *A:* Did anything weird happen when configuring? Check your configure output, and/or your configure.log. In particular you may see messages like "Bad file number".
 
