@@ -119,12 +119,10 @@ make install
 
 *e) pcre* http://sourceforge.net/projects/pcre/files/
 
-your favourite mantra:
-./configure
+your favourite mantra again:
+./configure --prefix=/mingw
 make
 make install
-
-TODO: no --prefix=/mingw needed here? try from scratch.
 
 note: if you don't have pkg-config installed first, you might see an error like
 
