@@ -54,7 +54,9 @@ option 2: add the path definitions inside your win32/Makefile.gcc file:
  * you probably want the 'amalgamation' tar.gz, that contains the configure script and makefile
  * everything should compile fine in mingw with sqlite 3.7.3, but we need to specify different installation paths for the header files and libraries/dlls. Instead of just './configure', run:
 
-./configure includedir=/mingw/include libdir=/mingw/lib
+./configure --prefix=/mingw
+make
+make install
 
 *c) glib.* Before we can actually build glib we need to build some requirements
 
