@@ -49,44 +49,43 @@ option 2: add the path definitions inside your win32/Makefile.gcc file:
  * you probably want the 'amalgamation' tar.gz, that contains the configure script and makefile
  * everything should compile fine in mingw with sqlite 3.7.3, but we need to specify different installation paths for the header files and libraries/dlls. Instead of just './configure', run:
 
-./configure --prefix=/mingw<br>
-make<br>
-make install<br>
+    ./configure --prefix=/mingw<br>
+    make<br>
+    make install<br>
 
 *c) glib.* http://www.gtk.org/download-windows.html
+
+You want the latest 'Sources' for glib.
 
 Note: If you grabbed autotools as part of the msysDTK rather than using the MinGW Developer Toolkit you may need to compile libiconv and gettext before you can build glib. If so see instructions in the "Other ways to get autotools on MinGW" section below.
 
 Note: it's possible that this could be done with just the glib Dev files. Feel free to try and let the list know how it goes.
 
-
-You want the latest 'Sources' for glib.
-
-./configure --prefix=/mingw<br>
-make<br>
-make install<br>
+    ./configure --prefix=/mingw<br>
+    make<br>
+    make install<br>
 
 
 *d) pkg-config.* http://pkgconfig.freedesktop.org/releases/
 
 Get the latest release; this guide used 0.25.
 
-./configure --prefix=/mingw<br>
-make<br>
-make install<br>
+    ./configure --prefix=/mingw<br>
+    make<br>
+    make install<br>
 
 *e) pcre* http://sourceforge.net/projects/pcre/files/
 
 your favourite mantra again:
 
-./configure --prefix=/mingw<br>
-make<br>
-make install<br>
+    ./configure --prefix=/mingw<br>
+    make<br>
+    make install<br>
 
 note: if you don't have pkg-config installed first, you might see an error like
 
-"checking for pkg-config... no
-checking for pcre... configure: error: PCRE required and missing."
+    "checking for pkg-config... no<br>
+    checking for pcre... configure: error: PCRE required and missing."
 
 this is actually an error with pkg-config, not pcre. to fix, install pkg-config first.
 
@@ -147,15 +146,15 @@ For this guide we'll be doing the second option.
 
 Easy. Grab the source code, then your favourite mantra
 
-./configure<br>
-make -s (-s is specified in the INSTALL doc)<br>
-make install<br>
+    ./configure<br>
+    make -s (-s is specified in the INSTALL doc)<br>
+    make install<br>
 
 
 *5.* Finally! Configure and make imms
 
-./configure
-make
+    ./configure<br>
+    make
 
 *Note:* There are numerous problems with building IMMS natively on Windows. These problems are still being addressed. More to come soon...
 
