@@ -157,6 +157,7 @@ IMMS will now be able to pass and run the entire configure script. However, ther
 
 a) IMMS has a signal for SIGPIPE, but Windows as an OS doesn't support or implement SIGPIPE. Possible solution: We can wrap that one definition in an #ifdef. In immsd.cc change
 
+    {{{
     // SIGPIPE is not supported on Windows, so ignore it if we're building under MinGW
     // TODO: find reference
     // TODO: is this the right #ifdef to use?
@@ -164,6 +165,7 @@ a) IMMS has a signal for SIGPIPE, but Windows as an OS doesn't support or implem
     #ifndef __MINGW32__
     signal(SIGPIPE, quit);
     #endif
+    }}}
 
 
 
