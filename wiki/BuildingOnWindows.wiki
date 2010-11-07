@@ -151,12 +151,31 @@ Easy. Grab the source code, then your favourite mantra
     make install<br>
 
 
-*5.* Finally! Configure and make imms
+*5.* Other compilation issues
+
+IMMS will now be able to pass and run the entire configure script. However, there are numerous problems with building IMMS natively on Windows.
+
+a) IMMS has a signal for SIGPIPE, but Windows as an OS doesn't support or implement SIGPIPE. Possible solution: We can wrap that one definition in an #ifdef. In immsd.cc change
+
+    // SIGPIPE is not supported on Windows, so ignore it if we're building under MinGW
+    // TODO: find reference
+    // TODO: is this the right #ifdef to use?
+    // TODO: this requires adding a unit test - what happens if we try to open a closed file socket on Windows?
+    #ifndef __MINGW32__
+    signal(SIGPIPE, quit);
+    #endif
+
+
+
+These problems are still being addressed. More to come soon...
+
+
+*6.* Finally! Configure and make imms
 
     ./configure<br>
     make
 
-*Note:* There are numerous problems with building IMMS natively on Windows. These problems are still being addressed. More to come soon...
+
 
 
 === Troubleshooting on MinGW ===
