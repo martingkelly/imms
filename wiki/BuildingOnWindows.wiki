@@ -211,6 +211,7 @@ e) realpath. This is supposedly supplied by gnulib, but I haven't gotten it to w
 
 still doesn't work even with all that though :-/
 
+f) nanosleep is another linux command not present on mingw. TODO supplied by gnulib?
 
 z) sockets. We may have to change over to winsock, which involved some #ifdefs?
 
@@ -259,6 +260,8 @@ however, this may really be an issue with file sockets. The real fix may require
 
 zzz) kill. This function doesn't exist in mingw. If we were actually trying to terminate a process we could perhaps substitute for {{{raise()}}} on win32 systems, but the code looks like it's just trying to see if a file exists. This may have to deal with file sockets and might have to be part of the system rewrite for windows.
 
+zzzz) {{{../immscore/immsutil.cc:205:24: error: aggregate 'socket_connect(const std::stri
+ng&)::sockaddr_un sun' has incomplete type and cannot be defined.}}} This is because struct sockaddr_un sun isn't defined on windows? This may necessitate switching to winsock, along with other socket things? Or is there something else we can do?
 
 
 These problems are still being addressed. More to come soon...
