@@ -167,6 +167,98 @@ a) IMMS has a signal for SIGPIPE, but Windows as an OS doesn't support or implem
     #endif
     }}}
 
+b) mkdir. on POSIX systems this function takes 2 arguments (directory, permissions); on Windows it takes 1 (directory). We could possibly get around this by redefining the function for windows:
+
+{{{
+#ifdef _WIN32
+# define  mkdir( D, M )   _mkdir( D )
+#endif
+}}}
+
+This would have to be tested.
+
+c) The constant 'ERROR' is already defined in MinGW, in include/wingdi.h. To get around this we could redefine 'ERROR' and 'INFO' to 'IMMSERROR' and 'IMMSINFO'. This would affect immsd/immsd.cc and immscore/fetcher.cc.
+
+d) srandom. This is not supplied by minGW or gnulib. We could potentially add
+
+{{{
+#ifdef WIN#@
+#define random rand
+#define srandom srand
+#endif
+}}}
+
+to immscore/immsutil.cc. This would need to be tested.
+
+e) realpath. This is supposedly supplied by gnulib, but I haven't gotten it to work yet. Note that IMMS currently builds without using 'automake', so we may have to add some automake parts to the IMMS build system for gnulibe to be able to import realpath. This would need to be tested so it doesn't break the Linux version of IMMS.
+
+ * Import gnulib realpath code with
+    {{{../prereqs/gnulib-HEAD-b392a22/gnulib-tool --source-base=gnulib --m4-base=gnulib/m4 --import canonicalize-lgpl}}}
+ * gnulib requires a newer version of autoconf, so we'd have to update IMMS {{{ }}} to {{{}}}
+ * add "gnulib/Makefile" to AC_CONFIG_FILES in ./configure.ac,
+ * invoke gl_EARLY in ./configure.ac, right after AC_PROG_CC,
+ * invoke gl_INIT in ./configure.ac.
+
+ * Then set up the IMMS build system so it can use automake too
+   * Create a 'Makefile.am' file in the main IMMS directory
+   * mention "gnulib" in SUBDIRS in Makefile.am,
+   * mention "-I gnulib/m4" in ACLOCAL_AMFLAGS in Makefile.am,
+   * add AM_INIT_AUTOMAKE to configure.ac
+   * copy in the 'missing', depcomp, config.guess, and config.sub files from automake 1.11 TODO: or use 'automake --add-missing'?
+   * add AC_PROG_RANLIB to configure.ac, right after AC_PROG_CC.
+   * either call aclocal with the new -I flag ('aclocal -I gnulib/m4') TODO: or add it to INCLUDES in vars.mk? TODO: how can we make missing gl_EARLY and gl_INIT macros an error rather than a warning?
+ * Add the gnulib dir to the -I include flags for the compiler? And add some flags to the linker?
+
+still doesn't work even with all that though :-/
+
+
+z) sockets. We may have to change over to winsock, which involved some #ifdefs?
+
+To compile we need to change at least:
+
+in immscore/immsutil.cc
+
+{{{
+#ifdef WIN32
+   #include <winsock.h>
+#else
+   #include <sys/socket.h>
+   #include <sys/un.h>
+#endif
+}}}
+
+ * and adding an init call on windows
+ * and add a linker flag on windows
+
+it may require a bunch of other stuff though (including fcntl, below)
+
+zz) fcntl. This doesn't exist/work on MinGW with F_SETFD. We could possibly substitute something like
+
+    {{{
+#ifndef __MINGW32__
+
+        fcntl(fd, F_SETFD, O_NONBLOCK);
+
+        #else
+
+        u_long *argp = 1; // TODO: only needed on Windows?
+        // set socket to non-zero value so that nonblocking mode
+        // is enabled
+        // http://msdn.microsoft.com/en-us/library/ms738573%28VS.85%29.aspx
+
+        int sret = ioctlsocket(fd, FIONBIO, argp);  //TODO: this requires using Winsocks.
+        if (sret != 0)
+        {
+            // TODO: check for errors with WSAGetLastError().
+        }
+
+        #endif
+    }}}
+
+however, this may really be an issue with file sockets. The real fix may require changing to an IP socket on windows.
+
+zzz) kill. This function doesn't exist in mingw. If we were actually trying to terminate a process we could perhaps substitute for {{{raise()}}} on win32 systems, but the code looks like it's just trying to see if a file exists. This may have to deal with file sockets and might have to be part of the system rewrite for windows.
+
 
 
 These problems are still being addressed. More to come soon...
