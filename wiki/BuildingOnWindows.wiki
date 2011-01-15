@@ -124,7 +124,7 @@ For this guide we'll be doing the second option.
  * Also change all lines that read "@\mkdir" to "@mkdir", or you'll get the same error. These are mostly in the "depend:" section. This also has to be done in each file.
 
  * Next, edit the Makefile_options_g++ file(s):
-    * Remove the "-mcpu=i686" flag from CFLAGS_OPT_DOUBLE and CFLAGS_OPT_DOUBLE. otherwise gcc will tell you "-mcpu is deprecated".
+    * Remove the "-mcpu=i686" flag from CFLAGS_OPT_DOUBLE and CFLAGS_OPT_FLOAT. otherwise gcc will tell you "-mcpu is deprecated".
     * Add the proper include directory to MYINCS; in this case "MYINCS = -I/mingw/include". TODO: may change if our directories change. try from scratch.
 
  * Edit the Makefile_options_MINGW32_NT-5.1 file (or Makefile_options_Linux file):
