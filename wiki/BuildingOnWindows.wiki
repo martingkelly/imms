@@ -128,7 +128,7 @@ For this guide we'll be doing the second option.
     * Add the proper include directory to MYINCS; in this case "MYINCS = -I/mingw/include". TODO: may change if our directories change. try from scratch.
 
  * Edit the Makefile_options_MINGW32_NT-5.1 file (or Makefile_options_Linux file):
-    * Remove the "-mcpu=i686" flag from CFLAGS_OPT_DOUBLE and CFLAGS_OPT_DOUBLE.
+    * Remove the "-mcpu=i686" flag from CFLAGS_OPT_DOUBLE and CFLAGS_OPT_FLOAT.
     * Add the proper include directory to MYINCS; in this case "MYINCS = -I/mingw/include". TODO: may change if our directories change.
     * Change the PACKAGES line to include the extra packages we need for IMMS: "PACKAGES = distributions gradients".
 
