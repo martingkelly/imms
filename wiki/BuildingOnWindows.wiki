@@ -2,7 +2,7 @@
 
 = Building IMMS on Windows =
 
-IMMS on Windows is a work in progress. The main options are compiling using Cygwin or MinGW. MinGW is preferred as this results in a native executable. Building IMMS under Cygwin means we would have to distribute the cygwin dll(s) along with the IMMS installation, adding an unnecessary dependency.
+IMMS on Windows is a work in progress. The main options are compiling using Cygwin or MinGW. MinGW is preferred as this results in a native executable. Building IMMS under Cygwin means people have to install cygwin on their system before they can run IMMS, adding an unnecessary dependency.
 
 
 This has only been tested on Windows XP (SP3).
