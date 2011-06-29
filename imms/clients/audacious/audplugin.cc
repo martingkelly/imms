@@ -49,43 +49,22 @@ bool shuffle = true, select_pending = false, xidle_val = false;
 
 string cur_path = "", last_path = "";
 
-extern "C" {
-void init(void);
-void about(void);
-void configure(void);
-void cleanup(void);
-}
-
-static GeneralPlugin imms_gp =
-{
-    0,
-    0,
-    PACKAGE_STRING,
-    init,
-    cleanup,
-    about,
-    configure
-};
-
-GeneralPlugin *gp_plugin_list[] = { &imms_gp, NULL };
-
-SIMPLE_GENERAL_PLUGIN(imms, gp_plugin_list);
-
 // Wrapper that frees memory
 string imms_get_playlist_item(int at)
 {
     if (at > pl_length - 1)
         return "";
-    char *tmp = 0;
-    while (!tmp)
-       tmp = aud_drct_pl_get_file(at);
-    string result = tmp;
-    free(tmp);
-    gchar *realfn = g_filename_from_uri(result.c_str(), NULL, NULL);
-    tmp = filename_to_utf8(realfn ? realfn : result.c_str());
-    result = tmp;
-    free(tmp);
+    char* uri = 0;
+    while (!uri) uri = aud_drct_pl_get_file(at);
+    string result = uri;
+    free(uri);
+
+    gchar* realfn = g_filename_from_uri(result.c_str(), NULL, NULL);
+    char* decoded = g_filename_to_utf8(realfn ? realfn : result.c_str(),
+                                       -1, NULL, NULL, NULL);
+    if (decoded) result = decoded;
     free(realfn);
+    free(decoded);
     return result;
 }
 

@@ -364,20 +364,21 @@ CPPFLAGS="$audacious_CFLAGS $dbus_glib_CFLAGS"
 AC_CHECK_HEADERS(audacious/plugin.h,, [with_audacious=no])
 
 if test "$with_audacious" != "no"; then
+    AC_LANG_PUSH(C)
     AC_CHECK_HEADERS(audacious/drct.h,, [with_audacious=no])
     AC_MSG_CHECKING([for aud_drct_pq_add in -laudacious])
-    AC_TRY_LINK([extern "C" {
-                 #include <audacious/drct.h>
+    AC_TRY_LINK([#include <audacious/drct.h>
                  #include <audacious/plugin.h>
                  #include <audacious/dbus.h>
-                }
+
                   SIMPLE_GENERAL_PLUGIN(0, 0);],
                 [aud_drct_pq_add(0)],
                 [AC_MSG_RESULT(yes)],
                 [with_audacious="no"
                  AC_MSG_RESULT(no)]);
-    AC_DEFINE(AUDACIOUS, 1, [Define for Audacious 2.4 support])
+    AC_DEFINE(AUDACIOUS, 1, [Define for Audacious 2.5 support])
     audacious_CFLAGS="$audacious_CFLAGS -DAUDACIOUS"
+    AC_LANG_POP(C)
 fi
 
 if test "$with_audacious" = "no"; then
