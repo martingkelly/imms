@@ -16,10 +16,11 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 #
-libaudaciousimms.so: audplugin.o audaciousinterface.o clientstubbase.o libimmscore.a 
+libaudaciousimms.so: audplugindef.o audplugin.o audaciousinterface.o clientstubbase.o libimmscore.a 
 libaudaciousimms-LIBS = $(AUDACIOUSLDFLAGS)
 
 audaciousinterface-CPPFLAGS=$(AUDACIOUSCPPFLAGS)
+audplugindef-CPPFLAGS=$(AUDACIOUSCPPFLAGS)
 audplugin-CPPFLAGS=$(AUDACIOUSCPPFLAGS)
 
 audaciousinterface.o: bmpinterface.c
