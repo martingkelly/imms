@@ -42,11 +42,11 @@ distclean: clean
 
 dist: immsconf.h distclean
 	mv autogen.sh configure
-	cp -r . /tmp/imms-$(VERSION)
-	rm -rf `find /tmp/imms-$(VERSION)/ -name .svn`
-	tar -C /tmp/ -cj imms-$(VERSION)/ -f build/imms-$(VERSION).tar.bz2
-	tar -C /tmp/ -cz imms-$(VERSION)/ -f build/imms-$(VERSION).tar.gz
-	rm -rf /tmp/imms-$(VERSION)/
+	cp -r . /tmp/imms-r$(VERSION)
+	rm -rf `find /tmp/imms-r$(VERSION)/ -name .svn`
+	tar -C /tmp/ -cj imms-r$(VERSION)/ -f build/imms-r$(VERSION).tar.bz2
+	tar -C /tmp/ -cz imms-r$(VERSION)/ -f build/imms-r$(VERSION).tar.gz
+	rm -rf /tmp/imms-r$(VERSION)/
 	mv configure autogen.sh
 
 vars.mk:;
