@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 #
 define([svnversion], esyscmd([sh -c "svnversion -n"]))
-AC_INIT([IMMS],[3.1.svnversion],[mag@luminal.org])
+AC_INIT([IMMS],[svnversion],[mag@luminal.org])
 
 AC_PREREQ([2.52g])
 
