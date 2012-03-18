@@ -383,7 +383,7 @@ if test "$with_audacious" != "no"; then
 fi
 
 if test "$with_audacious" = "no"; then
-    AC_MSG_WARN([Not building audacious plugin])
+    AC_MSG_ERROR([Not building audacious plugin])
 else 
     AC_APPEND(PLUGINS, libaudaciousimms.so)
 fi
