@@ -36,8 +36,8 @@ FILE *run_sox(const string &path, int samplerate, bool sign = false)
     if (extension == "mp3" || extension == "ogg")
         command << "-t ." << extension << " ";
     command << "\'" << epath << "\' ";
-    command << "-t .raw -2 -c 1 -r " << samplerate
-        << (sign ? " -s" : " -u") << " -";
+    command << "-t .raw -b 16 -c 1 -r " << samplerate
+        << (sign ? " -e signed-integer" : " -e unsigned-integer") << " -";
     LOG(INFO) << "Executing: " << command.str() << endl;
     return popen(command.str().c_str(), "r");
 }
