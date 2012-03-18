@@ -29,6 +29,8 @@ extern "C" {
 #include <audacious/audctrl.h>
 #include <audacious/drct.h>
 #include <libaudcore/audstrings.h>
+#include <audacious/playlist.h>
+#include <audacious/misc.h>
 }
 
 #include "immsconf.h"
@@ -55,9 +57,9 @@ string imms_get_playlist_item(int at)
     if (at > pl_length - 1)
         return "";
     char* uri = 0;
-    while (!uri) uri = aud_drct_pl_get_file(at);
+    while (!uri) uri = aud_playlist_entry_get_filename(aud_playlist_get_active (), at);
     string result = uri;
-    free(uri);
+    if(uri) str_unref(uri);
 
     gchar* realfn = g_filename_from_uri(result.c_str(), NULL, NULL);
     char* decoded = g_filename_to_utf8(realfn ? realfn : result.c_str(),
@@ -70,7 +72,8 @@ string imms_get_playlist_item(int at)
 
 static void player_reset_selection()
 {
-    aud_drct_pq_remove(next_plpos);
+    gint playlist = aud_playlist_get_active();
+    aud_playlist_queue_delete (playlist, aud_playlist_queue_find_entry(playlist, next_plpos), 1);
     next_plpos = -1;
 }
 
@@ -98,7 +101,7 @@ struct FilterOps
     static void set_next(int next)
     {
         next_plpos = next;
-        aud_drct_pq_add(next_plpos);
+        aud_playlist_queue_insert(aud_playlist_get_active (), -1, next_plpos);
         select_pending = false;
         just_enqueued = 2;
     }
@@ -112,7 +115,7 @@ struct FilterOps
     }
     static int get_length()
     {
-        return aud_drct_pl_get_length();
+        return aud_playlist_entry_count(aud_playlist_get_active());
     }
 }; 
 
@@ -162,7 +165,7 @@ static void do_song_change()
 static void check_playlist()
 {
     // update playlist length
-    int new_pl_length = aud_drct_pl_get_length();
+    int new_pl_length = aud_playlist_entry_count(aud_playlist_get_active());
     if (new_pl_length != pl_length)
     {
         pl_length = new_pl_length;
@@ -188,10 +191,10 @@ void do_checks()
         select_pending = false;
         imms->setup(xidle_val);
         imms->playlist_changed(pl_length =
-                aud_drct_pl_get_length());
+                aud_playlist_entry_count(aud_playlist_get_active()));
         if (aud_drct_get_playing())
         {
-            last_plpos = cur_plpos = aud_drct_pl_get_pos();
+            last_plpos = cur_plpos = aud_playlist_get_position(aud_playlist_get_active());
             last_path = cur_path = imms_get_playlist_item(cur_plpos);
             imms->start_song(cur_plpos, cur_path);
         }
@@ -201,10 +204,10 @@ void do_checks()
     if (!aud_drct_get_playing())
         return;
 
-    cur_plpos = aud_drct_pl_get_pos();
+    cur_plpos = aud_playlist_get_position(aud_playlist_get_active());
     
     // check if xmms is reporting the song length correctly
-    song_length = aud_drct_pl_get_time(cur_plpos);
+    song_length = aud_playlist_entry_get_length(aud_playlist_get_active(), cur_plpos, FALSE);
     if (song_length > 1000)
         good_length++;
 
@@ -220,14 +223,15 @@ void do_checks()
         if (last_path != cur_path)
         {
             do_song_change();
-            aud_drct_pq_remove(next_plpos);
+            gint playlist = aud_playlist_get_active();
+            aud_playlist_queue_delete(playlist, aud_playlist_queue_find_entry(playlist, next_plpos), 1);
             return;
         }
     }
 
     check_time();
 
-    bool newshuffle = aud_drct_pl_shuffle_is_enabled();
+    bool newshuffle = aud_get_bool(NULL, "shuffle");
     if (!newshuffle && shuffle)
         player_reset_selection();
     shuffle = newshuffle;
@@ -235,7 +239,7 @@ void do_checks()
     if (!shuffle)
         return;
 
-    int qlength = aud_drct_pq_get_length();
+    int qlength = aud_playlist_queue_count(aud_playlist_get_active());
     if (qlength > 1)
         player_reset_selection();
     else if (!qlength)

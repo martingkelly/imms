@@ -356,7 +356,7 @@ else
     fi
 fi
 
-PKG_CHECK_MODULES(audacious, [audacious >= 2.4], [], [with_audacious=no])
+PKG_CHECK_MODULES(audacious, [audacious >= 2.4 gtk+-3.0], [], [with_audacious=no])
 PKG_CHECK_MODULES(dbus_glib, [dbus-glib-1 >= 0.70], [], [with_audacious=no])
 
 LIBS="$audacious_LIBS $dbus_glib_LIBS"
@@ -366,14 +366,16 @@ AC_CHECK_HEADERS(audacious/plugin.h,, [with_audacious=no])
 
 if test "$with_audacious" != "no"; then
     AC_LANG_PUSH(C)
+dnl    AC_CHECK_HEADERS(gtk/gtk.h,, [with_audacious=no])
     AC_CHECK_HEADERS(audacious/drct.h,, [with_audacious=no])
-    AC_MSG_CHECKING([for aud_drct_pq_add in -laudacious])
+    AC_MSG_CHECKING([for aud_playlist_queue_insert in -laudcore])
     AC_TRY_LINK([#include <audacious/drct.h>
                  #include <audacious/plugin.h>
                  #include <audacious/dbus.h>
+                 #include <audacious/playlist.h>
 
-                  SIMPLE_GENERAL_PLUGIN(0, 0);],
-                [aud_drct_pq_add(0)],
+                  AUD_GENERAL_PLUGIN();],
+                [aud_playlist_queue_insert(aud_playlist_get_active(),-1,0)],
                 [AC_MSG_RESULT(yes)],
                 [with_audacious="no"
                  AC_MSG_RESULT(no)]);

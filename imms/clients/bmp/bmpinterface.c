@@ -28,8 +28,8 @@
 #include <audacious/i18n.h>
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
-#include <audacious/configdb.h>
 #include <audacious/plugin.h>
+#include <audacious/misc.h>
 #include <libaudgui/libaudgui.h>
 #include <libaudgui/libaudgui-gtk.h>
 #define PACKAGE PACKAGE_NAME
@@ -53,6 +53,9 @@ gint poll_func(gpointer unused)
 
 void read_config(void)
 {
+#if AUDACIOUS
+    use_xidle=PLAYER_PREFIX(get_int)("imms", "xidle");
+#else
     ConfigDb *cfgfile;
 
     if ((cfgfile = PLAYER_PREFIX(cfg_db_open)()) != NULL)
@@ -60,6 +63,7 @@ void read_config(void)
         PLAYER_PREFIX(cfg_db_get_int)(cfgfile, "imms", "xidle", &use_xidle);
         PLAYER_PREFIX(cfg_db_close)(cfgfile);
     }
+#endif
 }
 
 void init(void)
@@ -67,7 +71,7 @@ void init(void)
     imms_init();
     read_config();
     imms_setup(use_xidle);
-    poll_tag = gtk_timeout_add(200, poll_func, NULL);
+    poll_tag = g_timeout_add(200, poll_func, NULL);
 }
 
 void cleanup(void)
@@ -75,19 +79,23 @@ void cleanup(void)
     imms_cleanup();
 
     if (poll_tag)
-        gtk_timeout_remove(poll_tag);
+        g_source_remove(poll_tag);
 
     poll_tag = 0;
 }
 
 void configure_ok_cb(gpointer data)
 {
+#if AUDACIOUS
+    PLAYER_PREFIX(set_int)("imms", "xidle",use_xidle);
+#else
     ConfigDb *cfgfile = PLAYER_PREFIX(cfg_db_open)();
 
     use_xidle = !!GTK_TOGGLE_BUTTON(xidle_button)->active;
 
     PLAYER_PREFIX(cfg_db_set_int)(cfgfile, "imms", "xidle", use_xidle);
     PLAYER_PREFIX(cfg_db_close)(cfgfile);
+#endif
 
     imms_setup(use_xidle);
     gtk_widget_destroy(configure_win);
@@ -132,8 +140,8 @@ void configure(void)
     read_config();
 
     configure_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_signal_connect(GTK_OBJECT(configure_win), "destroy",
-            GTK_SIGNAL_FUNC(gtk_widget_destroyed), &configure_win);
+    g_signal_connect(configure_win, "destroy",
+            G_CALLBACK(gtk_widget_destroyed), &configure_win);
     gtk_window_set_title(GTK_WINDOW(configure_win), "IMMS Configuration");
 
     gtk_container_set_border_width(GTK_CONTAINER(configure_win), 10);
@@ -152,21 +160,21 @@ void configure(void)
     /* Buttons */
     configure_bbox = gtk_hbutton_box_new();
     gtk_button_box_set_layout(GTK_BUTTON_BOX(configure_bbox), GTK_BUTTONBOX_END);
-    gtk_button_box_set_spacing(GTK_BUTTON_BOX(configure_bbox), 5);
+    gtk_box_set_spacing(GTK_BUTTON_BOX(configure_bbox), 5);
     gtk_box_pack_start(GTK_BOX(configure_vbox), configure_bbox, FALSE, FALSE, 0);
 
     configure_ok = gtk_button_new_with_label("Ok");
-    gtk_signal_connect(GTK_OBJECT(configure_ok), "clicked",
-            GTK_SIGNAL_FUNC(configure_ok_cb), NULL);
-    GTK_WIDGET_SET_FLAGS(configure_ok, GTK_CAN_DEFAULT);
+    g_signal_connect(configure_ok, "clicked",
+            G_CALLBACK(configure_ok_cb), NULL);
+    gtk_widget_set_can_default(configure_ok,TRUE);
     gtk_box_pack_start(GTK_BOX(configure_bbox), configure_ok, TRUE, TRUE, 0);
     gtk_widget_show(configure_ok);
     gtk_widget_grab_default(configure_ok);
 
     configure_cancel = gtk_button_new_with_label("Cancel");
-    gtk_signal_connect_object(GTK_OBJECT(configure_cancel), "clicked",
-            GTK_SIGNAL_FUNC(gtk_widget_destroy), GTK_OBJECT(configure_win));
-    GTK_WIDGET_SET_FLAGS(configure_cancel, GTK_CAN_DEFAULT);
+    g_signal_connect_swapped(configure_cancel, "clicked",
+            G_CALLBACK(gtk_widget_destroy), configure_win);
+    gtk_widget_set_can_default(configure_cancel,TRUE);
     gtk_box_pack_start(GTK_BOX(configure_bbox), configure_cancel, TRUE, TRUE, 0);
     gtk_widget_show(configure_cancel);
     gtk_widget_show(configure_bbox);

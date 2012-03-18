@@ -5,11 +5,12 @@
 
 #include "immsconf.h"
 
-void init(void);
+bool_t init(void);
 void about(void);
 void configure(void);
 void cleanup(void);
 
+/*
 static GeneralPlugin imms_gp =
 {
     PACKAGE_STRING,
@@ -24,3 +25,11 @@ static GeneralPlugin imms_gp =
 GeneralPlugin *gp_plugin_list[] = { &imms_gp, NULL };
 
 SIMPLE_GENERAL_PLUGIN(imms, gp_plugin_list);
+*/
+AUD_GENERAL_PLUGIN(
+        .name = PACKAGE_NAME,
+        .init = init,
+        .cleanup = cleanup,
+        .about = about,
+        .configure = configure
+)
