@@ -51,6 +51,6 @@ GLIB1LDFLAGS=`pkg-config glib --libs`
 AUDACIOUSCPPFLAGS=@audacious_CFLAGS@ @dbus_glib_CFLAGS@ -I../clients/xmms/
 AUDACIOUSLDFLAGS=@audacious_LIBS@ @dbus_glib_LIBS@
 
-LDFLAGS=-L. @LIBS@
+LDFLAGS=-L. @LIBS@ @LDFLAGS@
 
 default: all

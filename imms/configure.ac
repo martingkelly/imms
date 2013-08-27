@@ -263,7 +263,7 @@ if test "$enable_analyzer" != "no"; then
 fi
 
 if test "$with_screensaver" != "no"; then
-    LDFLAGS="-L/usr/X11R6/lib"
+    LDFLAGS="${LDFLAGS} -L/usr/X11R6/lib"
     AC_CHECK_LIB(X11, XFlush,, [with_screensaver=no])
     AC_CHECK_LIB(Xext, XextFindDisplay,, [with_screensaver=no])
     AC_CHECK_LIB(Xss, XScreenSaverQueryInfo,, [with_screensaver=no])
@@ -410,6 +410,7 @@ AC_SUBST(INSTALL)
 AC_SUBST(XCPPFLAGS)
 AC_SUBST(TAGCPPFLAGS)
 AC_SUBST(LIBS)
+AC_SUBST(LDFLAGS)
 AC_SUBST(PLUGINS)
 AC_SUBST(OPTIONAL)
 
