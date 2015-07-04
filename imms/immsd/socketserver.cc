@@ -64,7 +64,7 @@ SocketListenerBase::~SocketListenerBase()
 {
     if (listener)
     {
-        g_io_channel_close(listener);
+        g_io_channel_shutdown(listener, true, 0);
         g_io_channel_unref(listener);
         listener = 0;
     }

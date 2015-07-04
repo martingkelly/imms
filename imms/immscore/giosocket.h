@@ -71,7 +71,7 @@ public:
     {
         if (con)
         {
-            g_io_channel_close(con);
+            g_io_channel_shutdown(con, true, 0);
             g_io_channel_unref(con);
         }
         if (write_tag)
@@ -116,8 +116,8 @@ public:
 
         unsigned len = strlen(outp);
         gsize n = 0;
-        GIOError e = g_io_channel_write(con, (char*)outp, len, &n);
-        if (e == G_IO_ERROR_NONE)
+        GIOStatus s = g_io_channel_write_chars(con, (char*)outp, len, &n, 0);
+        if (s == G_IO_STATUS_NORMAL)
         {
             if (n == len)
             {
@@ -149,8 +149,8 @@ public:
         if (condition & G_IO_IN)
         {
             gsize n = 0;
-            GIOError e = g_io_channel_read(con, buf, sizeof(buf) - 1, &n);
-            if (e == G_IO_ERROR_NONE)
+            GIOStatus s = g_io_channel_read_chars(con, buf, sizeof(buf) - 1, &n, 0);
+            if (s == G_IO_STATUS_NORMAL)
             {
                 buf[n] = '\0';
                 char *lineend, *cur = buf;
