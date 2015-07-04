@@ -16,22 +16,12 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 #
-libaudaciousimms.so: audplugindef.o audplugin.o audaciousinterface.o clientstubbase.o libimmscore.a 
-libaudaciousimms-LIBS = $(AUDACIOUSLDFLAGS)
+libaudaciousimms.so: audplugin.o clientstubbase.o libimmscore.a
+libaudaciousimms-LIBS = $(AUDACIOUSLDFLAGS) $(GLIB2LDFLAGS)
 
-audaciousinterface-CPPFLAGS=$(AUDACIOUSCPPFLAGS)
-audplugindef-CPPFLAGS=$(AUDACIOUSCPPFLAGS)
-audplugin-CPPFLAGS=$(AUDACIOUSCPPFLAGS)
+audplugin-CPPFLAGS=$(AUDACIOUSCPPFLAGS) $(GLIB2CPPFLAGS)
 
-audaciousinterface.o: bmpinterface.c
-	$(call compile, $(CC), $<, $@, $($*-CFLAGS) $(CFLAGS) $($*-CPPFLAGS) $(CPPFLAGS))
-
-AUDACIOUSDESTDIR=""
-ifeq ($(shell id -u), 0)
-	AUDACIOUSDESTDIR=`pkg-config --variable=general_plugin_dir audacious`
-else
-	AUDACIOUSDESTDIR=${HOME}/.audacious/Plugins/General
-endif
+AUDACIOUSDESTDIR=`pkg-config --variable=plugin_dir audacious`
 
 libaudaciousimms.so_install: libaudaciousimms.so
-	${INSTALL} -D $^ $(AUDACIOUSDESTDIR)/libaudaciousimms.so
+	${INSTALL} -D $^ $(AUDACIOUSDESTDIR)/General/libaudaciousimms.so

@@ -24,56 +24,77 @@
 #include <iostream>
 #include <time.h>
 
-extern "C" {
-#include <audacious/plugin.h>
-#include <audacious/audctrl.h>
-#include <audacious/drct.h>
 #include <libaudcore/audstrings.h>
-#include <audacious/playlist.h>
-#include <audacious/misc.h>
-}
+#include <libaudcore/drct.h>
+#include <libaudcore/mainloop.h>
+#include <libaudcore/playlist.h>
+#include <libaudcore/plugin.h>
+#include <libaudcore/runtime.h>
 
 #include "immsconf.h"
-#include "cplugin.h"
 #include "immsutil.h"
 #include "clientstub.h"
 
+#define USE_XIDLE true
+
 using std::string;
-using std::cerr;
-using std::endl;
+
+class IMMSPlugin : public GeneralPlugin
+{
+public:
+    static const char about[];
+
+    static constexpr PluginInfo info = {
+        "IMMS",
+        nullptr,
+        about
+    };
+
+    constexpr IMMSPlugin() : GeneralPlugin(info, false) {}
+
+    bool init();
+    void cleanup();
+};
+
+IMMSPlugin aud_plugin_instance;
+
+const char IMMSPlugin::about[] =
+    "Intelligent Multimedia Management System\n\n"
+    "IMMS is an intelligent playlist plugin for Audacious that tracks your "
+    "listening patterns and dynamically adapts to your taste.\n\n"
+    "It is incredibly unobtrusive and easy to use as it requires no direct "
+    "user interaction.\n\n"
+    "For more information please visit:\n"
+    "http://www.luminal.org/wiki/index.php/IMMS\n\n"
+    "Written by Michael \"mag\" Grigoriev <mag@luminal.org>";
 
 // Local vars
+static QueuedFunc timer;
+
 int cur_plpos, next_plpos = -1, pl_length = -1,
     last_plpos = -1, last_song_length = -1;
 int good_length = 0, song_length = 0,
-    busy = 0, just_enqueued = 0, ending = 0;
-bool shuffle = true, select_pending = false, xidle_val = false;
+    just_enqueued = 0, ending = 0;
+bool shuffle = true, select_pending = false;
 
 string cur_path = "", last_path = "";
+
+static void do_checks(void *);
 
 // Wrapper that frees memory
 string imms_get_playlist_item(int at)
 {
-    if (at > pl_length - 1)
-        return "";
-    char* uri = 0;
-    while (!uri) uri = aud_playlist_entry_get_filename(aud_playlist_get_active (), at);
-    string result = uri;
-    if(uri) str_unref(uri);
-
-    gchar* realfn = g_filename_from_uri(result.c_str(), NULL, NULL);
-    char* decoded = g_filename_to_utf8(realfn ? realfn : result.c_str(),
-                                       -1, NULL, NULL, NULL);
-    if (decoded) result = decoded;
-    free(realfn);
-    free(decoded);
-    return result;
+    int pl = aud_playlist_get_playing();
+    String uri = aud_playlist_entry_get_filename(pl, at);
+    StringBuf fn = uri ? uri_to_filename(uri, false) : StringBuf();
+    return fn ? string(fn) : "";
 }
 
 static void player_reset_selection()
 {
-    gint playlist = aud_playlist_get_active();
-    aud_playlist_queue_delete (playlist, aud_playlist_queue_find_entry(playlist, next_plpos), 1);
+    int pl = aud_playlist_get_playing();
+    int qp = aud_playlist_queue_find_entry(pl, next_plpos);
+    aud_playlist_queue_delete(pl, qp, 1);
     next_plpos = -1;
 }
 
@@ -101,7 +122,8 @@ struct FilterOps
     static void set_next(int next)
     {
         next_plpos = next;
-        aud_playlist_queue_insert(aud_playlist_get_active (), -1, next_plpos);
+        int pl = aud_playlist_get_playing();
+        aud_playlist_queue_insert(pl, -1, next_plpos);
         select_pending = false;
         just_enqueued = 2;
     }
@@ -115,28 +137,22 @@ struct FilterOps
     }
     static int get_length()
     {
-        return aud_playlist_entry_count(aud_playlist_get_active());
+        int pl = aud_playlist_get_playing();
+        return aud_playlist_entry_count(pl);
     }
-}; 
+};
 
-void imms_setup(int use_xidle)
+bool IMMSPlugin::init()
 {
-    xidle_val = use_xidle;
-    if (imms)
-        imms->setup(use_xidle);
+    imms = new XMMSClient();
+    imms->setup(USE_XIDLE);
+    timer.start(200, do_checks, nullptr);
+    return true;
 }
 
-void imms_init()
+void IMMSPlugin::cleanup()
 {
-    if (!imms)
-    {
-        imms = new XMMSClient();
-        busy = 0;
-    }
-}
-
-void imms_cleanup(void)
-{
+    timer.stop();
     delete imms;
     imms = 0;
 }
@@ -162,10 +178,10 @@ static void do_song_change()
         next_plpos = (cur_plpos + 1) % pl_length;
 }
 
-static void check_playlist()
+static void check_playlist(int pl)
 {
     // update playlist length
-    int new_pl_length = aud_playlist_entry_count(aud_playlist_get_active());
+    int new_pl_length = aud_playlist_entry_count(pl);
     if (new_pl_length != pl_length)
     {
         pl_length = new_pl_length;
@@ -182,19 +198,20 @@ static void check_time()
                             ? ending < 10 : -(ending > 0);
 }
 
-void do_checks()
+static void do_checks(void *)
 {
-    check_playlist();
+    int pl = aud_playlist_get_playing();
+    check_playlist(pl);
 
     if (imms->check_connection())
     {
         select_pending = false;
-        imms->setup(xidle_val);
-        imms->playlist_changed(pl_length =
-                aud_playlist_entry_count(aud_playlist_get_active()));
+        imms->setup(USE_XIDLE);
+        pl_length = aud_playlist_entry_count(pl);
+        imms->playlist_changed(pl_length);
         if (aud_drct_get_playing())
         {
-            last_plpos = cur_plpos = aud_playlist_get_position(aud_playlist_get_active());
+            last_plpos = cur_plpos = aud_playlist_get_position(pl);
             last_path = cur_path = imms_get_playlist_item(cur_plpos);
             imms->start_song(cur_plpos, cur_path);
         }
@@ -204,10 +221,11 @@ void do_checks()
     if (!aud_drct_get_playing())
         return;
 
-    cur_plpos = aud_playlist_get_position(aud_playlist_get_active());
-    
+    cur_plpos = aud_playlist_get_position(pl);
+
     // check if xmms is reporting the song length correctly
-    song_length = aud_playlist_entry_get_length(aud_playlist_get_active(), cur_plpos, FALSE);
+    Tuple tu = aud_playlist_entry_get_tuple(pl, cur_plpos);
+    song_length = tu.get_int(Tuple::Length);
     if (song_length > 1000)
         good_length++;
 
@@ -223,15 +241,15 @@ void do_checks()
         if (last_path != cur_path)
         {
             do_song_change();
-            gint playlist = aud_playlist_get_active();
-            aud_playlist_queue_delete(playlist, aud_playlist_queue_find_entry(playlist, next_plpos), 1);
+            int qp = aud_playlist_queue_find_entry(pl, next_plpos);
+            aud_playlist_queue_delete(pl, qp, 1);
             return;
         }
     }
 
     check_time();
 
-    bool newshuffle = aud_get_bool(NULL, "shuffle");
+    bool newshuffle = aud_get_bool(nullptr, "shuffle");
     if (!newshuffle && shuffle)
         player_reset_selection();
     shuffle = newshuffle;
@@ -239,19 +257,9 @@ void do_checks()
     if (!shuffle)
         return;
 
-    int qlength = aud_playlist_queue_count(aud_playlist_get_active());
+    int qlength = aud_playlist_queue_count(pl);
     if (qlength > 1)
         player_reset_selection();
     else if (!qlength)
         enqueue_next();
-}
-
-void imms_poll()
-{
-    if (busy)
-        return;
-
-    ++busy;
-    do_checks();
-    --busy;
 }
