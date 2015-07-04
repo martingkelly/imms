@@ -58,7 +58,7 @@ AC_ARG_ENABLE(debug,
 
 AC_ARG_ENABLE(queuecontrol,
             AC_HELP_STRING([--disable-queuecontrol],
-                           [Don't use XMMS queue control functions]),
+                           [Do not use XMMS queue control functions]),
             [enable_queuecontrol=$enableval])
 
 AC_ARG_ENABLE(analyzer,
@@ -145,7 +145,7 @@ if test "$enable_analyzer" != "no"; then
                 [Torch::KMeans kmeans(10, 5)],
         [AC_MSG_RESULT(yes)],
         [have_torch=no; AC_MSG_RESULT(no)])
-    
+
     if test "$have_torch" = "no"; then
         AC_MSG_WARN([******************************************************]);
         AC_MSG_WARN("torch >= 3.0 required for analyzer and missing");
@@ -306,7 +306,7 @@ fi
 xmms_enable_playqueue=$enable_queuecontrol
 if test "$with_xmms" = "no"; then
     AC_MSG_WARN([Not building XMMS plugin])
-else 
+else
     if test "$xmms_enable_playqueue" != "no"; then
         AC_MSG_CHECKING([for xmms_remote_playqueue_add in -lxmms])
         saved_libs="$LIBS"
@@ -338,7 +338,7 @@ AC_CHECK_HEADERS(bmp/beepctrl.h,, [with_bmp=no])
 bmp_enable_playqueue=$enable_queuecontrol
 if test "$with_bmp" = "no"; then
     AC_MSG_WARN([Not building BMP plugin])
-else 
+else
     if test "$bmp_enable_playqueue" != "no"; then
         AC_MSG_CHECKING([for xmms_remote_playqueue_add in -lbeep])
         AC_TRY_LINK([#include <bmp/beepctrl.h>],
@@ -386,7 +386,7 @@ fi
 
 if test "$with_audacious" = "no"; then
     AC_MSG_ERROR([Not building audacious plugin])
-else 
+else
     AC_APPEND(PLUGINS, libaudaciousimms.so)
 fi
 
