@@ -54,6 +54,15 @@ public:
         fcntl(fd, F_SETFD, O_NONBLOCK);
 
         con = g_io_channel_unix_new(fd);
+
+        /*
+         * Disable channel buffering so that IMMS immediately sees any requests
+         * sent by the client.
+         */
+        GIOStatus s = g_io_channel_set_encoding(con, NULL, 0);
+        assert(s == G_IO_STATUS_NORMAL);
+        g_io_channel_set_buffered(con, false);
+
         read_tag = g_io_add_watch(con,
                 (GIOCondition)(G_IO_IN | G_IO_PRI | G_IO_ERR | G_IO_HUP),
                 _read_event, this);
