@@ -16,17 +16,33 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 #
+
 -include vars.mk
 
-.PHONY: first
+# Find the latest tag of the form "imms-X.Y" and generate a version from it.
+LATEST_TAG:=$(shell git tag | grep -Exe 'imms-[0-9]+(\.[0-9]+)?' | sort -rn | head -1)
+COMMITS_SINCE:=$(shell git rev-list $(LATEST_TAG)..HEAD --count)
+LATEST_VERSION:=$(LATEST_TAG:imms-%=%)
+ifeq ($(COMMITS_SINCE), 0)
+GIT_VERSION:=$(LATEST_VERSION)
+else
+GIT_VERSION:=$(LATEST_VERSION).$(COMMITS_SINCE)
+endif
+
+.PHONY: first generate-version
 
 first: configure
 	$(error Please run the "configure" script)
- 
-configure: configure.ac
+
+generate-version:
+	@echo "m4_define([GIT_VERSION], [$(GIT_VERSION)])" > gitversion.m4
+
+configure.ac: generate-version
 	autoheader
 	aclocal
 	autoconf
+
+configure: configure.ac
 
 immsconf.h: configure
 	$(error Please run the "configure" script)

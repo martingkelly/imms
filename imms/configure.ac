@@ -16,8 +16,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 #
-define([svnversion], esyscmd([sh -c "svnversion -n"]))
-AC_INIT([IMMS],[svnversion],[mag@luminal.org])
+
+m4_include([gitversion.m4])dnl
+AC_INIT([IMMS],[GIT_VERSION],[mag@luminal.org])
+AM_INIT_AUTOMAKE
 
 AC_PREREQ([2.52g])
 
