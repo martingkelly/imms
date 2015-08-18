@@ -1,18 +1,18 @@
-Website:
+# Website:
     http://www.luminal.org/wiki/index.php/IMMS
 
-Mailing list:
+# Mailing list:
     https://github.com/martingkelly/imms/issues
     or email martin@martingkelly.com
     (Yes, these are not real mailing lists; we haven't yet setup real ones)
 
-Author:
+# Author:
     Michael Grigoriev <mag@luminal.org>
 
-Licence:
+# Licence:
     GNU/GPL - see LICENSE and AUTHORS for details
 
-Installation:
+# Installation:
     See INSTALL for details
 
 See website for more information.
