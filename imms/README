@@ -2,7 +2,9 @@ Website:
     http://www.luminal.org/wiki/index.php/IMMS
 
 Mailing list:
-    imms@luminal.org
+    https://github.com/martingkelly/imms/issues
+    or email martin@martingkelly.com
+    (Yes, these are not real mailing lists; we haven't yet setup real ones)
 
 Author:
     Michael Grigoriev <mag@luminal.org>
@@ -15,3 +17,6 @@ Installation:
 
 See website for more information.
 Bug reports and suggestions are welcomed.
+
+IMMS was originally hosted on Google Code. When Google Code was abandoned by
+Google, Martin Kelly <martin@martingkelly.com> moved it to Github.
