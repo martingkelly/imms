@@ -29,7 +29,7 @@ else
 GIT_VERSION:=$(LATEST_VERSION).$(COMMITS_SINCE)
 endif
 
-.PHONY: first generate-version
+.PHONY: first generate-version clean distclean dist
 
 first: configure
 	$(error Please run the "configure" script)
