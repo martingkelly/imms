@@ -92,7 +92,10 @@ struct md5_ctx
 
   md5_uint32 total[2];
   md5_uint32 buflen;
-  char buffer[128];
+  union {
+    char buffer[128];
+    md5_uint32 buffer_uint[32];
+  };
 };
 
 /*
