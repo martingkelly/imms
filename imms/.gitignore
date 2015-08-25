@@ -1,0 +1,12 @@
+aclocal.m4
+autom4te.cache/
+build/
+config.log
+config.status
+configure
+gitversion.m4
+immsconf.h
+immsconf.h.in
+vars.mk
+stamp-h*
+cscope.*
