@@ -24,7 +24,6 @@
 
 #include "fetcher.h"
 #include "strmanip.h"
-#include "md5digest.h"
 #include "immsutil.h"
 
 using std::endl;
