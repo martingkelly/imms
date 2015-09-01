@@ -21,6 +21,7 @@ CXX = @CXX@
 VERSION = @PACKAGE_VERSION@
 INSTALL = @INSTALL@
 prefix = @prefix@
+datarootdir = @datarootdir@
 PREFIX = $(prefix)
 OBJCOPY = @OBJCOPY@
 OBJDUMP = @OBJDUMP@
