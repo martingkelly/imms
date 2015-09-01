@@ -43,7 +43,7 @@ GLIB1CPPFLAGS=`pkg-config glib --cflags`
 TAGCPPFLAGS=@TAGCPPFLAGS@
 
 INCLUDES=-I../ -I../immscore -I../clients
-CPPFLAGS=@CPPFLAGS@ @XCPPFLAGS@ -Wall -fPIC -D_REENTRANT $(INCLUDES)
+CPPFLAGS=@CPPFLAGS@ @XCPPFLAGS@ -Wall -Werror -fPIC -D_REENTRANT $(INCLUDES)
 CXXFLAGS=@CXXFLAGS@ -fno-rtti
 
 GLIB2LDFLAGS=`pkg-config glib-2.0 --libs`
