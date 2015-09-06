@@ -29,20 +29,18 @@ else
 GIT_VERSION:=$(LATEST_VERSION).$(COMMITS_SINCE)
 endif
 
-.PHONY: first generate-version clean distclean dist
+.PHONY: first clean distclean dist
 
 first: configure
 	$(error Please run the "configure" script)
 
-generate-version:
+gitversion.m4:
 	@echo "m4_define([GIT_VERSION], [$(GIT_VERSION)])" > gitversion.m4
 
-configure.ac: generate-version
+configure: configure.ac gitversion.m4
 	autoheader
 	aclocal
 	autoconf
-
-configure: configure.ac
 
 immsconf.h: configure
 	$(error Please run the "configure" script)
@@ -51,7 +49,7 @@ clean:
 	rm -f $(wildcard build/[^M]* core* build/.*.d)
 
 distclean: clean
-	rm -f $(wildcard .\#* config.* configure immsconf.h* aclocal.m4* vars.mk)
+	rm -f $(wildcard .\#* config.* configure immsconf.h* aclocal.m4* vars.mk gitversion.m4)
 	rm -rf $(wildcard autom4te.cache)
 
 dist: immsconf.h distclean
