@@ -47,8 +47,6 @@ configure: configure.ac
 immsconf.h: configure
 	$(error Please run the "configure" script)
 
-.PHONY: clean distclean dist
-
 clean:
 	rm -f $(wildcard build/[^M]* core* build/.*.d)
 
