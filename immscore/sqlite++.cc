@@ -332,7 +332,7 @@ SQLQuery &SQLQuery::bind(const void *data, size_t n)
     return *this;
 }
 
-SQLQuery &SQLQuery::operator<<(const SQLExec &execute)
+SQLQuery &SQLQuery::operator<<(const SQLExec &)
 {
     this->execute();
     return *this;

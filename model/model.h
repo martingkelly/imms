@@ -37,7 +37,7 @@ public:
 class DummyModel : public Model
 {
 public:
-    float evaluate(float *features) { return 0; }
+    float evaluate(float *) { return 0; }
 };
 
 class SimilarityModel

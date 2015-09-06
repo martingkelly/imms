@@ -119,7 +119,7 @@ void Imms::playlist_changed(int length)
 
     ImmsDb::clear_recent();
     PlaylistDb::playlist_clear();
-    SongPicker::playlist_changed(length);
+    SongPicker::playlist_changed();
 } 
 
 void Imms::playlist_ready()

@@ -48,7 +48,7 @@ protected:
     void get_related(std::vector<int> &out, int pivot_sid, int limit);
 
     virtual void sql_create_tables();
-    virtual void sql_schema_upgrade(int from = 0) {}
+    virtual void sql_schema_upgrade(int) {}
 
 private:
     // shared within callbacks

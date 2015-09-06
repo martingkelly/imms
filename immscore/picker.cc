@@ -57,7 +57,7 @@ void SongPicker::reset()
         --reschedule_requested;
 }
 
-void SongPicker::playlist_changed(int length)
+void SongPicker::playlist_changed()
 {
     playlist_known = 0;
     reset();

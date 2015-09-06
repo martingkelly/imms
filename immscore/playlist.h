@@ -54,7 +54,7 @@ public:
 
 protected:
     virtual void sql_create_tables();
-    virtual void sql_schema_upgrade(int from = 0) {}
+    virtual void sql_schema_upgrade(int) {}
 
 private:
     int effective_length_cache;

@@ -44,7 +44,7 @@ const string AppName = IMMSD_APP;
 static Imms *imms;
 static list<RemoteProcessor*> remotes;
 
-gboolean do_events(void *unused)
+gboolean do_events(void *)
 {
     if (imms)
         imms->do_events();
@@ -252,7 +252,7 @@ void quit(int signum)
     signal(signum, SIG_DFL);
 }
 
-int main(int argc, char **argv)
+int main()
 {
     int r = mkdir(get_imms_root().c_str(), 0700);
     if (r < 0 && errno != EEXIST)

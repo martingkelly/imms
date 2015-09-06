@@ -71,7 +71,7 @@ SocketListenerBase::~SocketListenerBase()
 }
 
 gboolean SocketListenerBase::incoming_connection_helper(
-        GIOChannel *source, GIOCondition condition, gpointer data)
+        GIOChannel *, GIOCondition, gpointer data)
 {
     SocketListenerBase *ss = (SocketListenerBase*)data;
 

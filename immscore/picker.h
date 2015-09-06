@@ -32,7 +32,7 @@ public:
     SongPicker();
     virtual int select_next();
     virtual void playlist_ready() { playlist_known = 1; }
-    virtual void playlist_changed(int length);
+    virtual void playlist_changed();
 
     void request_reschedule() { reschedule_requested = 2; }
 

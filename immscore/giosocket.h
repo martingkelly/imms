@@ -96,14 +96,14 @@ public:
 
     virtual void connection_lost() = 0;
 
-    static gboolean _read_event(GIOChannel *source,
+    static gboolean _read_event(GIOChannel *,
             GIOCondition condition, gpointer data)
     {
         GIOSocket *s = (GIOSocket*)data;
         return s->read_event(condition);
     }
 
-    static gboolean _write_event(GIOChannel *source,
+    static gboolean _write_event(GIOChannel *,
             GIOCondition condition, gpointer data)
     {
         GIOSocket *s = (GIOSocket*)data;

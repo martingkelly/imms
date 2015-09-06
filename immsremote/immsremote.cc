@@ -120,7 +120,7 @@ extern "C" {
             GdkEventButton *event, gpointer userdata);
 }
 
-gboolean marked_aid_list(GtkTreeModel *model, GtkTreePath *path,
+gboolean marked_aid_list(GtkTreeModel *model, GtkTreePath *,
         GtkTreeIter *iter, gpointer data)
 {
     set<int> &aids = *(set<int>*)data;
@@ -133,7 +133,7 @@ gboolean marked_aid_list(GtkTreeModel *model, GtkTreePath *path,
     return false;
 }
 
-void all_aid_list(GtkTreeModel *model, GtkTreePath *path,
+void all_aid_list(GtkTreeModel *model, GtkTreePath *,
         GtkTreeIter *iter, gpointer data)
 {
     set<int> &aids = *(set<int>*)data;
@@ -142,7 +142,7 @@ void all_aid_list(GtkTreeModel *model, GtkTreePath *path,
     aids.insert(aid);
 }
 
-gboolean restore_mark(GtkTreeModel *model, GtkTreePath *path,
+gboolean restore_mark(GtkTreeModel *model, GtkTreePath *,
         GtkTreeIter *iter, gpointer data)
 {
     int aid;
@@ -153,7 +153,7 @@ gboolean restore_mark(GtkTreeModel *model, GtkTreePath *path,
     return false;
 }
 
-gboolean restore_select(GtkTreeModel *model, GtkTreePath *path,
+gboolean restore_select(GtkTreeModel *model, GtkTreePath *,
         GtkTreeIter *iter, gpointer data)
 {
     int aid;
@@ -330,13 +330,13 @@ void toggle(GtkTreeIter *iter, int value, RecurseControl r = RecurseAuto)
         limit_requested = true;
 }
 
-void get_aid(GtkTreeModel *model, GtkTreePath *path,
-        GtkTreeIter *iter, gpointer data)
+void get_aid(GtkTreeModel *model, GtkTreePath *,
+        GtkTreeIter *iter, gpointer)
 {
     gtk_tree_model_get(model, iter, COL_AID, &sel_aid, -1);
 }
 
-void selection_action(GtkTreeModel *model, GtkTreePath *path,
+void selection_action(GtkTreeModel *, GtkTreePath *,
         GtkTreeIter *iter, gpointer data)
 {
     toggle(iter, GPOINTER_TO_UINT(data));
@@ -360,8 +360,8 @@ void get_name_alternatives(vector<string> &alternatives, int aid)
     }
 }
 
-void view_popup_menu(GtkWidget *treeview,
-        GdkEventButton *event, gpointer userdata)
+void view_popup_menu(GtkWidget *,
+        GdkEventButton *event, gpointer)
 {
     GtkWidget *menu = glade_xml_get_widget(cmxml, "contextmenu");
 
@@ -486,13 +486,13 @@ void rename(int aid, unsigned alternative)
     WARNIFFAILED();
 }
 
-void on_rename_activate(GtkWidget *item, gpointer user_data)
+void on_rename_activate(GtkWidget *, gpointer user_data)
 {
     rename(sel_aid, GPOINTER_TO_UINT(user_data));
     refresh();
 }
 
-void on_cropitem_activate(GtkWidget *menuitem, gpointer userdata)
+void on_cropitem_activate(GtkWidget *, gpointer)
 {
     GtkTreeIter iter;
     if (gtk_tree_model_get_iter_first(gtk_tree_view_get_model(tree), &iter))
@@ -505,7 +505,7 @@ void on_cropitem_activate(GtkWidget *menuitem, gpointer userdata)
     on_markitem_activate(0, 0);
 }
 
-void on_allitem_activate(GtkWidget *menuitem, gpointer userdata)
+void on_allitem_activate(GtkWidget *, gpointer)
 {
     GtkTreeIter iter;
     if (gtk_tree_model_get_iter_first(gtk_tree_view_get_model(tree), &iter))
@@ -516,14 +516,14 @@ void on_allitem_activate(GtkWidget *menuitem, gpointer userdata)
     }
 }
 
-void on_markitem_activate(GtkWidget *menuitem, gpointer userdata)
+void on_markitem_activate(GtkWidget *, gpointer)
 {
     gtk_tree_selection_selected_foreach(
             gtk_tree_view_get_selection(GTK_TREE_VIEW(tree)),
             selection_action, (void*)1);
 }
 
-void on_unmarkitem_activate(GtkWidget *menuitem, gpointer userdata)
+void on_unmarkitem_activate(GtkWidget *, gpointer)
 {
     gtk_tree_selection_selected_foreach(
             gtk_tree_view_get_selection(GTK_TREE_VIEW(tree)),
@@ -553,23 +553,23 @@ gboolean on_maintreeview_button_press_event(GtkWidget *treeview,
     return TRUE;
 }
 
-void on_window_destroy(GtkWindow *window, gpointer user_data)
+void on_window_destroy(GtkWindow *, gpointer)
 {
     gtk_main_quit();
 }
 
-void on_folditem_activate(GtkWidget *item, gpointer user_data)
+void on_folditem_activate(GtkWidget *, gpointer user_data)
 {
     fold = GPOINTER_TO_UINT(user_data);
     refresh();
 }
 
-void on_refreshitem_activate(GtkButton *button, gpointer user_data)
+void on_refreshitem_activate(GtkButton *, gpointer)
 {
     refresh();
 }
 
-void item_toggled(GtkCellRendererToggle *cell, gchar *path_str, gpointer data)
+void item_toggled(GtkCellRendererToggle *, gchar *path_str, gpointer data)
 {
     GtkTreeModel *model = (GtkTreeModel *)data;
     GtkTreePath *path = gtk_tree_path_new_from_string(path_str);
@@ -580,7 +580,7 @@ void item_toggled(GtkCellRendererToggle *cell, gchar *path_str, gpointer data)
     gtk_tree_path_free(path);
 }
 
-gboolean limit_action(void *unused)
+gboolean limit_action(void *)
 {
     if (limit_requested)
     {
