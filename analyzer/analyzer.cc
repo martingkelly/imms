@@ -206,7 +206,8 @@ int main(int argc, char *argv[])
     for (int i = 3; i < 255; ++i)
         close(i);
 
-    nice(15);
+    int result = nice(15);
+    (void)(result);
 
     ImmsDb immsdb;
     Analyzer analyzer;
