@@ -29,6 +29,9 @@
 
 #include "appname.h"
 
+#undef max
+#undef min
+
 enum LogTypes {
     INFO,
     ERROR

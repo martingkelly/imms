@@ -25,6 +25,9 @@
 #include <torch/MemoryDataSet.h>
 #include <torch/DiagonalGMM.h>
 
+#undef max
+#undef min
+
 #include <sqlite++.h>
 
 #include "mfcckeeper.h"
