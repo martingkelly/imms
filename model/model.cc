@@ -18,10 +18,10 @@
 */
 #include "immsconf.h"
 
-#include <iostream>
-#include <vector>
 #include <algorithm>
+#include <iostream>
 #include <memory>
+#include <vector>
 
 #undef max
 #undef min
