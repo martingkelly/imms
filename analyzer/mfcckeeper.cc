@@ -25,6 +25,10 @@
 #include <torch/MemoryDataSet.h>
 #include <torch/DiagonalGMM.h>
 
+#undef max
+#undef min
+// Who thought these macros were a good idea, again?
+
 #include <sqlite++.h>
 
 #include "mfcckeeper.h"

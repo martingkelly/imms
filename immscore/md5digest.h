@@ -47,7 +47,8 @@ public:
 
         long offset = OFFSET;
         fseek(fp, TAGOFFSET, SEEK_END);
-        fread(tag_buf, 4, 1, fp);
+        int result = fread(tag_buf, 4, 1, fp);
+        (void)(result);
         if (!strncmp(tag_buf, "TAG", 3))
             offset += TAGOFFSET;
 

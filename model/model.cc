@@ -18,6 +18,15 @@
 */
 #include "immsconf.h"
 
+#include <algorithm>
+#include <iostream>
+#include <memory>
+#include <vector>
+
+#undef max
+#undef min
+// These macros conflict with, like, everything
+
 #ifdef WITH_TORCH
 #include "torch/ConnectedMachine.h"
 #include "torch/XFile.h"
@@ -32,10 +41,7 @@
 #include "torch/Tanh.h"
 #endif  // WITH_TORCH
 
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <memory>
+
 
 #include "model.h"
 #include "song.h"
