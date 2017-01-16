@@ -25,6 +25,7 @@
 
 #undef max
 #undef min
+// These macros conflict with, like, everything
 
 #ifdef WITH_TORCH
 #include "torch/ConnectedMachine.h"
