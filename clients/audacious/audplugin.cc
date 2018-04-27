@@ -17,7 +17,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 /*
- *      The XMMS plugin portion of IMMS
+ *      The Audacious plugin portion of IMMS
  */
 
 #include <string>
