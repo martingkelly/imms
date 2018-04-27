@@ -59,8 +59,8 @@ static const int num_hidden = 25;
 static const int num_outputs = 2;
 static const int stdv = 12;
 
-extern char _binary____data_svm_similarity_start;
-extern char _binary____data_svm_similarity_end;
+extern char ___data_svm_similarity;
+extern char ___data_svm_similarity_len;
 
 class XFileModeSetter {
 public:
@@ -106,10 +106,7 @@ public:
         }
         else
         {
-            static const size_t data_size = &_binary____data_svm_similarity_end
-                - &_binary____data_svm_similarity_start;
-            model.reset(new MemoryXFile(
-                        &_binary____data_svm_similarity_start, data_size));
+            model.reset(new MemoryXFile(&___data_svm_similarity, ___data_svm_similarity_len));
         }
         normalizer.load(model.get());
         svm.loadXFile(model.get());

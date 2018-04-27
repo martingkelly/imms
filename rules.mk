@@ -37,7 +37,7 @@ link = $(CXX) $(filter-out %.a,$1) $(filter %.a,$1) $3 -o $2
             -shared -Wl,-z,defs,-soname,$@ -o $@
 
 %-data.o: %
-	$(OBJCOPY) -I binary -O $(OBJCOPYTARGET) -B $(OBJCOPYARCH) --rename-section .data=.rodata,alloc,load,readonly,data,contents $< $@
+	xxd -i $< | $(CXX) -c -x c - -o $@
 
 # macros that expand to the object files in the given directories
 objects=$(sort $(notdir $(foreach type,c cc,$(call objects_$(type),$1))))
