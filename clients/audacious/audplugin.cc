@@ -84,17 +84,18 @@ static void do_checks(void *);
 // Wrapper that frees memory
 string imms_get_playlist_item(int at)
 {
-    int pl = aud_playlist_get_playing();
-    String uri = aud_playlist_entry_get_filename(pl, at);
+    auto pl = Playlist::playing_playlist();
+    String uri = pl.entry_filename(at);
     StringBuf fn = uri ? uri_to_filename(uri, false) : StringBuf();
     return fn ? string(fn) : "";
 }
 
 static void player_reset_selection()
 {
-    int pl = aud_playlist_get_playing();
-    int qp = aud_playlist_queue_find_entry(pl, next_plpos);
-    aud_playlist_queue_delete(pl, qp, 1);
+    auto pl = Playlist::playing_playlist();
+    int qp = pl.queue_find_entry(next_plpos);
+    if (qp >= 0)
+        pl.queue_remove(qp);
     next_plpos = -1;
 }
 
@@ -122,8 +123,8 @@ struct FilterOps
     static void set_next(int next)
     {
         next_plpos = next;
-        int pl = aud_playlist_get_playing();
-        aud_playlist_queue_insert(pl, -1, next_plpos);
+        auto pl = Playlist::playing_playlist();
+        pl.queue_insert(-1, next_plpos);
         select_pending = false;
         just_enqueued = 2;
     }
@@ -137,8 +138,8 @@ struct FilterOps
     }
     static int get_length()
     {
-        int pl = aud_playlist_get_playing();
-        return aud_playlist_entry_count(pl);
+        auto pl = Playlist::playing_playlist();
+        return pl.n_entries();
     }
 };
 
@@ -176,10 +177,10 @@ static void do_song_change()
         next_plpos = (cur_plpos + 1) % pl_length;
 }
 
-static void check_playlist(int pl)
+static void check_playlist(const Playlist &pl)
 {
     // update playlist length
-    int new_pl_length = aud_playlist_entry_count(pl);
+    int new_pl_length = pl.n_entries();
     if (new_pl_length != pl_length)
     {
         pl_length = new_pl_length;
@@ -198,18 +199,18 @@ static void check_time()
 
 static void do_checks(void *)
 {
-    int pl = aud_playlist_get_playing();
+    auto pl = Playlist::playing_playlist();
     check_playlist(pl);
 
     if (imms->check_connection())
     {
         select_pending = false;
         imms->setup(USE_XIDLE);
-        pl_length = aud_playlist_entry_count(pl);
+        pl_length = pl.n_entries();
         imms->playlist_changed(pl_length);
         if (aud_drct_get_playing())
         {
-            last_plpos = cur_plpos = aud_playlist_get_position(pl);
+            last_plpos = cur_plpos = pl.get_position();
             last_path = cur_path = imms_get_playlist_item(cur_plpos);
             imms->start_song(cur_plpos, cur_path);
         }
@@ -219,10 +220,10 @@ static void do_checks(void *)
     if (!aud_drct_get_playing())
         return;
 
-    cur_plpos = aud_playlist_get_position(pl);
+    cur_plpos = pl.get_position();
 
     // check if xmms is reporting the song length correctly
-    Tuple tu = aud_playlist_entry_get_tuple(pl, cur_plpos);
+    Tuple tu = pl.entry_tuple(cur_plpos);
     song_length = tu.get_int(Tuple::Length);
     if (song_length > 1000)
         good_length++;
@@ -239,8 +240,9 @@ static void do_checks(void *)
         if (last_path != cur_path)
         {
             do_song_change();
-            int qp = aud_playlist_queue_find_entry(pl, next_plpos);
-            aud_playlist_queue_delete(pl, qp, 1);
+            int qp = pl.queue_find_entry(next_plpos);
+            if (qp >= 0)
+                pl.queue_remove(qp);
             return;
         }
     }
@@ -255,7 +257,7 @@ static void do_checks(void *)
     if (!shuffle)
         return;
 
-    int qlength = aud_playlist_queue_count(pl);
+    int qlength = pl.n_queued();
     if (qlength > 1)
         player_reset_selection();
     else if (!qlength)
