@@ -24,6 +24,8 @@
 #include <torch/Sequence.h>
 #include <torch/MemoryDataSet.h>
 #include <torch/DiagonalGMM.h>
+#undef min
+#undef max
 
 #include <sqlite++.h>
 

@@ -30,6 +30,8 @@
 #include "torch/OneHotClassFormat.h"
 #include "torch/SVMClassification.h"
 #include "torch/Tanh.h"
+#undef min
+#undef max
 #endif  // WITH_TORCH
 
 #include <iostream>
