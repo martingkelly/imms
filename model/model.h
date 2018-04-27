@@ -56,7 +56,7 @@ public:
             const MixtureModel &mm2, float *beats2,
             std::vector<float> *features);
 private:
-    std::auto_ptr<Model> model;
+    std::unique_ptr<Model> model;
 };
 
 class SVMSimilarityModel : public SimilarityModel {

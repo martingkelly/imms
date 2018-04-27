@@ -66,7 +66,7 @@ public:
 
     static const int ResultSize = sizeof(Gaussian) * NUMGAUSS;
 protected:
-    std::auto_ptr<MFCCKeeperPrivate> impl;
+    std::unique_ptr<MFCCKeeperPrivate> impl;
     int sample_number;
     float last_frame[NUMCEPSTR], last_delta[NUMCEPSTR];
     MixtureModel result;

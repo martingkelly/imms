@@ -24,7 +24,7 @@
 #include "sqlite++.h"
 
 using std::string;
-using std::auto_ptr;
+using std::unique_ptr;
 
 class SqlDb
 {
@@ -37,7 +37,7 @@ protected:
     int changes();
 
 private:
-    auto_ptr<AttachedDatabase> correlations, acoustic;
+    unique_ptr<AttachedDatabase> correlations, acoustic;
     SQLDatabaseConnection dbcon;
 };
 

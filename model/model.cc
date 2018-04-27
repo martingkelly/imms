@@ -46,7 +46,7 @@ using std::endl;
 using std::cout;
 using std::cerr;
 using std::vector;
-using std::auto_ptr;
+using std::unique_ptr;
 
 #ifdef WITH_TORCH
 
@@ -95,7 +95,7 @@ public:
     SVMModel()
         : kernel(1./(stdv*stdv)), svm(&kernel), normalizer(num_inputs)
     {
-        auto_ptr<XFile> model;
+        unique_ptr<XFile> model;
         string filename = get_imms_root("svm-similarity");
         if (file_exists(filename))
         {
