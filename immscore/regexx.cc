@@ -30,7 +30,6 @@
 
 const unsigned int&
 regexx::Regexx::exec(int _flags)
-  throw(CompileException)
 {
   if(!m_compiled) {
     const char *errptr;
@@ -122,7 +121,6 @@ regexx::Regexx::exec(int _flags)
 
 const std::string&
 regexx::Regexx::replace(const std::string& _repstr, int _flags)
-  throw(CompileException)
 {
   exec(_flags&~nomatch);
   std::vector< std::pair<unsigned int,std::string::size_type> > v;

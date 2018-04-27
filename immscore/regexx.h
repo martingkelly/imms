@@ -228,7 +228,6 @@ namespace regexx {
     // Constructor with regular expression execution.
     inline
     Regexx(const std::string& _str, const std::string& _expr, int _flags = 0)
-      throw(CompileException)
       : m_compiled(false), m_study(false), m_matches(0), m_extra(NULL)
     { exec(_str,_expr,_flags); }
 
@@ -242,30 +241,25 @@ namespace regexx {
 
     // Execute a regular expression.
     const unsigned int&
-    exec(int _flags = 0)
-      throw(CompileException);
+    exec(int _flags = 0);
 
     // Execute a regular expression.
     inline const unsigned int&
-    exec(const std::string& _str, const std::string& _expr, int _flags = 0)
-      throw(CompileException);
+    exec(const std::string& _str, const std::string& _expr, int _flags = 0);
 
     // Replace string with regular expression.
     const std::string&
-    replace(const std::string& _repstr, int _flags = 0)
-      throw(CompileException);
+    replace(const std::string& _repstr, int _flags = 0);
 
     inline const std::string&
     replace(const std::string& _str, const std::string& _expr, 
-	    const std::string& _repstr, int _flags = 0)
-      throw(CompileException);
+	    const std::string& _repstr, int _flags = 0);
 
     // Customized replace string with regular expression.
     inline const std::string&
     replacef(const std::string& _str, const std::string& _expr,
 	     std::string (*_func)(const RegexxMatch&),
-	     int _flags = 0)
-      throw(CompileException);
+	     int _flags = 0);
     
     /** Returns the number of matches of the last exec()/replace()/replacef().
      */
@@ -325,7 +319,6 @@ namespace regexx {
   
   inline const unsigned int&
   Regexx::exec(const std::string& _str, const std::string& _expr, int _flags)
-    throw(CompileException)
   {
     str(_str);
     expr(_expr);
@@ -335,7 +328,6 @@ namespace regexx {
   inline const std::string&
   Regexx::replace(const std::string& _str, const std::string& _expr, 
 		  const std::string& _repstr, int _flags)
-    throw(CompileException)
   {
     str(_str);
     expr(_expr);
@@ -346,7 +338,6 @@ namespace regexx {
   Regexx::replacef(const std::string& _str, const std::string& _expr,
 		   std::string (*_func)(const RegexxMatch&),
 		   int _flags)
-    throw(CompileException)
   {
     str(_str);
     expr(_expr);
