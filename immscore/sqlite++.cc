@@ -75,7 +75,7 @@ string SQLDatabase::error()
 sqlite3 *SQLDatabase::db()
 {
     if (!db_ptr)
-        throw SQLException("Error", "db_ptr not intialized");
+        throw SQLException("Error", "db_ptr not initialized");
     return db_ptr;
 } 
 
