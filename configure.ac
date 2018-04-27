@@ -291,7 +291,7 @@ saved_cppflags="$CPPFLAGS"
 saved_libs="$LIBS"
 
 PLUGINS=""
-PKG_CHECK_MODULES(audacious, [audacious >= 3.6], [], [with_audacious=no])
+PKG_CHECK_MODULES(audacious, [audacious >= 3.9], [], [with_audacious=no])
 
 if test "$with_audacious" = "no"; then
     AC_MSG_ERROR([Not building audacious plugin])
