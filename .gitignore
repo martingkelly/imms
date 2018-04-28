@@ -1,9 +1,11 @@
 aclocal.m4
 autom4te.cache/
 build/
+build-stamp
 config.log
 config.status
 configure
+configure-stamp
 gitversion.m4
 immsconf.h
 immsconf.h.in
