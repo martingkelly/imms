@@ -58,11 +58,6 @@ AC_ARG_ENABLE(debug,
                            [Extra debug output]),
             [enable_debug=$enableval])
 
-AC_ARG_ENABLE(queuecontrol,
-            AC_HELP_STRING([--disable-queuecontrol],
-                           [Do not use XMMS queue control functions]),
-            [enable_queuecontrol=$enableval])
-
 AC_ARG_ENABLE(analyzer,
             AC_HELP_STRING([--disable-analyzer],
                            [Disable acoustic song similarity analyzer]),
@@ -296,68 +291,6 @@ saved_cppflags="$CPPFLAGS"
 saved_libs="$LIBS"
 
 PLUGINS=""
-AC_CHECK_PROG(with_xmms, xmms-config, "yes", "no")
-if test "$with_xmms" != "no"; then
-    CPPFLAGS=`xmms-config --cflags`
-    AC_CHECK_HEADERS(glib.h,, [with_xmms=no]) # how to disable caching for this?
-    AC_CHECK_HEADERS(gtk/gtk.h,, [with_xmms=no])
-    AC_CHECK_HEADERS(xmms/plugin.h,, [with_xmms=no])
-    AC_CHECK_HEADERS(xmms/xmmsctrl.h,, [with_xmms=no])
-fi
-
-xmms_enable_playqueue=$enable_queuecontrol
-if test "$with_xmms" = "no"; then
-    AC_MSG_WARN([Not building XMMS plugin])
-else
-    if test "$xmms_enable_playqueue" != "no"; then
-        AC_MSG_CHECKING([for xmms_remote_playqueue_add in -lxmms])
-        saved_libs="$LIBS"
-        LIBS="$LIBS -lxmms"
-        AC_TRY_LINK([#include <xmms/xmmsctrl.h>],
-                    [xmms_remote_playqueue_add(0, 0)],
-                    [AC_MSG_RESULT(yes)],
-                    [xmms_enable_playqueue="no"
-                         AC_MSG_RESULT(no)]);
-        LIBS="$saved_libs"
-    fi
-    if test "$xmms_enable_playqueue" = "no"; then
-        AC_APPEND(PLUGINS, libxmmsimms.so)
-    else
-        AC_DEFINE(XMMS_HAVE_QUEUE_CONTROL,,
-                  [XMMS provides functions to control the play queue])
-        AC_APPEND(PLUGINS, libxmmsimms2.so)
-    fi
-fi
-
-PKG_CHECK_MODULES(BMP, [bmp >= 0.9.7], [], [with_bmp=no])
-
-LIBS=$BMP_LIBS
-CPPFLAGS=$BMP_CFLAGS
-
-AC_CHECK_HEADERS(bmp/plugin.h,, [with_bmp=no])
-AC_CHECK_HEADERS(bmp/beepctrl.h,, [with_bmp=no])
-
-bmp_enable_playqueue=$enable_queuecontrol
-if test "$with_bmp" = "no"; then
-    AC_MSG_WARN([Not building BMP plugin])
-else
-    if test "$bmp_enable_playqueue" != "no"; then
-        AC_MSG_CHECKING([for xmms_remote_playqueue_add in -lbeep])
-        AC_TRY_LINK([#include <bmp/beepctrl.h>],
-                    [xmms_remote_playqueue_add(0, 0)],
-                    [AC_MSG_RESULT(yes)],
-                    [bmp_enable_playqueue="no"
-                         AC_MSG_RESULT(no)]);
-    fi
-    if test "$bmp_enable_playqueue" = "no"; then
-        AC_APPEND(PLUGINS, libbmpimms.so)
-    else
-        AC_DEFINE(BMP_HAVE_QUEUE_CONTROL,,
-                  [BMP provides functions to control the play queue])
-        AC_APPEND(PLUGINS, libbmpimms2.so)
-    fi
-fi
-
 PKG_CHECK_MODULES(audacious, [audacious >= 3.6], [], [with_audacious=no])
 
 if test "$with_audacious" = "no"; then
