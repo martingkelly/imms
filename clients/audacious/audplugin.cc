@@ -92,11 +92,13 @@ string imms_get_playlist_item(int at)
 
 static void player_reset_selection()
 {
-    auto pl = Playlist::playing_playlist();
-    int qp = pl.queue_find_entry(next_plpos);
-    if (qp >= 0)
-        pl.queue_remove(qp);
-    next_plpos = -1;
+    if (next_plpos != -1) {
+        auto pl = Playlist::playing_playlist();
+        int qp = pl.queue_find_entry(next_plpos);
+        if (qp >= 0)
+            pl.queue_remove(qp);
+        next_plpos = -1;
+        }
 }
 
 struct FilterOps;
@@ -240,9 +242,11 @@ static void do_checks(void *)
         if (last_path != cur_path)
         {
             do_song_change();
-            int qp = pl.queue_find_entry(next_plpos);
-            if (qp >= 0)
-                pl.queue_remove(qp);
+            if (next_plpos != -1) {
+                int qp = pl.queue_find_entry(next_plpos);
+                if (qp >= 0)
+                    pl.queue_remove(qp);
+            }
             return;
         }
     }
