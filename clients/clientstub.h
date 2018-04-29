@@ -110,7 +110,7 @@ public:
     bool check_connection()
     {
         if (isok())
-            return false;
+            return true;
 
         system("nice -n 5 immsd &");
 
