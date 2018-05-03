@@ -157,8 +157,6 @@ void IMMSPlugin::cleanup()
     imms = 0;
 }
 
-int random_index() { return imms_random(pl_length); }
-
 static void do_song_change()
 {
     bool forced = (cur_plpos != next_plpos);
