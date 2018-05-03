@@ -22,11 +22,10 @@
 
 #include <string>
 #include <iostream>
-#include <time.h>
 
 #include <libaudcore/audstrings.h>
 #include <libaudcore/drct.h>
-#include <libaudcore/mainloop.h>
+#include <libaudcore/hook.h>
 #include <libaudcore/playlist.h>
 #include <libaudcore/plugin.h>
 #include <libaudcore/runtime.h>
@@ -69,8 +68,6 @@ const char IMMSPlugin::about[] =
     "Written by Michael \"mag\" Grigoriev <mag@luminal.org>";
 
 // Local vars
-static QueuedFunc timer;
-
 int cur_plpos, next_plpos = -1, pl_length = -1,
     last_plpos = -1, last_song_length = -1;
 int good_length = 0, song_length = 0,
@@ -149,13 +146,13 @@ bool IMMSPlugin::init()
 {
     imms = new XMMSClient();
     imms->setup(USE_XIDLE);
-    timer.start(200, do_checks, nullptr);
+    timer_add(TimerRate::Hz1, do_checks, nullptr);
     return true;
 }
 
 void IMMSPlugin::cleanup()
 {
-    timer.stop();
+    timer_remove(TimerRate::Hz1, do_checks, nullptr);
     delete imms;
     imms = 0;
 }
