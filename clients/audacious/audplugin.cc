@@ -72,7 +72,7 @@ int cur_plpos, next_plpos = -1, pl_length = -1,
     last_plpos = -1, last_song_length = -1;
 int good_length = 0, song_length = 0,
     just_enqueued = 0, ending = 0;
-bool shuffle = true, select_pending = false;
+bool shuffle = true, select_pending = false, do_init = true;
 
 string cur_path = "", last_path = "";
 
@@ -101,6 +101,17 @@ static void player_reset_selection()
 struct FilterOps;
 typedef IMMSClient<FilterOps> XMMSClient;
 XMMSClient *imms = 0;
+static bool connected()
+{
+    static bool was_connected = false;
+    bool is_connected = imms->check_connection();
+    if (!was_connected && is_connected)
+        do_init = true;
+    else if (was_connected && !is_connected)
+        select_pending = false;
+    was_connected = is_connected;
+    return is_connected;
+}
 
 static void enqueue_next()
 {
@@ -114,7 +125,8 @@ static void enqueue_next()
 
     // have imms select the next song for us
     select_pending = true;
-    imms->select_next();
+    if (connected())
+        imms->select_next();
 }
 
 struct FilterOps
@@ -145,7 +157,6 @@ struct FilterOps
 bool IMMSPlugin::init()
 {
     imms = new XMMSClient();
-    imms->setup(USE_XIDLE);
     timer_add(TimerRate::Hz1, do_checks, nullptr);
     return true;
 }
@@ -163,11 +174,12 @@ static void do_song_change()
     bool bad = good_length < 3 || song_length < 30*1000;
 
     // notify imms that the previous song has ended
-    if (last_path != "")
+    if (last_path != "" && connected())
         imms->end_song(ending, forced, bad);
 
     // notify imms of the next song
-    imms->start_song(cur_plpos, cur_path);
+    if (connected())
+        imms->start_song(cur_plpos, cur_path);
 
     last_path = cur_path;
     ending = good_length = 0;
@@ -180,12 +192,13 @@ static void check_playlist(const Playlist &pl)
 {
     // update playlist length
     int new_pl_length = pl.n_entries();
-    if (new_pl_length != pl_length)
-    {
-        pl_length = new_pl_length;
-        player_reset_selection();
-        imms->playlist_changed(pl_length);
+    if (new_pl_length == pl_length) {
+        return;
     }
+    pl_length = new_pl_length;
+    player_reset_selection();
+    if (connected())
+        imms->playlist_changed(pl_length);
 }
 
 static void check_time()
@@ -200,13 +213,11 @@ static void do_checks(void *)
 {
     auto pl = Playlist::playing_playlist();
     check_playlist(pl);
-
-    if (imms->check_connection())
-    {
+ 
+    if (connected() && do_init) {
         select_pending = false;
         imms->setup(USE_XIDLE);
-        pl_length = pl.n_entries();
-        imms->playlist_changed(pl_length);
+        imms->playlist_changed(pl.n_entries());
         if (aud_drct_get_playing())
         {
             last_plpos = cur_plpos = pl.get_position();
@@ -214,6 +225,7 @@ static void do_checks(void *)
             imms->start_song(cur_plpos, cur_path);
         }
         enqueue_next();
+        do_init = false;
     }
 
     if (!aud_drct_get_playing())
