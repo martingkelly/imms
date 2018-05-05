@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -195,4 +196,9 @@ int socket_connect(const string &sockname)
 bool file_exists(const string &filename) {
     struct stat buf;
     return !stat(filename.c_str(), &buf);
+}
+
+string error_string(int errnum) {
+    char buffer[1024];
+    return string(strerror_r(errnum, buffer, sizeof(buffer)));
 }
