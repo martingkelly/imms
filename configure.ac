@@ -178,7 +178,7 @@ AC_SUBST(OBJCOPYTARGET, $octarget)
 AC_SUBST(OBJCOPYARCH, $ocarch)
 
 PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.0],
-                  [], [AC_MSG_ERROR([Required packages missing.])])
+                  [], AC_MSG_ERROR([Required packages missing.]))
 
 saved_cppflags="$CPPFLAGS"
 saved_libs="$LIBS"
