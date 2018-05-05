@@ -161,7 +161,8 @@ string path_normalize(const string &path)
     if (access(start, R_OK))
         return start;
     char resolved[PATH_MAX];
-    realpath(start, resolved);
+    if (realpath(start, resolved) == NULL)
+        LOG(ERROR) << "Couldn't resolve path \"" << path << "\": " << error_string(errno) << endl;
     return resolved;
 }
 
