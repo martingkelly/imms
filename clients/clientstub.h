@@ -112,7 +112,8 @@ public:
         if (isok())
             return true;
 
-        system("nice -n 5 immsd &");
+        int result = system("nice -n 5 immsd &");
+        (void)(result);
 
         return connect();
     }

@@ -160,7 +160,8 @@ string path_normalize(const string &path)
     if (access(start, R_OK))
         return start;
     char resolved[PATH_MAX];
-    realpath(start, resolved);
+    char* result = realpath(start, resolved);
+    (void)(result);
     return resolved;
 }
 
