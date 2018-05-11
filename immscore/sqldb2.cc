@@ -57,7 +57,7 @@ SqlDb::SqlDb()
         command << "sqlite " << get_imms_root("imms.db")
             << " .dump | sqlite3 " << get_imms_root("imms2.db") << endl;
         cerr << "Running: " << command.str() << endl;
-        system(command.str().c_str());
+        cerr << "Result: " << system(command.str().c_str()) << endl;
         cerr << "If you see errors above verify that you have *both*"
             " sqlite 2.8.x" << endl;
         cerr << "and 3.0.x installed and rerun the command by hand." << endl;

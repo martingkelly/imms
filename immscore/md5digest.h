@@ -40,32 +40,52 @@ public:
         static unsigned char bin_buffer[128 / 8];
         static char hex_buf[34] = {'\0'};
         static char tag_buf[4] = {'\0'};
+        long offset = OFFSET;
+        char *cur = hex_buf;
+        int res, err;
 
         FILE *fp = fopen(filename.c_str(), "r");
         if (!fp)
-            return "bad_checksum";
+            goto failed;
 
-        long offset = OFFSET;
-        fseek(fp, TAGOFFSET, SEEK_END);
-        fread(tag_buf, 4, 1, fp);
+        err = fseek(fp, TAGOFFSET, SEEK_END);
+        if (err)
+            goto failed;
+
+        err = fread(tag_buf, 4, 1, fp) != 1;
+        if (err)
+            goto failed;
+
         if (!strncmp(tag_buf, "TAG", 3))
             offset += TAGOFFSET;
 
-        int res = fseek(fp, offset, SEEK_END);
-
+        res = fseek(fp, offset, SEEK_END);
         if (res)
             rewind(fp);
 
-        int err = md5_stream(fp, NUMBLOCKS, bin_buffer);
-        fclose(fp);
+        err = md5_stream(fp, NUMBLOCKS, bin_buffer);
         if (err)
-            return "bad_checksum";
+            goto failed;
 
-        char *cur = hex_buf;
+        err = fclose(fp);
+        fp = NULL;
+        if (err)
+            goto failed;
+
         for (int i = 0; i < (128 / 4 / 2); ++i)
             cur += sprintf(cur, "%02x", bin_buffer[i]);
 
         return hex_buf;
+
+failed:
+        LOG(ERROR) << "Error hashing file \"" << filename << "\": " << error_string(errno) << endl;
+        if (fp) {
+            err = fclose(fp);
+            fp = NULL;
+            if (err)
+                goto failed;
+        }
+        return "bad_checksum";
     }
 };
 

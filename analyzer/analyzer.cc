@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
     int result = nice(15);
     if (result == -1) {
         // If the nice failed...
-        LOG(ERROR) << "Failed to renice (errno " << errno << ")" << endl;
+        LOG(ERROR) << "Failed to renice: " << error_string(errno) << endl;
     }
 
     ImmsDb immsdb;

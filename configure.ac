@@ -21,7 +21,7 @@ m4_include([gitversion.m4])dnl
 AC_INIT([IMMS],[GIT_VERSION],[mag@luminal.org])
 AM_INIT_AUTOMAKE
 
-AC_PREREQ([2.52g])
+AC_PREREQ([2.60])
 
 AC_REVISION($Id: configure.ac,v 1.30 2003/10/23 23:53:20 mag Exp $)
 
@@ -73,6 +73,7 @@ AC_PROG_CC
 AC_PROG_INSTALL
 
 AC_LANG(C++)
+AC_USE_SYSTEM_EXTENSIONS
 
 AC_MSG_CHECKING([for --enable-debug])
 

@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -160,7 +161,8 @@ string path_normalize(const string &path)
     if (access(start, R_OK))
         return start;
     char resolved[PATH_MAX];
-    realpath(start, resolved);
+    if (realpath(start, resolved) == NULL)
+        LOG(ERROR) << "Couldn't resolve path \"" << path << "\": " << error_string(errno) << endl;
     return resolved;
 }
 
@@ -195,4 +197,9 @@ int socket_connect(const string &sockname)
 bool file_exists(const string &filename) {
     struct stat buf;
     return !stat(filename.c_str(), &buf);
+}
+
+string error_string(int errnum) {
+    char buffer[1024];
+    return string(strerror_r(errnum, buffer, sizeof(buffer)));
 }

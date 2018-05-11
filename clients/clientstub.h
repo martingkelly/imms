@@ -112,7 +112,8 @@ public:
         if (isok())
             return true;
 
-        system("nice -n 5 immsd &");
+        if (system("nice -n 5 immsd &"))
+            LOG(ERROR) << "Couldn't start immsd: " << error_string(errno) << endl;
 
         return connect();
     }

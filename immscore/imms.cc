@@ -172,7 +172,8 @@ void Imms::start_song(int position, string path)
     if (!current.isanalyzed())
     {
         string epath = rex.replace(path, "'", "'\"'\"'", Regexx::global);
-        system(string("analyzer '" + epath + "' &").c_str());
+        if (system(string("analyzer '" + epath + "' &").c_str()))
+            LOG(ERROR) << "Couldn't start analyzer: " << error_string(errno) << endl;
     }
 #endif
 }
